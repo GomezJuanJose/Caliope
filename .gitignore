@@ -1,0 +1,11 @@
+# Directiories
+.vs/
+bin/
+build/
+*.user
+*.sln
+
+#File formats
+*.sln
+*.vcxproj
+*.vcxproj.filters
