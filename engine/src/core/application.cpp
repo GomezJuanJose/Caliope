@@ -1,10 +1,23 @@
 #include "application.h"
-#include <iostream>
+
+#include "logger.h"
 
 namespace caliope {
 
+	typedef struct application_state {
+
+	} application_state;
+
 	bool application_create() {
-		std::cout << "Init application" << std::endl;
+		CE_LOG_INFO("Creating application!");
+
+		int logger_memory_requirement;
+		logger_initialize(&logger_memory_requirement, nullptr);
+		void* block = malloc(logger_memory_requirement);
+		if (!logger_initialize(&logger_memory_requirement, block)) {
+			CE_LOG_ERROR("Failed to initialize logger; shutting down");
+			return false;
+		}
 
 		return true;
 	}
@@ -14,6 +27,8 @@ namespace caliope {
 		while (true) {
 
 		}
+
+		logger_shutdow();
 
 		return true;
 	}
