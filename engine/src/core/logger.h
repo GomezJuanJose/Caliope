@@ -1,7 +1,6 @@
 #pragma once
 #include "../defines.h"
-
-#include <memory>
+#include <string>
 
 #define CE_WARNING_ENABLED 1
 #define CE_INFO_ENABLED 1
@@ -12,7 +11,6 @@
 	#define CE_DEBUG_ENABLED 0
 #endif // CE_RELEASE
 
-
 namespace caliope {
 	typedef enum log_level {
 		LOG_LEVEL_FATAL = 0,
@@ -22,7 +20,7 @@ namespace caliope {
 		LOG_LEVEL_DEBUG = 4
 	} log_level;
 
-	bool logger_initialize(int* memory_requirement, void* state);
+	bool logger_initialize();
 	void logger_shutdow();
 
 	CE_API void logger_output(log_level level, const std::string string, ...);
