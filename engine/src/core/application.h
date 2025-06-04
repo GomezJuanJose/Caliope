@@ -2,7 +2,9 @@
 #include "../defines.h"
 
 namespace caliope {
-	CE_API bool application_create();
+	struct program_config;
+
+	CE_API bool application_create(program_config*);
 
 	CE_API bool application_run();
 }
