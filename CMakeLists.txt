@@ -40,6 +40,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 target_link_libraries(engine PRIVATE glfw Vulkan::Vulkan)
 
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+)
+FetchContent_MakeAvailable(glm)
+target_link_libraries(engine PRIVATE glm::glm)
+
 
 file(GLOB_RECURSE SRC_FILES testbed/src/*.cpp)
 file(GLOB_RECURSE HEADERS_FILES testbed/src/*.h)
