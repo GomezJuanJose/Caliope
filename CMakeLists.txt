@@ -17,8 +17,9 @@ project(Caliope VERSION 1.0)
 
 file(GLOB_RECURSE ENGINE_SRC_FILES engine/src/**.cpp)
 file(GLOB_RECURSE ENGINE_HEADERS_FILES engine/src/*.h)
+file(GLOB_RECURSE ENGINE_INL_FILES engine/src/*.inl)
 
-add_library(engine SHARED ${ENGINE_SRC_FILES} ${ENGINE_HEADERS_FILES})
+add_library(engine SHARED ${ENGINE_SRC_FILES} ${ENGINE_HEADERS_FILES} ${ENGINE_INL_FILES})
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/engine/src)
 target_compile_definitions(engine PRIVATE CE_PLATFORM_WINDOWS=1 CE_EXPORT_DLL=1)
 target_precompile_headers(engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine/src/cepch.h)

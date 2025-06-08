@@ -5,7 +5,9 @@
 #include "core/logger.h"
 #include "core/cememory.h"
 #include "core/event.h"
-#include "input.h"
+#include "core/input.h"
+
+#include "renderer/renderer_frontend.h"
 
 #include "platform/platform.h"
 
@@ -15,6 +17,7 @@ namespace caliope {
 		std::shared_ptr<program_config> program_config;
 
 		bool is_running;
+		bool is_suspended;
 	} application_state;
 
 	static std::unique_ptr<application_state> state_ptr;
@@ -53,6 +56,11 @@ namespace caliope {
 			return false;
 		}
 
+		if (!renderer_system_initialize(config.name)) {
+			CE_LOG_FATAL("Failed to initialize platform; shutting down");
+			return false;
+		}
+
 		if (!state_ptr->program_config->initialize()) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
 			return false;
@@ -73,12 +81,22 @@ namespace caliope {
 				state_ptr->is_running = false;
 			}
 
-			if (!state_ptr->program_config->update(0.0f)) {
-				CE_LOG_ERROR("Failed to update the program;");
-			}
+			if (!state_ptr->is_suspended) {
+				if (!state_ptr->program_config->update(0.0f)) {
+					CE_LOG_ERROR("Failed to update the program;");
+				}
 
-			input_system_update_inputs(0.0f);
+				renderer_packet packet;
+				if (!renderer_draw_frame(packet)) {
+					CE_LOG_FATAL("Failed to render frame");
+					return false;
+				}
+
+				input_system_update_inputs(0.0f);
+			}
 		}
+
+		renderer_system_shutdown();
 
 		platform_system_shutdown();
 
