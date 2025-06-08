@@ -17,14 +17,20 @@
 
 namespace caliope {
 
-	typedef struct logger_state {
+	typedef struct logger_system_state {
 		std::shared_ptr<spdlog::logger> console_logger;
 		std::shared_ptr<spdlog::logger> file_logger;
 	} logger_state;
 
-	static std::unique_ptr<logger_state> state_ptr = std::make_unique<logger_state>();
+	static std::unique_ptr<logger_system_state> state_ptr;
 
-	bool logger_initialize() {
+	bool logger_system_initialize() {
+
+		state_ptr = std::make_unique<logger_system_state>();
+
+		if (state_ptr == nullptr) {
+			return false;
+		}
 
 		state_ptr->console_logger = spdlog::stdout_color_mt("logger");
 		state_ptr->file_logger = spdlog::basic_logger_mt("file_logger", "logs/caliope_log.log");
@@ -34,40 +40,47 @@ namespace caliope {
 		return true;
 	}
 
-	void logger_shutdow() {
+	void logger_system_shutdown() {
 		state_ptr->console_logger.reset();
 		state_ptr->file_logger.reset();
 		state_ptr.reset();
 	}
 
-	void logger_output(log_level level, const std::string string, ...) {
-		std::string string_levels[5]{ "FATAL", "ERROR", "WARNING", "INFO", "DEBUG" };
+	void logger_output(const std::string& string, log_level level, ...) {
+
 		spdlog::level::level_enum log_levels[5]{ 
 			spdlog::level::level_enum::critical, 
 			spdlog::level::level_enum::err,
 			spdlog::level::level_enum::warn,
-			spdlog::level::level_enum::info,
-			spdlog::level::level_enum::debug
+			spdlog::level::level_enum::info
 		};
-
 
 		char buffer[512];
 		std::va_list args;
-		va_start(args, string);
+		va_start(args, level);
 		vsprintf_s(buffer, string.c_str(), args);
 		va_end(args);
 
-		std::string format_string(buffer);
-
-		
-
 		if (state_ptr && state_ptr->console_logger && state_ptr->file_logger) {
+			std::string format_string(buffer);
 			state_ptr->console_logger->log(log_levels[level], format_string);
 			state_ptr->file_logger->log(log_levels[level], format_string);
 		}
 		else {
-			std::string message = "[" + string_levels[level] + "]: " + format_string + "\n";
-			std::printf(message.c_str());
+			char* message = buffer;
+			std::printf("[UNINITIALIZED_LOGGER]: %s\n",message);
 		}
+	}
+
+	void logger_plain_output(log_level level, const char* string, ...) {
+		const char* string_levels[] = {"FATAL", "ERROR", "WARNING", "INFO"};
+
+		char buffer[512];
+		std::va_list args;
+		va_start(args, string);
+		vsprintf_s(buffer, string, args);
+		va_end(args);
+
+		std::printf("[%s]: %s\n", string_levels[level], buffer);
 	}
 }
