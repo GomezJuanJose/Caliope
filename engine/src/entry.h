@@ -17,7 +17,7 @@ int main(void){
         return -1;
     }
 
-    if (!caliope::application_create(&config)) {
+    if (!caliope::application_create(config)) {
         return -1;
     }
     

@@ -1,4 +1,15 @@
-    #ifdef CE_PLATFORM_WINDOWS
+
+typedef unsigned char uchar;
+typedef unsigned short uint16;
+typedef unsigned int uint;
+typedef unsigned long long uint64;
+
+typedef signed short iint16;
+typedef signed long long iint64;
+
+#define INVALID_ID 4294967295U
+
+#ifdef CE_PLATFORM_WINDOWS
         #ifdef CE_EXPORT_DLL
             #define CE_API __declspec(dllexport)
         #else

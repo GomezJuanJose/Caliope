@@ -10,7 +10,7 @@ namespace caliope {
 		int height;
 
 		bool (*initialize) ();
-		bool (*update) ();
+		bool (*update) (float delta_time);
 		bool (*resize) ();
 		void (*shutdown) ();
 
