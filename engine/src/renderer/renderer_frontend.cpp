@@ -28,6 +28,7 @@ namespace caliope{
 			return false;
 		}
 
+		CE_LOG_INFO("Renderer system initialized.");
 		return true;
 	}
 

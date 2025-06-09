@@ -9,6 +9,8 @@ typedef signed long long iint64;
 
 #define INVALID_ID 4294967295U
 
+#define CE_DEBUG
+
 #ifdef CE_PLATFORM_WINDOWS
         #ifdef CE_EXPORT_DLL
             #define CE_API __declspec(dllexport)
