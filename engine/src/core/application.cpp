@@ -57,7 +57,7 @@ namespace caliope {
 		}
 
 		if (!renderer_system_initialize(config.name)) {
-			CE_LOG_FATAL("Failed to initialize platform; shutting down");
+			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
 		}
 

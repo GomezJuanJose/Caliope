@@ -1,11 +1,15 @@
 #include "vulkan_renderer.h"
-
+#include "cepch.h"
 #include "renderer/vulkan/vulkan_types.inl"
-
 #include "renderer/vulkan/vulkan_device.h"
+#include "renderer/vulkan/vulkan_swapchain.h"
+#include "renderer/vulkan/vulkan_image.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+#include "platform/platform.h"
+
 
 namespace caliope {
 
@@ -68,13 +72,31 @@ namespace caliope {
 
 #endif // CE_DEBUG
 
-		
-		
-
 		VK_CHECK(vkCreateInstance(&create_info, nullptr, &context.instance));
 
+
+		// Create surface
+		if (glfwCreateWindowSurface(context.instance, std::any_cast<GLFWwindow*>(platform_system_get_window()), nullptr, &context.surface)) {
+			CE_LOG_FATAL("Could not create a window surface");
+			return false;
+		}
+
+
+		// Create device
 		if (!vulkan_device_create(context)) {
 			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create a device");
+			return false;
+		}
+
+		// Create swapchain
+		if (!vulkan_swapchain_create(context)) {
+			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the swapchain");
+			return false;
+		}
+
+		// Create swapchain images views
+		if (!vulkan_imageview_create(context)) {
+			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the swapchain images views");
 			return false;
 		}
 
@@ -84,7 +106,13 @@ namespace caliope {
 
 	void vulkan_renderer_backend_shutdown() {
 
+		vulkan_imageview_destroy(context);
+
+		vulkan_swapchain_destroy(context);
+
 		vulkan_device_destroy(context);
+
+		vkDestroySurfaceKHR(context.instance, context.surface, nullptr);
 
 		vkDestroyInstance(context.instance, nullptr);
 	}

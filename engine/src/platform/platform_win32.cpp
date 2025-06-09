@@ -7,7 +7,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <string>
+#include "cepch.h"
 
 
 namespace caliope {
@@ -84,6 +84,10 @@ namespace caliope {
 	bool platform_system_pump_event() {
 		glfwPollEvents();
 		return !glfwWindowShouldClose(state_ptr->window);
+	}
+
+	std::any platform_system_get_window() {
+		return state_ptr->window;
 	}
 
 	void* platform_system_allocate_memory(size_t size) {

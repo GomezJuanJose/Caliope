@@ -2,11 +2,14 @@
 
 #include "defines.h"
 
+
 namespace caliope {
 	bool platform_system_initialize(const std::string& window_name, int width, int height);
 	void platform_system_shutdown();
 
 	bool platform_system_pump_event();
+
+	std::any platform_system_get_window();
 
 	void* platform_system_allocate_memory(size_t size);
 	void platform_system_free_memory(void* block);
