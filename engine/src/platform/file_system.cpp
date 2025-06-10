@@ -92,14 +92,14 @@ namespace caliope {
 		return false;
 	}
 
-	bool file_system_read_all_bytes(file_handle& handle, std::shared_ptr<void> out_bytes, uint64& out_bytes_read) {
+	bool file_system_read_all_bytes(file_handle& handle, void* out_bytes, uint64& out_bytes_read) {
 		if (handle.is_valid) {
 			uint64 size = 0;
 			if (!file_system_size(handle, size)) {
 				return false;
 			}
 
-			out_bytes_read = fread(out_bytes.get(), 1, size, std::any_cast<FILE*>(handle.handle));
+			out_bytes_read = fread(out_bytes, 1, size, std::any_cast<FILE*>(handle.handle));
 			return out_bytes_read == size;
 		}
 

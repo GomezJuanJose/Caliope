@@ -30,7 +30,7 @@ namespace caliope {
 
 	CE_API bool file_system_write_line(file_handle& handle, const std::string& text);
 
-	CE_API bool file_system_read_all_bytes(file_handle& handle, std::shared_ptr<void> out_bytes, uint64& out_bytes_read);
+	CE_API bool file_system_read_all_bytes(file_handle& handle, void* out_bytes, uint64& out_bytes_read);
 
 	CE_API bool file_system_read_all_text(file_handle& handle, std::string& out_text, uint64& out_bytes_read);
 

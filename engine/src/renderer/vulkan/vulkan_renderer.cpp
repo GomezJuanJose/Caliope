@@ -4,6 +4,8 @@
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_swapchain.h"
 #include "renderer/vulkan/vulkan_image.h"
+#include "renderer/vulkan/vulkan_renderpass.h"
+#include "renderer/vulkan/vulkan_pipeline.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -100,11 +102,29 @@ namespace caliope {
 			return false;
 		}
 
+		// Create renderpass
+		if (!vulkan_renderpass_create(context)) {
+			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the renderpass");
+			return false;
+		}
+
+		// Create pipeline
+		if (!vulkan_pipeline_create(context)) {
+			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the pipeline");
+			return false;
+		}
+
 		CE_LOG_INFO("Vulkan backend initialized.");
 		return true;
 	}
 
 	void vulkan_renderer_backend_shutdown() {
+
+		vkDeviceWaitIdle(context.device.logical_device);
+
+		vulkan_pipeline_destroy(context);
+
+		vulkan_renderpass_destroy(context);
 
 		vulkan_imageview_destroy(context);
 

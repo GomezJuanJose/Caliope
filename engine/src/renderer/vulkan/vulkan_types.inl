@@ -48,6 +48,15 @@ namespace caliope {
 		uint image_count;
 	} vulkan_swapchain;
 
+	typedef struct vulkan_pipeline {
+		VkPipelineLayout layout;
+		VkPipeline handle;
+	}vulkan_pipeline;
+
+	typedef struct vulkan_renderpass {
+		VkRenderPass handle;
+	} vulkan_renderpass;
+
 	typedef struct vulkan_context {
 		VkInstance instance;
 		vulkan_device device;
@@ -55,7 +64,11 @@ namespace caliope {
 
 		VkSurfaceKHR surface;
 
+		
 		vulkan_swapchain swapchain;
+
+		vulkan_pipeline pipeline;
+		vulkan_renderpass renderpass;
 
 	} vulkan_context;
 }
