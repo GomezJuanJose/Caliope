@@ -11,6 +11,8 @@
 		}											\
 	}
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 namespace caliope {
 	typedef struct swapchain_support_details {
 		VkSurfaceCapabilitiesKHR capabilities;
@@ -33,6 +35,8 @@ namespace caliope {
 		VkQueue graphics_queue;
 		VkQueue presentation_queue;
 
+		VkCommandPool command_pool;
+
 	}vulkan_device;
 
 	typedef struct vulkan_swapchain {
@@ -44,6 +48,8 @@ namespace caliope {
 
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;
+
+		std::vector<VkFramebuffer> framebuffers;
 
 		uint image_count;
 	} vulkan_swapchain;
@@ -57,7 +63,14 @@ namespace caliope {
 		VkRenderPass handle;
 	} vulkan_renderpass;
 
+	typedef struct vulkan_command_buffer{
+		VkCommandBuffer handle;
+	}vulkan_command_buffer;
+
 	typedef struct vulkan_context {
+
+		uint current_frame;
+
 		VkInstance instance;
 		vulkan_device device;
 		swapchain_support_details swapchain_details;
@@ -69,6 +82,12 @@ namespace caliope {
 
 		vulkan_pipeline pipeline;
 		vulkan_renderpass renderpass;
+
+		std::vector<VkSemaphore> image_available_semaphores;
+		std::vector<VkSemaphore> render_finished_semaphores;
+		std::vector<VkFence> in_flight_fences;
+
+		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
 
 	} vulkan_context;
 }

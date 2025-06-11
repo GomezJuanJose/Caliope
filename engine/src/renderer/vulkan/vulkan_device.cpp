@@ -78,10 +78,17 @@ namespace caliope {
 		vkGetDeviceQueue(context.device.logical_device, indices.graphics_family.value(), 0, &context.device.graphics_queue);
 		vkGetDeviceQueue(context.device.logical_device, indices.present_family.value(), 0, &context.device.presentation_queue);
 
+		// Creates the command pool for the device
+		VkCommandPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+		pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		pool_info.queueFamilyIndex = context.device.graphics_queue_index;
+		VK_CHECK(vkCreateCommandPool(context.device.logical_device, &pool_info, nullptr, &context.device.command_pool));
+
 		return true;
 	}
 
 	void vulkan_device_destroy(vulkan_context& context) {
+		vkDestroyCommandPool(context.device.logical_device, context.device.command_pool, nullptr);
 		vkDestroyDevice(context.device.logical_device, nullptr);
 	}
 

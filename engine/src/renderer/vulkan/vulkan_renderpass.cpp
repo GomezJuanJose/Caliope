@@ -27,6 +27,17 @@ namespace caliope {
 		renderpass_info.subpassCount = 1;
 		renderpass_info.pSubpasses = &subpass;
 
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		renderpass_info.dependencyCount = 1;
+		renderpass_info.pDependencies = &dependency;
+
 		VK_CHECK(vkCreateRenderPass(context.device.logical_device, &renderpass_info, nullptr, &context.renderpass.handle));
 
 		return true;
