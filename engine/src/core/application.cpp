@@ -22,6 +22,9 @@ namespace caliope {
 
 	static std::unique_ptr<application_state> state_ptr;
 
+	// Event handlers
+	bool application_on_resize(event_system_code code, std::any data);
+
 	bool application_create(program_config& config) {
 		CE_LOG_INFO("Creating application");
 
@@ -65,6 +68,9 @@ namespace caliope {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
 			return false;
 		}
+
+		// Register events
+		event_register(EVENT_CODE_MOUSE_RESIZED, application_on_resize);
 
 
 		CE_LOG_INFO("\n" + get_memory_stats());
@@ -111,6 +117,19 @@ namespace caliope {
 
 
 		return true;
+	}
+
+	bool application_on_resize(event_system_code code, std::any data) {
+
+		int* size = std::any_cast<int*>(data);
+		renderer_on_resized(size[0], size[1]);
+
+		state_ptr->is_suspended = false;
+		if (size[0] == 0 || size[1] == 0) {
+			state_ptr->is_suspended = true;
+		}
+
+		return false;
 	}
 
 }

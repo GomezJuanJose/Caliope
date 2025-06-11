@@ -70,6 +70,7 @@ namespace caliope {
 	typedef struct vulkan_context {
 
 		uint current_frame;
+		bool framebuffer_resized;
 
 		VkInstance instance;
 		vulkan_device device;
@@ -88,6 +89,8 @@ namespace caliope {
 		std::vector<VkFence> in_flight_fences;
 
 		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
+
+
 
 	} vulkan_context;
 }

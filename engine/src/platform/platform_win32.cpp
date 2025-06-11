@@ -3,6 +3,7 @@
 #if CE_PLATFORM_WINDOWS
 #include "core/logger.h"
 #include "core/input.h"
+#include "core/event.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -27,10 +28,15 @@ namespace caliope {
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 		state_ptr->window = glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL);
 
 		// Set callbacks for the windows event
+		glfwSetWindowSizeCallback(state_ptr->window, [](GLFWwindow* window, int width, int height) {
+				int size[] = { width, height };
+				event_fire(EVENT_CODE_MOUSE_RESIZED, size);
+			}
+		);
+
 		glfwSetKeyCallback(state_ptr->window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 				switch (action) {
 					case GLFW_PRESS:

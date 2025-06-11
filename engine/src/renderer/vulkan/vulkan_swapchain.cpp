@@ -9,13 +9,13 @@ namespace caliope {
 
 	VkSurfaceFormatKHR choose_swapchain_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
 	VkPresentModeKHR choose_swapchain_presentation_mode(const std::vector<VkPresentModeKHR>& available_presentation_modes);
-	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
+	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, bool force_recalculation);
 
 	bool vulkan_swapchain_create(vulkan_context& context) {
 
 		context.swapchain.surface_format = choose_swapchain_format(context.swapchain_details.formats);
 		context.swapchain.presentation_mode = choose_swapchain_presentation_mode(context.swapchain_details.present_modes);
-		context.swapchain.extent = choose_swap_extent(context.swapchain_details.capabilities);
+		context.swapchain.extent = choose_swap_extent(context.swapchain_details.capabilities, context.framebuffer_resized);
 		context.swapchain.image_count = context.swapchain_details.capabilities.minImageCount + 1;
 		// Avoids to suprass the maximum number of image counts (0 means no maximum)
 		if (context.swapchain_details.capabilities.maxImageCount > 0 && context.swapchain.image_count > context.swapchain_details.capabilities.maxImageCount) {
@@ -83,8 +83,8 @@ namespace caliope {
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities) {
-		if (capabilities.currentExtent.width != std::numeric_limits<uint>::max()) {
+	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, bool force_recalculation) {
+		if (!force_recalculation && capabilities.currentExtent.width != std::numeric_limits<uint>::max()) {
 			return capabilities.currentExtent;
 		}
 		else {

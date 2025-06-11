@@ -13,7 +13,6 @@ namespace caliope {
 
 	bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface);
 	bool check_device_extension_support(VkPhysicalDevice device);
-	swapchain_support_details query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface);
 	queue_family_indices find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	bool vulkan_device_create(vulkan_context& context) {
