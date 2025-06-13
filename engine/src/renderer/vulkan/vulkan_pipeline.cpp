@@ -1,6 +1,7 @@
 #include "vulkan_pipeline.h"
 
 #include "core/logger.h"
+#include "math/math_types.inl"
 
 #include <fstream>
 
@@ -41,11 +42,34 @@ namespace caliope {
 		dynamic_state.dynamicStateCount = dynamic_states.size();
 		dynamic_state.pDynamicStates = dynamic_states.data();
 
+
+		// Vertex inputs
+		VkVertexInputBindingDescription binding_description = {};
+		binding_description.binding = 0;
+		binding_description.stride = sizeof(vertex);
+		binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		// TODO: Material/Shader system
+		// Attributes
+		std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions;
+		attribute_descriptions[0].binding = 0;
+		attribute_descriptions[0].location = 0;
+		attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attribute_descriptions[0].offset = 0;// HARDCODED!!!!
+
+		attribute_descriptions[1].binding = 0;
+		attribute_descriptions[1].location = 1;
+		attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attribute_descriptions[1].offset = sizeof(glm::vec3);// HARDCODED!!!!
+
+
 		VkPipelineVertexInputStateCreateInfo vertex_info = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-		vertex_info.vertexBindingDescriptionCount = 0;
-		vertex_info.pVertexBindingDescriptions = nullptr;
-		vertex_info.vertexAttributeDescriptionCount = 0;
-		vertex_info.pVertexAttributeDescriptions = nullptr;
+		vertex_info.vertexBindingDescriptionCount = 1;
+		vertex_info.pVertexBindingDescriptions = &binding_description;
+		vertex_info.vertexAttributeDescriptionCount = attribute_descriptions.size();
+		vertex_info.pVertexAttributeDescriptions = attribute_descriptions.data();
+
+
 
 		VkPipelineInputAssemblyStateCreateInfo input_assembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
 		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -73,7 +97,7 @@ namespace caliope {
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f;
 		rasterizer.depthBiasClamp = 0.0f;
@@ -108,8 +132,8 @@ namespace caliope {
 		color_blending.blendConstants[3] = 0.0f;
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-		pipeline_layout_info.setLayoutCount = 0;
-		pipeline_layout_info.pSetLayouts = nullptr;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = &context.descriptor_set_layout;
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 

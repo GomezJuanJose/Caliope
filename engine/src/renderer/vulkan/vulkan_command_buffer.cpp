@@ -48,7 +48,14 @@ namespace caliope {
 		scissor.extent = context.swapchain.extent;
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-		vkCmdDraw(command_buffer, 3, 1, 0, 0);
+		VkBuffer vertex_buffers[] = { context.vertex_buffer.handle };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+		vkCmdBindIndexBuffer(command_buffer, context.index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
+
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline.layout, 0, 1, &context.descriptor_sets[context.current_frame], 0, nullptr);
+
+		vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0); // HARDCODED VERTEX NUMBER
 		
 		vkCmdEndRenderPass(command_buffer);
 

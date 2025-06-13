@@ -67,6 +67,17 @@ namespace caliope {
 		VkCommandBuffer handle;
 	}vulkan_command_buffer;
 
+	typedef struct vulkan_buffer {
+
+		uint64 total_size;
+		VkBuffer handle;
+		VkBufferUsageFlagBits usage;
+		VkDeviceMemory memory;
+
+		// TODO: freelist
+
+	} vulkan_buffer;
+
 	typedef struct vulkan_context {
 
 		uint current_frame;
@@ -90,7 +101,16 @@ namespace caliope {
 
 		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
 
+		vulkan_buffer vertex_buffer;
+		vulkan_buffer index_buffer;
 
+		// TODO: remove and refactor
+		VkDescriptorSetLayout descriptor_set_layout;
+		std::vector<VkBuffer> uniform_buffers;
+		std::vector<VkDeviceMemory> uniform_buffers_memory;
+		std::vector<void*> uniform_buffers_mapped;
+		VkDescriptorPool descriptor_pool;
+		std::vector<VkDescriptorSet> descriptor_sets;
 
 	} vulkan_context;
 }
