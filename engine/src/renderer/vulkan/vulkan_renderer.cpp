@@ -14,6 +14,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -21,13 +22,15 @@
 
 #include "math/math_types.inl"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "vendors/stb_image/stb_image.h"
+
 namespace caliope {
 
 	void vulkan_renderer_framebuffers_create();
 	void vulkan_renderer_framebuffers_destroy();
 	void vulkan_renderer_recreate_swapchain();
-	
-	int find_memory_type(int type_filter, VkMemoryPropertyFlags properties);
+
 
 	void create_vertex_buffer();
 	void create_index_buffer();
@@ -35,20 +38,30 @@ namespace caliope {
 	void create_uniform_buffers();
 	void create_descriptor_pool();
 	void create_descriptor_sets();
+	void create_texture_image();
+	void create_depth_resource();
 	void update_uniform_buffer(int current_frame);
+
+	
 
 	static vulkan_context context;
 
 	// TODO: refactor
 	const std::vector<vertex> vertices = {
-		{ {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f} },
-		{ {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} },
-		{ {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} },
-		{ {-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f} }
+		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 	};
 
 	const std::vector<uint16> indices = {
-		0, 1, 2, 2, 3, 0
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4
 	};
 
 	typedef struct uniform_buffer_object {
@@ -144,7 +157,7 @@ namespace caliope {
 		}
 
 		// Create swapchain images views
-		if (!vulkan_imageview_create(context)) {
+		if (!vulkan_imageviews_create(context)) {
 			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the swapchain images views");
 			return false;
 		}
@@ -162,15 +175,16 @@ namespace caliope {
 			return false;
 		}
 
-		// Create framebuffers
-		vulkan_renderer_framebuffers_create();
-
 		// Create vertex and index buffer
 		create_vertex_buffer();
 		create_index_buffer();
+		create_texture_image();
 		create_uniform_buffers();
 		create_descriptor_pool();
 		create_descriptor_sets();
+
+		// Create framebuffers
+		vulkan_renderer_framebuffers_create();
 
 		// Create command buffers
 		if (!vulkan_command_buffer_allocate(context)) {
@@ -208,6 +222,15 @@ namespace caliope {
 			vkDestroyBuffer(context.device.logical_device, context.uniform_buffers[i], nullptr);
 			vkFreeMemory(context.device.logical_device, context.uniform_buffers_memory[i], nullptr);
 		}
+
+		vkDestroySampler(context.device.logical_device, context.texture_sampler, nullptr);
+		vkDestroyImageView(context.device.logical_device, context.texture_image_view, nullptr);
+		vkDestroyImage(context.device.logical_device, context.texture_image, nullptr);
+		vkFreeMemory(context.device.logical_device, context.texture_image_memory, nullptr);
+
+		vkDestroyImageView(context.device.logical_device, context.depth_image_view, nullptr);
+		vkDestroyImage(context.device.logical_device, context.depth_image, nullptr);
+		vkFreeMemory(context.device.logical_device, context.depth_image_memory, nullptr);
 
 		vkDestroyBuffer(context.device.logical_device, context.vertex_buffer.handle, nullptr);
 		vkFreeMemory(context.device.logical_device, context.vertex_buffer.memory, nullptr);
@@ -315,12 +338,13 @@ namespace caliope {
 		context.swapchain.framebuffers.resize(context.swapchain.swapchain_image_views.size());
 		for (int i = 0; i < context.swapchain.swapchain_image_views.size(); ++i) {
 			VkImageView attachments[] = {
-				context.swapchain.swapchain_image_views[i]
+				context.swapchain.swapchain_image_views[i],
+				context.depth_image_view
 			};
 
 			VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 			framebuffer_info.renderPass = context.renderpass.handle;
-			framebuffer_info.attachmentCount = 1;
+			framebuffer_info.attachmentCount = 2;
 			framebuffer_info.pAttachments = attachments;
 			framebuffer_info.width = context.swapchain.extent.width;
 			framebuffer_info.height = context.swapchain.extent.height;
@@ -338,6 +362,12 @@ namespace caliope {
 	}
 
 	void vulkan_renderer_recreate_swapchain() {
+		int width = 0, height = 0;
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(std::any_cast<GLFWwindow*>(platform_system_get_window()), &width, &height);
+			glfwWaitEvents();
+		}
+
 		vkDeviceWaitIdle(context.device.logical_device);
 		
 		vulkan_renderer_framebuffers_destroy();
@@ -345,7 +375,8 @@ namespace caliope {
 		vulkan_swapchain_destroy(context);
 
 		vulkan_swapchain_create(context);
-		vulkan_imageview_create(context);
+		vulkan_imageviews_create(context);
+		create_depth_resource();
 		vulkan_renderer_framebuffers_create();
 	}
 
@@ -398,9 +429,17 @@ namespace caliope {
 		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		ubo_layout_binding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
+		sampler_layout_binding.binding = 1;
+		sampler_layout_binding.descriptorCount = 1;
+		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		sampler_layout_binding.pImmutableSamplers = nullptr;
+		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { ubo_layout_binding, sampler_layout_binding };
 		VkDescriptorSetLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		layout_info.bindingCount = 1;
-		layout_info.pBindings = &ubo_layout_binding;
+		layout_info.bindingCount = bindings.size();
+		layout_info.pBindings = bindings.data();
 		VK_CHECK(vkCreateDescriptorSetLayout(context.device.logical_device, &layout_info, nullptr, &context.descriptor_set_layout));
 	}
 	void create_uniform_buffers() {
@@ -417,13 +456,15 @@ namespace caliope {
 	}
 
 	void create_descriptor_pool() {
-		VkDescriptorPoolSize pool_size;
-		pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_size.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+		std::array<VkDescriptorPoolSize, 2> pool_sizes;
+		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		pool_sizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		pool_sizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT;
 
 		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-		pool_info.poolSizeCount = 1;
-		pool_info.pPoolSizes = &pool_size;
+		pool_info.poolSizeCount = pool_sizes.size();
+		pool_info.pPoolSizes = pool_sizes.data();
 		pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
 
 		VK_CHECK(vkCreateDescriptorPool(context.device.logical_device, &pool_info, nullptr, &context.descriptor_pool));
@@ -445,18 +486,100 @@ namespace caliope {
 			buffer_info.offset = 0;
 			buffer_info.range = sizeof(uniform_buffer_object);
 
-			VkWriteDescriptorSet descriptor_write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptor_write.dstSet = context.descriptor_sets[i];
-			descriptor_write.dstBinding = 0;
-			descriptor_write.dstArrayElement = 0;
-			descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_write.descriptorCount = 1;
-			descriptor_write.pBufferInfo = &buffer_info;
-			descriptor_write.pImageInfo = nullptr;
-			descriptor_write.pTexelBufferView = nullptr;
+			VkDescriptorImageInfo image_info = {};
+			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			image_info.imageView = context.texture_image_view;
+			image_info.sampler = context.texture_sampler;
 
-			vkUpdateDescriptorSets(context.device.logical_device, 1, &descriptor_write, 0, nullptr);
+			std::array<VkWriteDescriptorSet, 2> descriptor_writes = {};
+			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[0].dstSet = context.descriptor_sets[i];
+			descriptor_writes[0].dstBinding = 0;
+			descriptor_writes[0].dstArrayElement = 0;
+			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptor_writes[0].descriptorCount = 1;
+			descriptor_writes[0].pBufferInfo = &buffer_info;
+			descriptor_writes[0].pImageInfo = nullptr;
+			descriptor_writes[0].pTexelBufferView = nullptr;
+
+			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[1].dstSet = context.descriptor_sets[i];
+			descriptor_writes[1].dstBinding = 1;
+			descriptor_writes[1].dstArrayElement = 0;
+			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptor_writes[1].descriptorCount = 1;
+			descriptor_writes[1].pImageInfo = &image_info;
+
+			vkUpdateDescriptorSets(context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 		}
+	}
+
+	void create_texture_image() {
+		//------------------Depth---------------
+		create_depth_resource();
+
+		//------------------Color image---------------
+		int tex_width, tex_height, tex_channels;
+		stbi_uc* pixels = stbi_load("C:\\dev\\GameEngine_Caliope\\bin\\Debug\\assets\\textures\\dummy_character.png", &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
+		VkDeviceSize image_size = tex_width * tex_height * 4;
+
+		if (!pixels) {
+			CE_LOG_FATAL("Cannot load the texture image");
+		}
+
+		VkBuffer staging_buffer;
+		VkDeviceMemory staging_buffer_memory;
+		vulkan_buffer_create(context, image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_memory);
+		void* data;
+		vkMapMemory(context.device.logical_device, staging_buffer_memory, 0, image_size, 0, &data);
+		copy_memory(data, pixels, image_size);
+		vkUnmapMemory(context.device.logical_device, staging_buffer_memory);
+		stbi_image_free(pixels);
+
+		vulkan_image_create(context, tex_width, tex_height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, context.texture_image, context.texture_image_memory);
+
+
+		vulkan_image_transition_layout(context, context.texture_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		vulkan_image_copy_buffer_to_image(context, staging_buffer, context.texture_image, tex_width, tex_height);
+
+		vulkan_image_transition_layout(context, context.texture_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		vkDestroyBuffer(context.device.logical_device, staging_buffer, nullptr);
+		vkFreeMemory(context.device.logical_device, staging_buffer_memory, nullptr);
+
+		// Create image view
+		context.texture_image_view = vulkan_image_view_create(context, context.texture_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+
+		// Create sampler
+		VkSamplerCreateInfo sampler_info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+		sampler_info.magFilter = VK_FILTER_LINEAR;
+		sampler_info.minFilter = VK_FILTER_LINEAR;
+		sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		
+		VkPhysicalDeviceProperties properties = {};
+		vkGetPhysicalDeviceProperties(context.device.physical_device, &properties);
+		sampler_info.anisotropyEnable = VK_TRUE;
+		sampler_info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+
+		sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		sampler_info.unnormalizedCoordinates = VK_FALSE;
+		sampler_info.compareEnable = VK_FALSE;
+		sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+		sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler_info.mipLodBias = 0.0f;
+		sampler_info.minLod = 0.0f;
+		sampler_info.maxLod = 0.0f;
+
+		VK_CHECK(vkCreateSampler(context.device.logical_device, &sampler_info, nullptr, &context.texture_sampler));
+	}
+
+	void create_depth_resource() {
+		VkFormat depth_format = find_depth_format(context);
+		vulkan_image_create(context, context.swapchain.extent.width, context.swapchain.extent.height, depth_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, context.depth_image, context.depth_image_memory);
+		context.depth_image_view = vulkan_image_view_create(context, context.depth_image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+		vulkan_image_transition_layout(context, context.depth_image, depth_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}
 
 	void update_uniform_buffer(int current_frame) {
@@ -468,4 +591,10 @@ namespace caliope {
 
 		copy_memory(context.uniform_buffers_mapped[current_frame], &ubo, sizeof(ubo));
 	}
+
+
+
+
+
+
 }

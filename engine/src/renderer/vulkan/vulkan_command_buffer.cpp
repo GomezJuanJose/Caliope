@@ -26,9 +26,11 @@ namespace caliope {
 		renderpass_info.framebuffer = context.swapchain.framebuffers[image_index];
 		renderpass_info.renderArea.offset = { 0, 0 };
 		renderpass_info.renderArea.extent = context.swapchain.extent;
-		VkClearValue clear_color = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-		renderpass_info.clearValueCount = 1;
-		renderpass_info.pClearValues = &clear_color;
+		std::array<VkClearValue, 2> clear_values;
+		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+		clear_values[1].depthStencil = {1.0f, 0};
+		renderpass_info.clearValueCount = clear_values.size();
+		renderpass_info.pClearValues = clear_values.data();
 
 		vkCmdBeginRenderPass(command_buffer, &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -55,11 +57,41 @@ namespace caliope {
 
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.pipeline.layout, 0, 1, &context.descriptor_sets[context.current_frame], 0, nullptr);
 
-		vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0); // HARDCODED VERTEX NUMBER
+		vkCmdDrawIndexed(command_buffer, 12, 1, 0, 0, 0); // HARDCODED VERTEX NUMBER
 		
 		vkCmdEndRenderPass(command_buffer);
 
 		VK_CHECK(vkEndCommandBuffer(command_buffer));
 	
+	}
+
+	VkCommandBuffer vulkan_command_buffer_single_use_begin(vulkan_context& context) {
+		VkCommandBufferAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		alloc_info.commandPool = context.device.command_pool;
+		alloc_info.commandBufferCount = 1;
+
+		VkCommandBuffer command_buffer;
+		vkAllocateCommandBuffers(context.device.logical_device, &alloc_info, &command_buffer);
+
+		VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		vkBeginCommandBuffer(command_buffer, &begin_info);
+
+		return command_buffer;
+	}
+
+	void vulkan_command_buffer_single_use_end(vulkan_context& context, VkCommandBuffer command_buffer) {
+
+		vkEndCommandBuffer(command_buffer);
+
+		VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &command_buffer;
+
+		vkQueueSubmit(context.device.graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+		vkQueueWaitIdle(context.device.graphics_queue);
+
+		vkFreeCommandBuffers(context.device.logical_device, context.device.command_pool, 1, &command_buffer);
 	}
 }

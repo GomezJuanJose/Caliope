@@ -112,5 +112,13 @@ namespace caliope {
 		VkDescriptorPool descriptor_pool;
 		std::vector<VkDescriptorSet> descriptor_sets;
 
+		VkImage texture_image;
+		VkDeviceMemory texture_image_memory;
+		VkImageView texture_image_view;
+		VkSampler texture_sampler;
+		VkImage depth_image;
+		VkDeviceMemory depth_image_memory;
+		VkImageView depth_image_view;
+
 	} vulkan_context;
 }

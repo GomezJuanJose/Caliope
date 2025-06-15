@@ -64,6 +64,7 @@ namespace caliope {
 		}
 		
 		VkPhysicalDeviceFeatures device_features = {};
+		device_features.samplerAnisotropy = VK_TRUE;
 
 		VkDeviceCreateInfo create_info = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 		create_info.pQueueCreateInfos = queue_create_infos.data();
@@ -112,7 +113,7 @@ namespace caliope {
 
 		return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_features.geometryShader
 			&& indices.graphics_family.has_value() && indices.present_family.has_value()
-			&& extensions_supported && swapchain_adequate;
+			&& extensions_supported && swapchain_adequate && device_features.samplerAnisotropy;
 	}
 
 	bool check_device_extension_support(VkPhysicalDevice device) {

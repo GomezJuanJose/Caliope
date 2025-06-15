@@ -51,7 +51,7 @@ namespace caliope {
 
 		// TODO: Material/Shader system
 		// Attributes
-		std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions;
+		std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions;
 		attribute_descriptions[0].binding = 0;
 		attribute_descriptions[0].location = 0;
 		attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -61,6 +61,11 @@ namespace caliope {
 		attribute_descriptions[1].location = 1;
 		attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attribute_descriptions[1].offset = sizeof(glm::vec3);// HARDCODED!!!!
+
+		attribute_descriptions[2].binding = 0;
+		attribute_descriptions[2].location = 2;
+		attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+		attribute_descriptions[2].offset = sizeof(glm::vec3) * 2;// HARDCODED!!!!
 
 
 		VkPipelineVertexInputStateCreateInfo vertex_info = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
@@ -139,6 +144,20 @@ namespace caliope {
 
 		VK_CHECK(vkCreatePipelineLayout(context.device.logical_device, &pipeline_layout_info, nullptr, &context.pipeline.layout));
 
+		VkPipelineDepthStencilStateCreateInfo depth_stencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+		depth_stencil.depthTestEnable = VK_TRUE;
+		depth_stencil.depthWriteEnable = VK_TRUE;
+		depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depth_stencil.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil.minDepthBounds = 0.0f;
+		depth_stencil.maxDepthBounds = 1.0f;
+		depth_stencil.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil.minDepthBounds = 0.0f;
+		depth_stencil.maxDepthBounds = 1.0f;
+		depth_stencil.stencilTestEnable = VK_FALSE;
+		depth_stencil.front = {};
+		depth_stencil.back = {};
+
 		VkGraphicsPipelineCreateInfo pipeline_info = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 		pipeline_info.stageCount = 2;
 		pipeline_info.pStages = shader_stages;
@@ -147,7 +166,7 @@ namespace caliope {
 		pipeline_info.pViewportState = &viewport_state;
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pMultisampleState = &multisampling;
-		pipeline_info.pDepthStencilState = nullptr;
+		pipeline_info.pDepthStencilState = &depth_stencil;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
 		pipeline_info.layout = context.pipeline.layout;
