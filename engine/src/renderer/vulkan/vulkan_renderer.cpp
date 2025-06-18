@@ -22,8 +22,10 @@
 
 #include "math/math_types.inl"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "vendors/stb_image/stb_image.h"
+
+// TODO: Remove and use texture, material and geometry system
+#include "systems/resource_system.h"
+#include "loaders/resources_types.inl"
 
 namespace caliope {
 
@@ -519,28 +521,31 @@ namespace caliope {
 		create_depth_resource();
 
 		//------------------Color image---------------
-		int tex_width, tex_height, tex_channels;
-		stbi_uc* pixels = stbi_load("C:\\dev\\GameEngine_Caliope\\bin\\Debug\\assets\\textures\\dummy_character.png", &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-		VkDeviceSize image_size = tex_width * tex_height * 4;
 
-		if (!pixels) {
+
+		resource image_resource;
+		resource_system_load(std::string("dummy_character"), RESOURCE_TYPE_TEXTURE, image_resource);
+		image_resource_data image_data = std::any_cast<image_resource_data>(image_resource.data);
+
+		if (!image_data.pixels) {
 			CE_LOG_FATAL("Cannot load the texture image");
 		}
 
 		VkBuffer staging_buffer;
 		VkDeviceMemory staging_buffer_memory;
-		vulkan_buffer_create(context, image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_memory);
+		vulkan_buffer_create(context, image_resource.data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_memory);
 		void* data;
-		vkMapMemory(context.device.logical_device, staging_buffer_memory, 0, image_size, 0, &data);
-		copy_memory(data, pixels, image_size);
+		vkMapMemory(context.device.logical_device, staging_buffer_memory, 0, image_resource.data_size, 0, &data);
+		copy_memory(data, image_data.pixels, image_resource.data_size);
 		vkUnmapMemory(context.device.logical_device, staging_buffer_memory);
-		stbi_image_free(pixels);
+		
+		resource_system_unload(image_resource);
 
-		vulkan_image_create(context, tex_width, tex_height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, context.texture_image, context.texture_image_memory);
+		vulkan_image_create(context, image_data.width, image_data.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, context.texture_image, context.texture_image_memory);
 
 
 		vulkan_image_transition_layout(context, context.texture_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		vulkan_image_copy_buffer_to_image(context, staging_buffer, context.texture_image, tex_width, tex_height);
+		vulkan_image_copy_buffer_to_image(context, staging_buffer, context.texture_image, image_data.width, image_data.height);
 
 		vulkan_image_transition_layout(context, context.texture_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

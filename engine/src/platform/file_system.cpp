@@ -1,4 +1,5 @@
 #include "platform/file_system.h"
+#include "platform/platform.h"
 
 #include "core/logger.h"
 
@@ -9,7 +10,7 @@ namespace caliope {
 	bool file_system_exists(std::string& path) {
 #ifdef _MSC_VER
 		struct _stat buffer;
-		return _stat(path.c_str(), &buffer);
+		return _stat(path.c_str(), &buffer) == 0;
 #else
 		struct stat buffer;
 		return stat(path.c_str(), &buffer) == 0;
@@ -17,90 +18,53 @@ namespace caliope {
 
 	}
 
-	bool file_system_open(std::string& path, file_modes mode, bool binary, file_handle& out_handle) {
+	bool file_system_open(std::string& path, file_modes mode, file_handle& out_handle) {
 		out_handle.is_valid = false;
 		out_handle.handle = nullptr;
-		std::string mode_str;
-
-		if ((mode & FILE_MODE_READ) != 0 && (mode & FILE_MODE_WRITE) != 0) {
-			mode_str = binary ? "w+b" : "w+";
-		}
-		else if ((mode & FILE_MODE_READ) != 0 && (mode & FILE_MODE_WRITE) == 0) {
-			mode_str = binary ? "rb" : "r";
-		}
-		else if ((mode & FILE_MODE_READ) == 0 && (mode & FILE_MODE_WRITE) != 0) {
-			mode_str = binary ? "wb" : "w";
-		}
-		else {
-			CE_LOG_ERROR("Invalid mode passed while trying to open file: '%s'", path);
-			return false;
-		}
-
-		FILE* file = fopen(path.c_str(), mode_str.c_str());
-		if (!file) {
-			CE_LOG_ERROR("Error opening file '%s'", path);
-			return false;
-		}
-
-		out_handle.handle = file;
-		out_handle.is_valid = true;
+		out_handle.is_valid = platform_system_open_file(path.c_str(), out_handle.handle, mode);
 
 		return true;
 	}
 
 	void file_system_close(file_handle& handle) {
-		if (handle.is_valid) {
-			fclose(std::any_cast<FILE*>(handle.handle));
-			handle.handle = nullptr;
-			handle.is_valid = false;
-		}
+		platform_system_close_file(handle.handle);
 	}
 
 	bool file_system_size(file_handle& handle, uint64& out_size) {
 		if (handle.is_valid) {
-			fseek(std::any_cast<FILE*>(handle.handle), 0, SEEK_END);
-			out_size = ftell(std::any_cast<FILE*>(handle.handle));
-			rewind(std::any_cast<FILE*>(handle.handle));
+			out_size = platform_system_file_size(handle.handle);
+
 			return true;
 		}
+
+		return false;
 	}
 
-	bool file_system_read_line(file_handle& handle, uint64 max_length, std::string& line_buf, uint64& out_line_lenght) {
+	bool file_system_read_text(file_handle& handle, uint64 max_length, std::string& line_buf) {
 		if (handle.is_valid && max_length > 0) {
-			char* buffer;
-			if (fgets(buffer, max_length, std::any_cast<FILE*>(handle.handle)) != 0) {
-				line_buf = buffer;
-				out_line_lenght = line_buf.size();
-				return true;
-			}
+			return platform_system_file_read_text(handle.handle, max_length, line_buf.data());
+			
 		}
 
 		return false;
 	}
 
-	bool file_system_write_line(file_handle& handle, const std::string& text) {
+	bool file_system_write_text(file_handle& handle, const std::string& text) {
 		if (handle.is_valid) {
-			int result = fputs(text.c_str(), std::any_cast<FILE*>(handle.handle));
-			if (result != EOF) {
-				result = fputc('\n', std::any_cast<FILE*>(handle.handle));
-			}
-
-			fflush(std::any_cast<FILE*>(handle.handle));
-			return result != EOF;
+			return platform_system_file_write_text(handle.handle, text.c_str());
 		}
 
 		return false;
 	}
 
-	bool file_system_read_all_bytes(file_handle& handle, void* out_bytes, uint64& out_bytes_read) {
+	bool file_system_read_all_bytes(file_handle& handle, std::vector<uchar>& out_bytes, uint64& out_bytes_read) {
 		if (handle.is_valid) {
-			uint64 size = 0;
-			if (!file_system_size(handle, size)) {
-				return false;
-			}
+			uint64 file_size = platform_system_file_size(handle.handle);
 
-			out_bytes_read = fread(out_bytes, 1, size, std::any_cast<FILE*>(handle.handle));
-			return out_bytes_read == size;
+			out_bytes.resize(file_size);
+			out_bytes_read = platform_system_file_read_bytes(handle.handle, file_size, out_bytes.data());
+
+			return out_bytes_read != 0;
 		}
 
 		return false;
@@ -108,15 +72,8 @@ namespace caliope {
 
 	bool file_system_read_all_text(file_handle& handle, std::string& out_text, uint64& out_bytes_read) {
 		if (handle.is_valid) {
-			uint64 size = 0;
-			if (!file_system_size(handle, size)) {
-				return false;
-			}
-
-			char* buffer;
-			out_bytes_read = fread(buffer, 1, size, std::any_cast<FILE*>(handle.handle));
-			out_text = buffer;
-			return out_bytes_read == size;
+			uint64 file_size = platform_system_file_size(handle.handle);
+			return platform_system_file_read_text(handle.handle, file_size, out_text.data());
 		}
 
 		return false;

@@ -8,8 +8,10 @@
 #include "core/input.h"
 
 #include "renderer/renderer_frontend.h"
-
+#include "platform/file_system.h"
 #include "platform/platform.h"
+
+#include "systems/resource_system.h"
 
 namespace caliope {
 
@@ -59,10 +61,19 @@ namespace caliope {
 			return false;
 		}
 
+		resource_system_config resource_config;
+		resource_config.base_path = "assets\\";
+		resource_config.max_number_loaders = 32;
+		if (!resource_system_initialize(resource_config)) {
+			CE_LOG_FATAL("Failed to initialize resource system; shutting down");
+			return false;
+		}
+
 		if (!renderer_system_initialize(config.name)) {
 			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
 		}
+
 
 		if (!state_ptr->program_config->initialize()) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
@@ -71,7 +82,6 @@ namespace caliope {
 
 		// Register events
 		event_register(EVENT_CODE_MOUSE_RESIZED, application_on_resize);
-
 
 		CE_LOG_INFO("\n" + get_memory_stats());
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);

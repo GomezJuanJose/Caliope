@@ -3,23 +3,30 @@
 #include "core/logger.h"
 #include "math/math_types.inl"
 
-#include <fstream>
+#include "platform/file_system.h"
+
+#include "loaders/resources_types.inl"
+#include "systems/resource_system.h"
+
 
 namespace caliope {
-	// TODO: Temp
-	static std::vector<char> read_file(const std::string& filename);
-	// TODO: End temp
+
 
 	//TODO move into vulkan_backend
-	VkShaderModule create_shader_module(VkDevice& device, const std::vector<char>& code);
+	VkShaderModule create_shader_module(VkDevice& device, std::vector<uchar> code, uint64 size);
 
 	bool vulkan_pipeline_create(vulkan_context& context) {
-		
-		auto vert_code = read_file(std::string("C:\\dev\\GameEngine_Caliope\\bin\\Debug\\assets\\shaders\\Builtin.SpriteShader.vert.spv"));
-		auto frag_code = read_file(std::string("C:\\dev\\GameEngine_Caliope\\bin\\Debug\\assets\\shaders\\Builtin.SpriteShader.frag.spv"));
 
-		VkShaderModule vert_module = create_shader_module(context.device.logical_device, vert_code);
-		VkShaderModule frag_module = create_shader_module(context.device.logical_device, frag_code);
+		resource r;
+		resource_system_load(std::string("shaders\\Builtin.SpriteShader.vert.spv"), RESOURCE_TYPE_BINARY, r);
+		std::vector<uchar> vert_code = std::any_cast<std::vector<uchar>>(r.data);
+		VkShaderModule vert_module = create_shader_module(context.device.logical_device, vert_code, r.data_size);
+		
+
+		resource_system_load(std::string("shaders\\Builtin.SpriteShader.frag.spv"), RESOURCE_TYPE_BINARY, r);
+		std::vector<uchar> frag_code = std::any_cast<std::vector<uchar>>(r.data);
+		VkShaderModule frag_module = create_shader_module(context.device.logical_device, frag_code, r.data_size);
+		resource_system_unload(r);
 
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -188,28 +195,12 @@ namespace caliope {
 		vkDestroyPipelineLayout(context.device.logical_device, context.pipeline.layout, nullptr);
 	}
 
-	static std::vector<char> read_file(const std::string& filename) {
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-		if (!file.is_open()) {
-			CE_LOG_ERROR("Could not ope file %s", filename);
-			return std::vector<char>();
-		}
 
-		size_t file_size = (size_t)file.tellg();
-		std::vector<char> buffer(file_size);
-
-		file.seekg(0);
-		file.read(buffer.data(), file_size);
-
-		file.close();
-
-		return buffer;
-	}
-	VkShaderModule create_shader_module(VkDevice& device, const std::vector<char>& code) {
+	VkShaderModule create_shader_module(VkDevice& device, std::vector<uchar> code, uint64 size) {
 
 		VkShaderModuleCreateInfo create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-		create_info.codeSize = code.size();
-		create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+		create_info.codeSize = size;
+		create_info.pCode = (uint*)code.data();
 
 		VkShaderModule shader_module;
 		if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {

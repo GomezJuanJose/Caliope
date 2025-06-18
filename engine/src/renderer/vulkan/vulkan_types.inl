@@ -3,11 +3,13 @@
 #include <vulkan/vulkan.h>
 
 #include "core/logger.h"
+#include "core/asserts.h"
 
 #define VK_CHECK(expr)								\
 	{												\
 		if (expr != VK_SUCCESS) {					\
 			CE_LOG_FATAL("Vulkan check failed");	\
+			CE_ASSERT(expr);						\
 		}											\
 	}
 
