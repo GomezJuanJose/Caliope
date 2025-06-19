@@ -36,5 +36,5 @@ namespace caliope {
 	bool platform_system_file_write_text(std::any& handle, const char* text);
 
 	uint64 platform_system_file_read_bytes(std::any& handle, uint64 size, uchar* data);
-	bool platform_system_file_write_bytes(std::any& handle, void* data);
+	bool platform_system_file_write_bytes(std::any& handle, uint64 size, void* data);
 }

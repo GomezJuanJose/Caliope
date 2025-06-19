@@ -13,6 +13,9 @@
 
 #include "systems/resource_system.h"
 #include "systems/texture_system.h"
+#include "systems/material_system.h"
+
+
 
 namespace caliope {
 
@@ -75,6 +78,11 @@ namespace caliope {
 			return false;
 		}
 
+		if (!material_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize material system; shutting down");
+			return false;
+		}
+
 		if (!renderer_system_initialize(config.name)) {
 			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
@@ -91,6 +99,13 @@ namespace caliope {
 
 		CE_LOG_INFO("\n" + get_memory_stats());
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);
+
+		// TODO: TEMPORAL CODE
+	
+		std::shared_ptr<material> mat;
+		mat = material_system_adquire(std::string("scene"));
+
+		// TODO: END TEMPORAL CODE
 		
 		return true;
 	}
@@ -119,6 +134,10 @@ namespace caliope {
 		}
 
 		renderer_system_shutdown();
+
+		material_system_shutdown();
+
+		texture_system_shutdown();
 
 		resource_system_shutdown();
 

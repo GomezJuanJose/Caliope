@@ -9,4 +9,5 @@ namespace caliope {
 		glm::vec3 color;
 		glm::vec2 tex_coord;
 	} vertex;
+
 }

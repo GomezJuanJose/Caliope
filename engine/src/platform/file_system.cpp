@@ -28,6 +28,7 @@ namespace caliope {
 
 	void file_system_close(file_handle& handle) {
 		platform_system_close_file(handle.handle);
+		handle.is_valid = false;
 	}
 
 	bool file_system_size(file_handle& handle, uint64& out_size) {
@@ -52,6 +53,14 @@ namespace caliope {
 	bool file_system_write_text(file_handle& handle, const std::string& text) {
 		if (handle.is_valid) {
 			return platform_system_file_write_text(handle.handle, text.c_str());
+		}
+
+		return false;
+	}
+
+	bool file_system_write_bytes(file_handle& handle, uint64 size, void* data) {
+		if (handle.is_valid && data) {
+			return platform_system_file_write_bytes(handle.handle, size, data);
 		}
 
 		return false;

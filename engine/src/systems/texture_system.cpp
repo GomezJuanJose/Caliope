@@ -11,7 +11,7 @@ namespace caliope {
 	typedef struct texture_system_state {
 		std::unordered_map<std::string, texture> registered_textures;
 
-		texture default_texture;
+		texture default_diffuse_texture;
 	}texture_system_state;
 
 	static std::unique_ptr<texture_system_state> state_ptr;
@@ -39,7 +39,7 @@ namespace caliope {
 		for (auto [key, value] : state_ptr->registered_textures) {
 			destroy_texture(value);
 		}
-		destroy_texture(state_ptr->default_texture);
+		destroy_texture(state_ptr->default_diffuse_texture);
 
 		state_ptr->registered_textures.empty();
 		state_ptr.reset();
@@ -67,7 +67,7 @@ namespace caliope {
 	}
 
 	std::shared_ptr<texture> texture_system_get_default() {
-		return std::make_shared<texture>(state_ptr->default_texture);
+		return std::make_shared<texture>(state_ptr->default_diffuse_texture);
 	}
 
 	bool load_texture(std::string& name, texture& t) {
@@ -125,12 +125,12 @@ namespace caliope {
 			}
 		}
 
-		state_ptr->default_texture.name = std::string("default_texture");
-		state_ptr->default_texture.width = texture_dimensions;
-		state_ptr->default_texture.height = texture_dimensions;
-		state_ptr->default_texture.channel_count = texture_channels;
-		state_ptr->default_texture.has_transparency = false;
+		state_ptr->default_diffuse_texture.name = std::string("default_texture");
+		state_ptr->default_diffuse_texture.width = texture_dimensions;
+		state_ptr->default_diffuse_texture.height = texture_dimensions;
+		state_ptr->default_diffuse_texture.channel_count = texture_channels;
+		state_ptr->default_diffuse_texture.has_transparency = false;
 		
-		renderer_create_texture(state_ptr->default_texture);
+		renderer_create_texture(state_ptr->default_diffuse_texture);
 	}
 }
