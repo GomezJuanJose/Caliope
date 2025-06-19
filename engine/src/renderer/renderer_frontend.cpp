@@ -6,6 +6,8 @@
 #include "renderer/renderer_types.inl"
 #include "renderer/renderer_backend.h"
 
+#include "loaders/resources_types.inl"
+
 namespace caliope{
 
 	typedef struct renderer_system_state {
@@ -63,5 +65,12 @@ namespace caliope{
 		}
 
 		return true;
+	}
+
+	void renderer_create_texture(texture& texture) {
+	
+	}
+
+	void renderer_destroy_texture(texture& texture) {
 	}
 }

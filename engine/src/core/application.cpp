@@ -12,6 +12,7 @@
 #include "platform/platform.h"
 
 #include "systems/resource_system.h"
+#include "systems/texture_system.h"
 
 namespace caliope {
 
@@ -69,6 +70,11 @@ namespace caliope {
 			return false;
 		}
 
+		if (!texture_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize texture system; shutting down");
+			return false;
+		}
+
 		if (!renderer_system_initialize(config.name)) {
 			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
@@ -113,6 +119,8 @@ namespace caliope {
 		}
 
 		renderer_system_shutdown();
+
+		resource_system_shutdown();
 
 		platform_system_shutdown();
 

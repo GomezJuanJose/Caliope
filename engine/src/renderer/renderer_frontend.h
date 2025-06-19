@@ -6,10 +6,15 @@
 #include <string>
 
 namespace caliope {
+	struct texture;
+
 	bool renderer_system_initialize(const std::string& application_name);
 	void renderer_system_shutdown();
 
 	void renderer_on_resized(uint16 width, uint16 height);
 
 	bool renderer_draw_frame(renderer_packet& packet);
+
+	void renderer_create_texture(texture& texture);
+	void renderer_destroy_texture(texture& texture);
 }

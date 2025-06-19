@@ -524,7 +524,7 @@ namespace caliope {
 
 
 		resource image_resource;
-		resource_system_load(std::string("dummy_character"), RESOURCE_TYPE_TEXTURE, image_resource);
+		resource_system_load(std::string("dummy_character"), RESOURCE_TYPE_IMAGE, image_resource);
 		image_resource_data image_data = std::any_cast<image_resource_data>(image_resource.data);
 
 		if (!image_data.pixels) {
