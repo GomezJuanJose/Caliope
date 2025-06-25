@@ -6,6 +6,7 @@
 #include "loaders/resources_types.inl"
 #include "systems/resource_system.h"
 #include "systems/texture_system.h"
+#include "systems/shader_system.h"
 
 namespace caliope {
 
@@ -49,7 +50,7 @@ namespace caliope {
 			resource r;
 			resource_system_load(name, RESOURCE_TYPE_MATERIAL, r);
 			material_configuration mat_config = std::any_cast<material_configuration>(r.data);
-			
+
 			if (!load_material(mat_config)) {
 				CE_LOG_ERROR("material_system_adquire couldnt adquire material");
 				return false;
@@ -61,8 +62,9 @@ namespace caliope {
 	}
 
 	std::shared_ptr<material> material_system_adquire_from_config(material_configuration& material_config) {
+		std::string string_material_name = std::string(material_config.name.data());
 
-		if (state_ptr->registered_materials.find(material_config.name) == state_ptr->registered_materials.end()) {
+		if (state_ptr->registered_materials.find(string_material_name) == state_ptr->registered_materials.end()) {
 
 			if (!load_material(material_config)) {
 				CE_LOG_ERROR("material_system_adquire couldnt adquire material");
@@ -71,7 +73,7 @@ namespace caliope {
 
 		}
 
-		return std::make_shared<material>(state_ptr->registered_materials[material_config.name]);
+		return std::make_shared<material>(state_ptr->registered_materials[string_material_name]);
 	}
 
 	void material_system_release(std::string& name) {
@@ -87,10 +89,10 @@ namespace caliope {
 
 	bool load_material(material_configuration& mat_config) {
 		material m;
-		m.name = mat_config.name;
-		m.type = mat_config.type;
+		m.name = std::string(mat_config.name.data());
 		m.diffuse_color = mat_config.diffuse_color;
-		m.diffuse_texture = texture_system_adquire(mat_config.diffuse_texture_name);
+		m.shader = shader_system_adquire(std::string(mat_config.shader_name.data()));
+		m.diffuse_texture = texture_system_adquire(std::string(mat_config.diffuse_texture_name.data()));
 
 		state_ptr->registered_materials.insert({ m.name, m });
 
@@ -98,17 +100,20 @@ namespace caliope {
 	}
 
 	void destroy_material(material& m) {
+		state_ptr->registered_materials.erase(m.name);
 		m.name = "";
-		m.type = MATERIAL_TYPE_UNDEFINED;
-		m.diffuse_color = glm::vec3(0.0f);
+		m.diffuse_color = glm::vec4(0.0f);
+		m.shader.reset();
+		m.shader = nullptr;
 		m.diffuse_texture.reset();
 		m.diffuse_texture = nullptr;
+		
 	}
 
 	void generate_default_material() {
 		state_ptr->default_material.name = std::string("default");
-		state_ptr->default_material.type = MATERIAL_TYPE_SCENE;
-		state_ptr->default_material.diffuse_color = glm::vec3(1.0f);
+		state_ptr->default_material.diffuse_color = glm::vec4(1.0f);
+		state_ptr->default_material.shader = shader_system_adquire(std::string("Builtin.SpriteShader"));
 		state_ptr->default_material.diffuse_texture = texture_system_get_default();	
 	}
 }

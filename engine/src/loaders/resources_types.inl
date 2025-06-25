@@ -34,23 +34,24 @@ namespace caliope {
 	} texture;
 
 
-	typedef enum material_type {
-		MATERIAL_TYPE_SCENE,
-		MATERIAL_TYPE_UI,
-		MATERIAL_TYPE_UNDEFINED
-	};
-
-	typedef struct material_configuration {
+	typedef struct shader {
 		std::string name;
-		material_type type;
-		glm::vec3 diffuse_color;
-		std::string diffuse_texture_name;
+		std::any internal_data;
+	} shader;
+
+#define MAX_NAME_LENGTH 256
+	typedef struct material_configuration {
+		std::array<char, MAX_NAME_LENGTH> name;
+		std::array<char, MAX_NAME_LENGTH> shader_name;
+		glm::vec4 diffuse_color;
+		std::array<char, MAX_NAME_LENGTH> diffuse_texture_name;
 	}material_configuration;
 
 	typedef struct material {
 		std::string name;
-		material_type type;
-		glm::vec3 diffuse_color;
+		glm::vec4 diffuse_color;
+		std::shared_ptr<shader> shader;
 		std::shared_ptr<texture> diffuse_texture;
+
 	}material;
 }

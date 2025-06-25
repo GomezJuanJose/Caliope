@@ -13,9 +13,13 @@
 
 #include "systems/resource_system.h"
 #include "systems/texture_system.h"
+#include "systems/shader_system.h"
 #include "systems/material_system.h"
 
+#include "math/transform.h"
 
+#include "loaders/resources_types.inl"
+#include <glm/glm.hpp>
 
 namespace caliope {
 
@@ -73,8 +77,18 @@ namespace caliope {
 			return false;
 		}
 
+		if (!renderer_system_initialize(config.name)) {
+			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
+			return false;
+		}
+
 		if (!texture_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize texture system; shutting down");
+			return false;
+		}
+
+		if (!shader_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize shader system; shutting down");
 			return false;
 		}
 
@@ -83,10 +97,6 @@ namespace caliope {
 			return false;
 		}
 
-		if (!renderer_system_initialize(config.name)) {
-			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
-			return false;
-		}
 
 
 		if (!state_ptr->program_config->initialize()) {
@@ -101,10 +111,16 @@ namespace caliope {
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);
 
 		// TODO: TEMPORAL CODE
-	
-		std::shared_ptr<material> mat;
-		mat = material_system_adquire(std::string("scene"));
+		material_configuration m;
+		m.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m.diffuse_texture_name = { "dummy_character" };
+		m.shader_name = { "Builtin.SpriteShader" };
+		m.name = { "scene" };
 
+		file_handle w;
+		file_system_open(std::string("assets\\materials\\scene.cemat"), FILE_MODE_WRITE, w);
+		file_system_write_bytes(w, sizeof(material_configuration) + 255, &m);
+		file_system_close(w);
 		// TODO: END TEMPORAL CODE
 		
 		return true;
@@ -124,6 +140,16 @@ namespace caliope {
 				}
 
 				renderer_packet packet;
+				//TODO: TEMP CODE
+				transform t1 = transform_create();
+				transform_set_rotation(t1, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
+				transform_set_scale(t1, glm::vec3(0.5f, 1.0f, 1.0f));
+				transform_set_position(t1, glm::vec3(0.0f, 0.0f, 0.0f));
+				transform t2 = transform_create();
+				transform_set_rotation(t2, glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
+				packet.quad_definitions.insert({ std::string("scene"), {t1} });
+				// TODO: TEMP CODE
+
 				if (!renderer_draw_frame(packet)) {
 					CE_LOG_FATAL("Failed to render frame");
 					return false;
@@ -133,14 +159,17 @@ namespace caliope {
 			}
 		}
 
-		renderer_system_shutdown();
 
 		material_system_shutdown();
+
+		shader_system_shutdown();
 
 		texture_system_shutdown();
 
 		resource_system_shutdown();
 
+		renderer_system_shutdown();
+		
 		platform_system_shutdown();
 
 		input_system_shutdown();

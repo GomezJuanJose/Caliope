@@ -91,14 +91,14 @@ namespace caliope {
 				break;
 			}
 		}
-		renderer_create_texture(t);
+		renderer_texture_create(t, image_data.pixels);
 
 		resource_system_unload(r);
 		return true;
 	}
 
 	void destroy_texture(texture& t) {
-		renderer_destroy_texture(t);
+		renderer_texture_destroy(t);
 	}
 
 	void generate_default_textures() {
@@ -131,6 +131,6 @@ namespace caliope {
 		state_ptr->default_diffuse_texture.channel_count = texture_channels;
 		state_ptr->default_diffuse_texture.has_transparency = false;
 		
-		renderer_create_texture(state_ptr->default_diffuse_texture);
+		renderer_texture_create(state_ptr->default_diffuse_texture, pixels);
 	}
 }

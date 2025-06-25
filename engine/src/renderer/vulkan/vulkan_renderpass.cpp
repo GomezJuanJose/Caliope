@@ -1,7 +1,15 @@
 #include "vulkan_renderpass.h"
 
+
 namespace caliope {
-	bool vulkan_renderpass_create(vulkan_context& context) {
+	bool vulkan_renderpass_create(vulkan_context& context, vulkan_renderpass& out_renderpass, glm::vec4 render_area, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass) {
+		out_renderpass.render_area = render_area;
+		out_renderpass.clear_color = clear_color;
+		out_renderpass.depth = depth;
+		out_renderpass.stencil = stencil;
+		out_renderpass.has_prev_pass = has_prev_pass;
+		out_renderpass.has_next_pass = has_next_pass;
+		
 		VkAttachmentDescription color_attachment = {};
 		color_attachment.format = context.swapchain.surface_format.format;
 		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -13,7 +21,7 @@ namespace caliope {
 		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		VkAttachmentDescription depth_attachment = {};
-		depth_attachment.format = find_depth_format(context);
+		depth_attachment.format = context.device.depth_format;
 		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -54,37 +62,36 @@ namespace caliope {
 		renderpass_info.dependencyCount = 1;
 		renderpass_info.pDependencies = &dependency;
 
-		VK_CHECK(vkCreateRenderPass(context.device.logical_device, &renderpass_info, nullptr, &context.renderpass.handle));
+		VK_CHECK(vkCreateRenderPass(context.device.logical_device, &renderpass_info, nullptr, &out_renderpass.handle));
 
 		return true;
 	}
 
-	void vulkan_renderpass_destroy(vulkan_context& context) {
-		vkDestroyRenderPass(context.device.logical_device, context.renderpass.handle, nullptr);
+	void vulkan_renderpass_destroy(vulkan_context& context, vulkan_renderpass& renderpass) {
+		vkDestroyRenderPass(context.device.logical_device, renderpass.handle, nullptr);
+	}
+
+	void vulkan_renderpass_begin(vulkan_command_buffer& command_buffer, vulkan_renderpass& renderpass, VkFramebuffer frame_buffer) {
+		VkRenderPassBeginInfo renderpass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+		renderpass_info.renderPass = renderpass.handle;
+		renderpass_info.framebuffer = frame_buffer;
+		renderpass_info.renderArea.offset.x = renderpass.render_area.x;
+		renderpass_info.renderArea.offset.y = renderpass.render_area.y;
+		renderpass_info.renderArea.extent.width = renderpass.render_area.z;
+		renderpass_info.renderArea.extent.height = renderpass.render_area.w;
+		std::array<VkClearValue, 2> clear_values;
+		clear_values[0].color = { {renderpass.clear_color.r, renderpass.clear_color.g, renderpass.clear_color.b, renderpass.clear_color.a} };
+		clear_values[1].depthStencil = { renderpass.depth, renderpass.stencil };
+		renderpass_info.clearValueCount = clear_values.size();
+		renderpass_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(command_buffer.handle, &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	void vulkan_renderpass_end(vulkan_command_buffer& command_buffer) {
+		vkCmdEndRenderPass(command_buffer.handle);
 	}
 
 
-	VkFormat find_supported_format(vulkan_context& context, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-		for (VkFormat format : candidates) {
-			VkFormatProperties props;
-			vkGetPhysicalDeviceFormatProperties(context.device.physical_device, format, &props);
 
-			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-				return format;
-			}
-			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-				return format;
-			}
-		}
-
-		return VkFormat();
-	}
-
-	VkFormat find_depth_format(vulkan_context& context) {
-		return find_supported_format(context,
-			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-		);
-	}
 }

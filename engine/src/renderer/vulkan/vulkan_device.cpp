@@ -43,8 +43,8 @@ namespace caliope {
 			return false;
 		}
 
-		swapchain_support_details swapchain_support = query_swapchain_support(context.device.physical_device, context.surface);
-		context.swapchain_details = swapchain_support;
+		swapchain_support_details swapchain_support = vulkan_device_query_swapchain_support(context.device.physical_device, context.surface);
+		context.device.swapchain_support_details = swapchain_support;
 
 		// Creates logical device
 		queue_family_indices indices = find_queue_families(context.device.physical_device, context.surface);
@@ -107,7 +107,7 @@ namespace caliope {
 
 		bool swapchain_adequate = false;
 		if (extensions_supported) {
-			swapchain_support_details swapchain_support = query_swapchain_support(device, surface);
+			swapchain_support_details swapchain_support = vulkan_device_query_swapchain_support(device, surface);
 			swapchain_adequate = !swapchain_support.formats.empty() && !swapchain_support.present_modes.empty();
 		}
 
@@ -133,7 +133,7 @@ namespace caliope {
 		return required_extensions.empty();
 	}
 
-	swapchain_support_details query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface) {
+	swapchain_support_details vulkan_device_query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface) {
 		swapchain_support_details details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -177,5 +177,21 @@ namespace caliope {
 		}
 
 		return indices;
+	}
+
+	VkFormat vulkan_device_check_format_support(vulkan_context& context, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+		for (VkFormat format : candidates) {
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(context.device.physical_device, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+				return format;
+			}
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+				return format;
+			}
+		}
+
+		return VkFormat();
 	}
 }

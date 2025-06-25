@@ -7,6 +7,7 @@
 
 namespace caliope {
 	struct texture;
+	struct shader;
 
 	bool renderer_system_initialize(const std::string& application_name);
 	void renderer_system_shutdown();
@@ -15,6 +16,10 @@ namespace caliope {
 
 	bool renderer_draw_frame(renderer_packet& packet);
 
-	void renderer_create_texture(texture& texture);
-	void renderer_destroy_texture(texture& texture);
+	void renderer_texture_create(texture& texture, uchar* pixels);
+	void renderer_texture_destroy(texture& texture);
+
+	void renderer_shader_create(shader& shader);
+	void renderer_shader_destroy(shader& shader);
+	void renderer_shader_use(shader& shader);
 }

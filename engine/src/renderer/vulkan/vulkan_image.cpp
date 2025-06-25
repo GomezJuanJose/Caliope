@@ -1,45 +1,25 @@
 #include "vulkan_image.h"
+#include "renderer/vulkan/vulkan_utils.h"
 
-// TODO: Remove it
-#include "renderer/vulkan/vulkan_buffer.h"
-#include "renderer/vulkan/vulkan_command_buffer.h"
 
 namespace caliope {
+	bool has_stencil_component(VkFormat format);
 
-	bool vulkan_imageviews_create(vulkan_context& context) {
-		context.swapchain.swapchain_image_views.resize(context.swapchain.swapchain_images.size());
+	bool vulkan_image_create(vulkan_context& context,
+		VkImageType image_type,
+		uint width,
+		uint height,
+		VkFormat format,
+		VkImageTiling tiling,
+		VkImageUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		bool create_view,
+		VkImageAspectFlags view_aspect_flags,
+		vulkan_image& out_image
+	) {
+		out_image.width = width;
+		out_image.height = height;
 
-		for (uint i = 0; i < context.swapchain.swapchain_images.size(); ++i) {
-			context.swapchain.swapchain_image_views[i] = vulkan_image_view_create(context, context.swapchain.swapchain_images[i], context.swapchain.surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT);
-		}
-
-		return true;
-	}
-
-	void vulkan_imageview_destroy(vulkan_context& context) {
-		for (VkImageView image_view : context.swapchain.swapchain_image_views) {
-			vkDestroyImageView(context.device.logical_device, image_view, nullptr);
-		}
-	}
-
-	VkImageView vulkan_image_view_create(vulkan_context& context, VkImage image, VkFormat format, VkImageAspectFlags aspect_flags) {
-		VkImageViewCreateInfo view_info = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		view_info.image = image;
-		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		view_info.format = format;
-		view_info.subresourceRange.aspectMask = aspect_flags;
-		view_info.subresourceRange.baseMipLevel = 0;
-		view_info.subresourceRange.levelCount = 1;
-		view_info.subresourceRange.baseArrayLayer = 0;
-		view_info.subresourceRange.layerCount = 1;
-
-		VkImageView image_view;
-		VK_CHECK(vkCreateImageView(context.device.logical_device, &view_info, nullptr, &image_view));
-
-		return image_view;
-	}
-
-	bool vulkan_image_create(vulkan_context& context, uint width, uint height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& image_memory) {
 		VkImageCreateInfo image_info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		image_info.imageType = VK_IMAGE_TYPE_2D;
 		image_info.extent.width = width;
@@ -54,35 +34,61 @@ namespace caliope {
 		image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 		image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VK_CHECK(vkCreateImage(context.device.logical_device, &image_info, nullptr, &image));
+		VK_CHECK(vkCreateImage(context.device.logical_device, &image_info, nullptr, &out_image.handle));
 
 		VkMemoryRequirements mem_requirements;
-		vkGetImageMemoryRequirements(context.device.logical_device, image, &mem_requirements);
+		vkGetImageMemoryRequirements(context.device.logical_device, out_image.handle, &mem_requirements);
 
 		VkMemoryAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 		alloc_info.allocationSize = mem_requirements.size;
 		alloc_info.memoryTypeIndex = find_memory_type(context.device.physical_device, mem_requirements.memoryTypeBits, properties);
+		VK_CHECK(vkAllocateMemory(context.device.logical_device, &alloc_info, nullptr, &out_image.memory));
 
-		VK_CHECK(vkAllocateMemory(context.device.logical_device, &alloc_info, nullptr, &image_memory));
+		VK_CHECK(vkBindImageMemory(context.device.logical_device, out_image.handle, out_image.memory, 0));
 
-		vkBindImageMemory(context.device.logical_device, image, image_memory, 0);
+		if (create_view) {
+			vulkan_image_view_create(context, format, out_image, view_aspect_flags);
+		}
 
 		return true;
 	}
 
-	bool has_stencil_component(VkFormat format) {
-		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+	void vulkan_image_view_create(
+		vulkan_context& context,
+		VkFormat format,
+		vulkan_image& image,
+		VkImageAspectFlags aspect_flags
+	) {
+		VkImageViewCreateInfo view_info = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		view_info.image = image.handle;
+		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		view_info.format = format;
+		view_info.subresourceRange.aspectMask = aspect_flags;
+
+		view_info.subresourceRange.baseMipLevel = 0;
+		view_info.subresourceRange.levelCount = 1;
+		view_info.subresourceRange.baseArrayLayer = 0;
+		view_info.subresourceRange.layerCount = 1;
+
+
+		VK_CHECK(vkCreateImageView(context.device.logical_device, &view_info, nullptr, &image.view));
 	}
 
-	void vulkan_image_transition_layout(vulkan_context& context, VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout) {
-		VkCommandBuffer command_buffer = vulkan_command_buffer_single_use_begin(context);// TODO: avoid to copy reference
 
+	void vulkan_image_transition_layout(
+		vulkan_context& context,
+		vulkan_command_buffer& command_buffer,
+		vulkan_image& image,
+		VkFormat format,
+		VkImageLayout old_layout,
+		VkImageLayout new_layout
+	) {
 		VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 		barrier.oldLayout = old_layout;
 		barrier.newLayout = new_layout;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = image;
+		barrier.srcQueueFamilyIndex = context.device.graphics_queue_index;
+		barrier.dstQueueFamilyIndex = context.device.graphics_queue_index;
+		barrier.image = image.handle;
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
@@ -132,19 +138,21 @@ namespace caliope {
 		}
 
 		vkCmdPipelineBarrier(
-			command_buffer,
+			command_buffer.handle,
 			source_stage, destrination_stage,
 			0,
 			0, nullptr,
 			0, nullptr,
 			1, &barrier
 		);
-
-		vulkan_command_buffer_single_use_end(context, command_buffer);// TODO: avoid to copy reference
 	}
 
-	void vulkan_image_copy_buffer_to_image(vulkan_context& context, VkBuffer buffer, VkImage image, uint width, uint height) {
-		VkCommandBuffer command_buffer = vulkan_command_buffer_single_use_begin(context);
+	void vulkan_image_copy_buffer_to_image(
+		vulkan_context& context,
+		vulkan_image& image,
+		VkBuffer buffer,
+		vulkan_command_buffer& command_buffer
+	) {
 
 		VkBufferImageCopy region = {};
 		region.bufferOffset = 0;
@@ -158,13 +166,25 @@ namespace caliope {
 
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = {
-			width,
-			height,
+			image.width,
+			image.height,
 			1
 		};
 
-		vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		vkCmdCopyBufferToImage(command_buffer.handle, buffer, image.handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-		vulkan_command_buffer_single_use_end(context, command_buffer);
+	}
+
+	void vulkan_image_destroy(
+		vulkan_context& context,
+		vulkan_image& image
+	) {
+		vkDestroyImageView(context.device.logical_device, image.view, nullptr);
+		vkFreeMemory(context.device.logical_device, image.memory, nullptr);
+		vkDestroyImage(context.device.logical_device, image.handle, nullptr);
+	}
+
+	bool has_stencil_component(VkFormat format) {
+		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 }

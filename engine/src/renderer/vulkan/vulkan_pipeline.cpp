@@ -1,44 +1,26 @@
 #include "vulkan_pipeline.h"
 
 #include "core/logger.h"
-#include "math/math_types.inl"
 
-#include "platform/file_system.h"
-
-#include "loaders/resources_types.inl"
-#include "systems/resource_system.h"
 
 
 namespace caliope {
 
-
-	//TODO move into vulkan_backend
-	VkShaderModule create_shader_module(VkDevice& device, std::vector<uchar> code, uint64 size);
-
-	bool vulkan_pipeline_create(vulkan_context& context) {
-
-		resource r;
-		resource_system_load(std::string("shaders\\Builtin.SpriteShader.vert.spv"), RESOURCE_TYPE_BINARY, r);
-		std::vector<uchar> vert_code = std::any_cast<std::vector<uchar>>(r.data);
-		VkShaderModule vert_module = create_shader_module(context.device.logical_device, vert_code, r.data_size);
-		
-
-		resource_system_load(std::string("shaders\\Builtin.SpriteShader.frag.spv"), RESOURCE_TYPE_BINARY, r);
-		std::vector<uchar> frag_code = std::any_cast<std::vector<uchar>>(r.data);
-		VkShaderModule frag_module = create_shader_module(context.device.logical_device, frag_code, r.data_size);
-		resource_system_unload(r);
-
-		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vert_shader_stage_info.module = vert_module;
-		vert_shader_stage_info.pName = "main";
-
-		VkPipelineShaderStageCreateInfo frag_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		frag_shader_stage_info.module = frag_module;
-		frag_shader_stage_info.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info, frag_shader_stage_info };
+	bool vulkan_pipeline_create(
+		vulkan_context& context,
+		vulkan_renderpass& renderpass,
+		uint vertex_stride,
+		uint attribute_count,
+		VkVertexInputAttributeDescription* attributes,
+		uint descriptor_set_layout_count,
+		VkDescriptorSetLayout& descriptor_set_layouts,
+		uint stage_count,
+		VkPipelineShaderStageCreateInfo* stages,
+		VkViewport viewport,
+		VkRect2D scissor,
+		bool depth_test_enabled,
+		vulkan_pipeline& out_pipeline
+	) {
 
 		std::vector<VkDynamicState> dynamic_states = {
 			VK_DYNAMIC_STATE_VIEWPORT,
@@ -53,33 +35,17 @@ namespace caliope {
 		// Vertex inputs
 		VkVertexInputBindingDescription binding_description = {};
 		binding_description.binding = 0;
-		binding_description.stride = sizeof(vertex);
+		binding_description.stride = vertex_stride;
 		binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		// TODO: Material/Shader system
-		// Attributes
-		std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions;
-		attribute_descriptions[0].binding = 0;
-		attribute_descriptions[0].location = 0;
-		attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribute_descriptions[0].offset = 0;// HARDCODED!!!!
 
-		attribute_descriptions[1].binding = 0;
-		attribute_descriptions[1].location = 1;
-		attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribute_descriptions[1].offset = sizeof(glm::vec3);// HARDCODED!!!!
-
-		attribute_descriptions[2].binding = 0;
-		attribute_descriptions[2].location = 2;
-		attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attribute_descriptions[2].offset = sizeof(glm::vec3) * 2;// HARDCODED!!!!
 
 
 		VkPipelineVertexInputStateCreateInfo vertex_info = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 		vertex_info.vertexBindingDescriptionCount = 1;
 		vertex_info.pVertexBindingDescriptions = &binding_description;
-		vertex_info.vertexAttributeDescriptionCount = attribute_descriptions.size();
-		vertex_info.pVertexAttributeDescriptions = attribute_descriptions.data();
+		vertex_info.vertexAttributeDescriptionCount = attribute_count;
+		vertex_info.pVertexAttributeDescriptions = attributes;
 
 
 
@@ -87,21 +53,11 @@ namespace caliope {
 		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		input_assembly.primitiveRestartEnable = VK_FALSE;
 
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)context.swapchain.extent.width;
-		viewport.height = (float)context.swapchain.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent = context.swapchain.extent;
-
 		VkPipelineViewportStateCreateInfo viewport_state = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 		viewport_state.viewportCount = 1;
+		viewport_state.pViewports = &viewport;
 		viewport_state.scissorCount = 1;
+		viewport_state.pScissors = &scissor;
 
 		VkPipelineRasterizationStateCreateInfo rasterizer = { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
 		rasterizer.depthClampEnable = VK_FALSE;
@@ -109,7 +65,7 @@ namespace caliope {
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f;
 		rasterizer.depthBiasClamp = 0.0f;
@@ -144,30 +100,32 @@ namespace caliope {
 		color_blending.blendConstants[3] = 0.0f;
 
 		VkPipelineLayoutCreateInfo pipeline_layout_info = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &context.descriptor_set_layout;
+		pipeline_layout_info.setLayoutCount = descriptor_set_layout_count;
+		pipeline_layout_info.pSetLayouts = &descriptor_set_layouts;
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
-		VK_CHECK(vkCreatePipelineLayout(context.device.logical_device, &pipeline_layout_info, nullptr, &context.pipeline.layout));
+		VK_CHECK(vkCreatePipelineLayout(context.device.logical_device, &pipeline_layout_info, nullptr, &out_pipeline.layout));
 
 		VkPipelineDepthStencilStateCreateInfo depth_stencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-		depth_stencil.depthTestEnable = VK_TRUE;
-		depth_stencil.depthWriteEnable = VK_TRUE;
-		depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
-		depth_stencil.depthBoundsTestEnable = VK_FALSE;
-		depth_stencil.minDepthBounds = 0.0f;
-		depth_stencil.maxDepthBounds = 1.0f;
-		depth_stencil.depthBoundsTestEnable = VK_FALSE;
-		depth_stencil.minDepthBounds = 0.0f;
-		depth_stencil.maxDepthBounds = 1.0f;
-		depth_stencil.stencilTestEnable = VK_FALSE;
-		depth_stencil.front = {};
-		depth_stencil.back = {};
+		if (depth_test_enabled) {
+			depth_stencil.depthTestEnable = VK_TRUE;
+			depth_stencil.depthWriteEnable = VK_TRUE;
+			depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+			depth_stencil.depthBoundsTestEnable = VK_FALSE;
+			depth_stencil.minDepthBounds = 0.0f;
+			depth_stencil.maxDepthBounds = 1.0f;
+			depth_stencil.depthBoundsTestEnable = VK_FALSE;
+			depth_stencil.minDepthBounds = 0.0f;
+			depth_stencil.maxDepthBounds = 1.0f;
+			depth_stencil.stencilTestEnable = VK_FALSE;
+			depth_stencil.front = {};
+			depth_stencil.back = {};
+		}
 
 		VkGraphicsPipelineCreateInfo pipeline_info = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-		pipeline_info.stageCount = 2;
-		pipeline_info.pStages = shader_stages;
+		pipeline_info.stageCount = stage_count;
+		pipeline_info.pStages = stages;
 		pipeline_info.pVertexInputState = &vertex_info;
 		pipeline_info.pInputAssemblyState = &input_assembly;
 		pipeline_info.pViewportState = &viewport_state;
@@ -176,38 +134,25 @@ namespace caliope {
 		pipeline_info.pDepthStencilState = &depth_stencil;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
-		pipeline_info.layout = context.pipeline.layout;
-		pipeline_info.renderPass = context.renderpass.handle;
+		pipeline_info.layout = out_pipeline.layout;
+		pipeline_info.renderPass = renderpass.handle;
 		pipeline_info.subpass = 0;
 		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 		pipeline_info.basePipelineIndex = -1;
 
-		VK_CHECK(vkCreateGraphicsPipelines(context.device.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &context.pipeline.handle));
-
-		vkDestroyShaderModule(context.device.logical_device, vert_module, nullptr);
-		vkDestroyShaderModule(context.device.logical_device, frag_module, nullptr);
+		VK_CHECK(vkCreateGraphicsPipelines(context.device.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &out_pipeline.handle));
+			
 
 		return true;
 	}
 
-	void vulkan_pipeline_destroy(vulkan_context& context) {
-		vkDestroyPipeline(context.device.logical_device, context.pipeline.handle, nullptr);
-		vkDestroyPipelineLayout(context.device.logical_device, context.pipeline.layout, nullptr);
+	void vulkan_pipeline_destroy(vulkan_context& context, vulkan_pipeline& pipeline) {
+		vkDestroyPipeline(context.device.logical_device, pipeline.handle, nullptr);
+		vkDestroyPipelineLayout(context.device.logical_device, pipeline.layout, nullptr);
 	}
 
-
-	VkShaderModule create_shader_module(VkDevice& device, std::vector<uchar> code, uint64 size) {
-
-		VkShaderModuleCreateInfo create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-		create_info.codeSize = size;
-		create_info.pCode = (uint*)code.data();
-
-		VkShaderModule shader_module;
-		if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {
-			CE_LOG_ERROR("Could not create the shader");
-			return VkShaderModule();
-		}
-
-		return shader_module;
+	void vulkan_pipeline_bind(vulkan_command_buffer& command_buffer, VkPipelineBindPoint bind_point, vulkan_pipeline& pipeline) {
+		vkCmdBindPipeline(command_buffer.handle, bind_point, pipeline.handle);
 	}
+
 }

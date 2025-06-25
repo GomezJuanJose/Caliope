@@ -5,6 +5,8 @@
 #include "core/logger.h"
 #include "core/asserts.h"
 
+#include <glm/glm.hpp>
+
 #define VK_CHECK(expr)								\
 	{												\
 		if (expr != VK_SUCCESS) {					\
@@ -39,7 +41,21 @@ namespace caliope {
 
 		VkCommandPool command_pool;
 
+		swapchain_support_details swapchain_support_details;
+
+		VkFormat depth_format;
+
 	}vulkan_device;
+
+
+	typedef struct vulkan_image {
+		VkImage handle;
+		VkDeviceMemory memory;
+		VkImageView view;
+		uint width;
+		uint height;
+	}vulkan_image;
+
 
 	typedef struct vulkan_swapchain {
 		VkSurfaceFormatKHR surface_format;
@@ -48,10 +64,12 @@ namespace caliope {
 
 		VkSwapchainKHR handle;
 
-		std::vector<VkImage> swapchain_images;
-		std::vector<VkImageView> swapchain_image_views;
+		std::vector<VkImage> images;
+		std::vector<VkImageView> views;
 
 		std::vector<VkFramebuffer> framebuffers;
+
+		vulkan_image depth_attachment;
 
 		uint image_count;
 	} vulkan_swapchain;
@@ -63,6 +81,15 @@ namespace caliope {
 
 	typedef struct vulkan_renderpass {
 		VkRenderPass handle;
+		glm::vec4 render_area;
+		glm::vec4 clear_color;
+
+		float depth;
+		uint stencil;
+
+		bool has_prev_pass;
+		bool has_next_pass;
+
 	} vulkan_renderpass;
 
 	typedef struct vulkan_command_buffer{
@@ -75,52 +102,53 @@ namespace caliope {
 		VkBuffer handle;
 		VkBufferUsageFlagBits usage;
 		VkDeviceMemory memory;
-
+		VkMemoryPropertyFlags memory_property_flag;
 		// TODO: freelist
 
 	} vulkan_buffer;
 
-	typedef struct vulkan_context {
+	typedef struct vulkan_texture {
+		vulkan_image image;
+		VkSampler sampler;
+	} vulkan_texture;
 
+	typedef struct vulkan_shader {
+		vulkan_pipeline pipeline;
+		VkDescriptorPool descriptor_pool;
+
+		VkDescriptorSetLayout descriptor_set_layout;
+
+		vulkan_buffer uniform_buffers;
+		void* uniform_buffers_mapped;
+
+		std::vector<VkDescriptorSet> descriptor_sets;
+		
+	} vulkan_shader;
+
+	typedef struct vulkan_context {
+		uint image_index;
 		uint current_frame;
 		bool framebuffer_resized;
 
 		VkInstance instance;
 		vulkan_device device;
-		swapchain_support_details swapchain_details;
 
 		VkSurfaceKHR surface;
 
-		
 		vulkan_swapchain swapchain;
-
-		vulkan_pipeline pipeline;
-		vulkan_renderpass renderpass;
+		vulkan_renderpass main_renderpass;
 
 		std::vector<VkSemaphore> image_available_semaphores;
 		std::vector<VkSemaphore> render_finished_semaphores;
 		std::vector<VkFence> in_flight_fences;
 
 		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
+		
+		
 
+		//TODO: Refactor for batch rendering
 		vulkan_buffer vertex_buffer;
 		vulkan_buffer index_buffer;
-
-		// TODO: remove and refactor
-		VkDescriptorSetLayout descriptor_set_layout;
-		std::vector<VkBuffer> uniform_buffers;
-		std::vector<VkDeviceMemory> uniform_buffers_memory;
-		std::vector<void*> uniform_buffers_mapped;
-		VkDescriptorPool descriptor_pool;
-		std::vector<VkDescriptorSet> descriptor_sets;
-
-		VkImage texture_image;
-		VkDeviceMemory texture_image_memory;
-		VkImageView texture_image_view;
-		VkSampler texture_sampler;
-		VkImage depth_image;
-		VkDeviceMemory depth_image_memory;
-		VkImageView depth_image_view;
 
 	} vulkan_context;
 }

@@ -8,6 +8,16 @@
 
 #include "loaders/resources_types.inl"
 
+#include "systems/shader_system.h"
+#include "systems/material_system.h"
+
+#include "math/transform.h"
+
+//TODO: TEMPORAL
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace caliope{
 
 	typedef struct renderer_system_state {
@@ -15,8 +25,9 @@ namespace caliope{
 	} renderer_system_state;
 
 	static std::unique_ptr<renderer_system_state> state_ptr;
-
-	bool caliope::renderer_system_initialize(const std::string& application_name) {
+	
+	
+	bool renderer_system_initialize(const std::string& application_name) {
 		state_ptr = std::make_unique<renderer_system_state>();
 
 		if (state_ptr == nullptr) {
@@ -29,12 +40,14 @@ namespace caliope{
 			CE_LOG_ERROR("Renderer backend failed to initialized. Shutting down");
 			return false;
 		}
+		
+
 
 		CE_LOG_INFO("Renderer system initialized.");
 		return true;
 	}
 
-	void caliope::renderer_system_shutdown() {
+	void renderer_system_shutdown() {
 		if (state_ptr != nullptr) {
 			state_ptr->backend.shutdown();
 			renderer_backend_system_destroy(state_ptr->backend);
@@ -42,7 +55,7 @@ namespace caliope{
 		}
 	}
 
-	void caliope::renderer_on_resized(uint16 width, uint16 height) {
+	void renderer_on_resized(uint16 width, uint16 height) {
 		if (state_ptr->backend.resize != nullptr) {
 			state_ptr->backend.resize(width, height);
 		}
@@ -51,11 +64,39 @@ namespace caliope{
 		}
 	}
 
-	bool caliope::renderer_draw_frame(renderer_packet& packet) {
+	bool renderer_draw_frame(renderer_packet& packet) {
+		
 		if (state_ptr->backend.begin_frame(packet.delta_time)) {
 
 
-			// TODO: Renderpasses
+			
+			if (!state_ptr->backend.begin_renderpass()) {
+				CE_LOG_ERROR("renderer_draw_frame failed renderpass begin. Application shutting down");
+				return false;
+			}
+
+			for (auto [key, value] : packet.quad_definitions) {
+				std::string mat_name = key;
+				std::shared_ptr<material> mat = material_system_adquire(mat_name);
+				renderer_shader_use(*mat->shader);
+
+				for (uint i = 0; i < value.size(); ++i) {
+					state_ptr->backend.set_and_apply_uniforms(
+						mat,
+						transform_get_world(value[i]),
+						glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),// TODO: camera system, fix later
+						//glm::perspective(glm::radians(45.0f), 1920 / (float)1080, 0.1f, 10.0f)
+						glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f)
+					);
+
+					state_ptr->backend.draw_geometry();
+				}
+			}
+
+			if (!state_ptr->backend.end_renderpass()) {
+				CE_LOG_ERROR("renderer_draw_frame failed renderpass end. Application shutting down");
+				return false;
+			}
 
 
 			if (!state_ptr->backend.end_frame(packet.delta_time)) {
@@ -67,10 +108,24 @@ namespace caliope{
 		return true;
 	}
 
-	void renderer_create_texture(texture& texture) {
-	
+	void renderer_texture_create(texture& texture, uchar* pixels) {
+		state_ptr->backend.texture_create(texture, pixels);
 	}
 
-	void renderer_destroy_texture(texture& texture) {
+	void renderer_texture_destroy(texture& texture) {
+		state_ptr->backend.texture_destroy(texture);
 	}
+
+	void renderer_shader_create(shader& shader) {
+		state_ptr->backend.shader_create(shader);
+	}
+
+	void renderer_shader_destroy(shader& shader) {
+		state_ptr->backend.shader_destroy(shader);
+	}
+
+	void renderer_shader_use(shader& shader) {
+		state_ptr->backend.shader_use(shader);
+	}
+
 }

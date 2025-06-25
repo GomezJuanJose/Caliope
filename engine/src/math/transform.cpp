@@ -4,7 +4,7 @@ namespace caliope {
 	transform transform_create() {
 		transform t;
 		transform_set_position_rotation_scale(t, glm::vec3(0.0f), glm::quat(), glm::vec3(1.0f));
-		t.local = glm::mat4();
+		t.local = glm::mat4(1.0f);
 		t.parent = nullptr;
 		return t;
 	}
@@ -12,7 +12,7 @@ namespace caliope {
 	transform transform_from_position(glm::vec3 postion) {
 		transform t;
 		transform_set_position_rotation_scale(t, postion, glm::quat(), glm::vec3(1.0f));
-		t.local = glm::mat4();
+		t.local = glm::mat4(1.0f);
 		t.parent = nullptr;
 		return t;
 	}
@@ -20,7 +20,7 @@ namespace caliope {
 	transform transform_from_rotation(glm::quat rotation) {
 		transform t;
 		transform_set_position_rotation_scale(t, glm::vec3(0.0f), rotation, glm::vec3(1.0f));
-		t.local = glm::mat4();
+		t.local = glm::mat4(1.0f);
 		t.parent = nullptr;
 		return t;
 	}
@@ -28,7 +28,7 @@ namespace caliope {
 	transform transform_from_position_rotation(glm::vec3 postion, glm::quat rotation) {
 		transform t;
 		transform_set_position_rotation_scale(t, postion, rotation, glm::vec3(1.0f));
-		t.local = glm::mat4();
+		t.local = glm::mat4(1.0f);
 		t.parent = nullptr;
 		return t;
 	}
@@ -36,7 +36,7 @@ namespace caliope {
 	transform transform_from_position_rotation_scale(glm::vec3 postion, glm::quat rotation, glm::vec3 scale) {
 		transform t;
 		transform_set_position_rotation_scale(t, postion, rotation, scale);
-		t.local = glm::mat4();
+		t.local = glm::mat4(1.0f);
 		t.parent = nullptr;
 		return t;
 	}
@@ -112,8 +112,8 @@ namespace caliope {
 
 	glm::mat4 transform_get_local(transform& t) {
 		if (t.is_dirty) {
-			glm::mat4 tr = glm::toMat4(t.rotation) * glm::translate(glm::mat4(), t.position);
-			tr = glm::scale(glm::mat4(), t.scale) * tr;
+			glm::mat4 tr = glm::toMat4(t.rotation) * glm::translate(glm::mat4(1.0f), t.position);
+			tr = glm::scale(glm::mat4(1.0f), t.scale) * tr;
 			t.local = tr;
 			t.is_dirty = false;
 		}
