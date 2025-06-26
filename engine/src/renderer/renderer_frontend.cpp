@@ -80,13 +80,17 @@ namespace caliope{
 				std::shared_ptr<material> mat = material_system_adquire(mat_name);
 				renderer_shader_use(*mat->shader);
 
+				glm::vec3 camera_position = glm::vec3(0.0f, 0.0f, 5.0f);
+
 				for (uint i = 0; i < value.size(); ++i) {
+					// TODO: Move this outside this for loop and here should be the quad generation vertex and index buffer with all data prepared for batch rendering
 					state_ptr->backend.set_and_apply_uniforms(
 						mat,
 						transform_get_world(value[i]),
-						glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),// TODO: camera system, fix later
+						glm::lookAt(camera_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),// TODO: camera system, fix later
 						//glm::perspective(glm::radians(45.0f), 1920 / (float)1080, 0.1f, 10.0f)
-						glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f)
+						glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f),// TODO: TEMPORAL, PASS THE ACTIVE CAMERA FROM THE CAMERA SYSTEM
+						camera_position// TODO: TEMPORAL, PASS THE ACTIVE CAMERA FROM THE CAMERA SYSTEM
 					);
 
 					state_ptr->backend.draw_geometry();

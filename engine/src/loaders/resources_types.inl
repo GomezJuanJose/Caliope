@@ -44,14 +44,20 @@ namespace caliope {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::array<char, MAX_NAME_LENGTH> shader_name;
 		glm::vec4 diffuse_color;
+		float shininess;
 		std::array<char, MAX_NAME_LENGTH> diffuse_texture_name;
+		std::array<char, MAX_NAME_LENGTH> specular_texture_name;
+		std::array<char, MAX_NAME_LENGTH> normal_texture_name;
 	}material_configuration;
 
 	typedef struct material {
 		std::string name;
 		glm::vec4 diffuse_color;
+		float shininess;
 		std::shared_ptr<shader> shader;
 		std::shared_ptr<texture> diffuse_texture;
+		std::shared_ptr<texture> specular_texture;
+		std::shared_ptr<texture> normal_texture;
 
 	}material;
 }

@@ -12,6 +12,8 @@ namespace caliope {
 		std::unordered_map<std::string, texture> registered_textures;
 
 		texture default_diffuse_texture;
+		texture default_specular_texture;
+		texture default_normal_texture;
 	}texture_system_state;
 
 	static std::unique_ptr<texture_system_state> state_ptr;
@@ -40,6 +42,8 @@ namespace caliope {
 			destroy_texture(value);
 		}
 		destroy_texture(state_ptr->default_diffuse_texture);
+		destroy_texture(state_ptr->default_specular_texture);
+		destroy_texture(state_ptr->default_normal_texture);
 
 		state_ptr->registered_textures.empty();
 		state_ptr.reset();
@@ -66,10 +70,19 @@ namespace caliope {
 		}
 	}
 
-	std::shared_ptr<texture> texture_system_get_default() {
+
+	std::shared_ptr<texture> texture_system_get_default_diffuse() {
 		return std::make_shared<texture>(state_ptr->default_diffuse_texture);
 	}
 
+	std::shared_ptr<texture> texture_system_get_default_specular() {
+		return std::make_shared<texture>(state_ptr->default_specular_texture);
+	}
+
+	CE_API std::shared_ptr<texture> texture_system_get_default_normal() {
+		return std::make_shared<texture>(state_ptr->default_normal_texture);
+	}
+	
 	bool load_texture(std::string& name, texture& t) {
 		resource r;
 		if (!resource_system_load(name, RESOURCE_TYPE_IMAGE, r)) {
@@ -124,13 +137,39 @@ namespace caliope {
 				}
 			}
 		}
-
 		state_ptr->default_diffuse_texture.name = std::string("default_texture");
 		state_ptr->default_diffuse_texture.width = texture_dimensions;
 		state_ptr->default_diffuse_texture.height = texture_dimensions;
 		state_ptr->default_diffuse_texture.channel_count = texture_channels;
 		state_ptr->default_diffuse_texture.has_transparency = false;
-		
 		renderer_texture_create(state_ptr->default_diffuse_texture, pixels);
+
+
+		std::array<uchar, 16 * 16 * 4> spec_pixels = { 0 };
+		state_ptr->default_specular_texture.name = std::string("default_spec");
+		state_ptr->default_specular_texture.width = 16;
+		state_ptr->default_specular_texture.height = 16;
+		state_ptr->default_specular_texture.channel_count = texture_channels;
+		state_ptr->default_specular_texture.has_transparency = false;
+		renderer_texture_create(state_ptr->default_specular_texture, spec_pixels.data());
+
+
+		std::array<uchar, 16 * 16 * 4> normal_pixels = { 0 };
+		for (uint row = 0; row < 16; row++) {
+			for (uint col = 0; col < 16; col++) {
+				uint index = (row * 16) + col;
+				uint index_bpp = index * texture_channels;
+				normal_pixels[index_bpp + 0] = 128;
+				normal_pixels[index_bpp + 1] = 128;
+				normal_pixels[index_bpp + 2] = 255;
+				normal_pixels[index_bpp + 3] = 255;
+			}
+		}
+		state_ptr->default_normal_texture.name = std::string("default_normal");
+		state_ptr->default_normal_texture.width = 16;
+		state_ptr->default_normal_texture.height = 16;
+		state_ptr->default_normal_texture.channel_count = texture_channels;
+		state_ptr->default_normal_texture.has_transparency = false;
+		renderer_texture_create(state_ptr->default_normal_texture, normal_pixels.data());
 	}
 }

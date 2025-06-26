@@ -113,7 +113,10 @@ namespace caliope {
 		// TODO: TEMPORAL CODE
 		material_configuration m;
 		m.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m.shininess = 64.0f;
 		m.diffuse_texture_name = { "dummy_character" };
+		m.specular_texture_name = { "dummy_specular" };
+		m.normal_texture_name = { "dummy_normal" };
 		m.shader_name = { "Builtin.SpriteShader" };
 		m.name = { "scene" };
 

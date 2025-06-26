@@ -27,7 +27,7 @@ namespace caliope {
 		bool (*begin_renderpass)();
 		bool (*end_renderpass)();
 
-		void (*set_and_apply_uniforms)(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection);
+		void (*set_and_apply_uniforms)(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
 		void (*draw_geometry)();
 

@@ -45,33 +45,70 @@ namespace caliope {
 
 	static vulkan_context context;
 
-	//TODO: Refactor for batch rendering
-	const std::vector<vertex> vertices = {
-		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+	//TODO: Refactor for batch rendering and quad system/ geometry system
+	std::vector<vertex> vertices = {
+		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
 
-		{{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.0f, 1.5, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-		{{1.5, 1.5, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{1.5, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+		{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.0f, 1.5, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+		{{1.5, 1.5, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+		{{1.5, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 	};
 
-	const std::vector<uint16> indices = {
+	std::vector<uint16> indices = {
 		0, 1, 2, 2, 1, 3,
 		4, 5, 6, 6, 7, 4
 	};
+
+	// TODO: MOVE INTO GEOMETRY/QUAD SYSTEM
+	void calculate_tangents(std::vector<vertex>& vertices, std::vector<uint16>& indices) {
+		for (uint i = 0; i < indices.size(); i+=3) {
+			uint i0 = indices[i + 0];
+			uint i1 = indices[i + 1];
+			uint i2 = indices[i + 2];
+
+			glm::vec3 deltaPos1 = vertices[i1].pos - vertices[i0].pos;
+			glm::vec3 deltaPos2 = vertices[i2].pos - vertices[i0].pos;
+		
+			glm::vec2 deltaUV1 = vertices[i1].tex_coord - vertices[i0].tex_coord;
+			glm::vec2 deltaUV2 = vertices[i2].tex_coord - vertices[i0].tex_coord;
+
+			float fc = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+			glm::vec3 tangent = glm::vec3(
+				(fc * (deltaUV2.y * deltaPos1.x - deltaUV1.y * deltaPos2.x)),
+				(fc * (deltaUV2.y * deltaPos1.y - deltaUV1.y * deltaPos2.y)),
+				(fc * (deltaUV2.y * deltaPos1.z - deltaUV1.y * deltaPos2.z))
+			);
+
+			tangent = glm::normalize(tangent);
+
+			float handedness = ((deltaUV1.y * deltaUV2.x - deltaUV2.y * deltaUV1.x) < 0.0f) ? -1.0 : 1.0f;
+			
+			glm::vec4 t4 = glm::vec4(tangent, handedness);
+			vertices[i0].tangent = t4;
+			vertices[i1].tangent = t4;
+			vertices[i2].tangent = t4;
+		}
+	}
 
 	typedef struct uniform_buffer_object {
 		glm::mat4 model;
 		glm::mat4 view;
 		glm::mat4 proj;
+		glm::vec4 ambient_color;
+		glm::vec3 view_position;
+		float shininess;
 	}uniform_buffer_object;
 
 	// TODO: refactor
 
 	bool vulkan_renderer_backend_initialize(const std::string& application_name) {
+
+		// TODO: MOVE INTO GEOMETRY/QUAD SYSTEM
+		calculate_tangents(vertices, indices);
 
 		// TODO: PRE-LOAD THE KNOWN SHADERS WHEN INITIALIZE
 
@@ -340,14 +377,19 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_set_and_apply_uniforms(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection) {
+	void vulkan_renderer_set_and_apply_uniforms(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
 		uniform_buffer_object ubo;
 		ubo.model = model;
 		ubo.view = view;
 		ubo.proj = projection;
+		ubo.ambient_color = glm::vec4(0.02f, 0.02f, 0.02f, 1.0f);// TODO: Scene system;
+		ubo.shininess = m->shininess;// TODO: batch rendering;
+		ubo.view_position = view_position;
 
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&m->shader->internal_data);
-		vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&m->diffuse_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		vulkan_texture* vk_texture_diff = std::any_cast<vulkan_texture>(&m->diffuse_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		vulkan_texture* vk_texture_spec = std::any_cast<vulkan_texture>(&m->specular_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		vulkan_texture* vk_texture_norm = std::any_cast<vulkan_texture>(&m->normal_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
 		copy_memory(vk_shader->uniform_buffers_mapped, &ubo, sizeof(ubo));
 
 		VkDescriptorBufferInfo buffer_info = {};
@@ -367,19 +409,25 @@ namespace caliope {
 		descriptor_writes[0].pImageInfo = nullptr;
 		descriptor_writes[0].pTexelBufferView = nullptr;
 
+		std::array<VkDescriptorImageInfo, 3> image_infos;
+		image_infos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_infos[0].imageView = vk_texture_diff->image.view;
+		image_infos[0].sampler = vk_texture_diff->sampler;
 
-		VkDescriptorImageInfo image_info = {};
-		image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		image_info.imageView = vk_texture->image.view;
-		image_info.sampler = vk_texture->sampler;
+		image_infos[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_infos[1].imageView = vk_texture_spec->image.view;
+		image_infos[1].sampler = vk_texture_spec->sampler;
+
+		image_infos[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_infos[2].imageView = vk_texture_norm->image.view;
+		image_infos[2].sampler = vk_texture_norm->sampler;
 
 		descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptor_writes[1].dstSet = vk_shader->descriptor_sets[context.current_frame];
 		descriptor_writes[1].dstBinding = 1;
-		descriptor_writes[1].dstArrayElement = 0;
 		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptor_writes[1].descriptorCount = 1;
-		descriptor_writes[1].pImageInfo = &image_info;
+		descriptor_writes[1].descriptorCount = image_infos.size();
+		descriptor_writes[1].pImageInfo = image_infos.data();
 
 		vkUpdateDescriptorSets(context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 
@@ -531,28 +579,26 @@ namespace caliope {
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
 		scissor.extent = context.swapchain.extent;
+
+		// Attributes
+		#define NUMBER_OF_VERTEX_ATTRIBUTES 4
+		std::array < std::pair<VkFormat, uint>, NUMBER_OF_VERTEX_ATTRIBUTES > attributes_definitions{ 
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3)),
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3)),
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)),
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2))
+		};
+		std::array<VkVertexInputAttributeDescription, NUMBER_OF_VERTEX_ATTRIBUTES> attribute_descriptions;
 		
+		uint offset = 0;
+		for (uint i = 0; i < NUMBER_OF_VERTEX_ATTRIBUTES; ++i) {
+			attribute_descriptions[i].binding = 0;
+			attribute_descriptions[i].location = i;
+			attribute_descriptions[i].format = attributes_definitions[i].first;
+			attribute_descriptions[i].offset = offset;
+			offset += attributes_definitions[i].second;
 
-#pragma region TEMP CODE
-		// TODO: Material/Shader system
-// Attributes
-		/**/	std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions;
-		attribute_descriptions[0].binding = 0;
-		attribute_descriptions[0].location = 0;
-		attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		attribute_descriptions[0].offset = 0;// HARDCODED!!!!
-
-		attribute_descriptions[1].binding = 0;
-		attribute_descriptions[1].location = 1;
-		attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribute_descriptions[1].offset = sizeof(glm::vec3);// HARDCODED!!!!
-
-		attribute_descriptions[2].binding = 0;
-		attribute_descriptions[2].location = 2;
-		attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attribute_descriptions[2].offset = sizeof(glm::vec3) * 2;// HARDCODED!!!!*/
-
-#pragma endregion
+		}
 
 		s.internal_data = vulkan_shader();
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
@@ -567,7 +613,7 @@ namespace caliope {
 
 		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
 		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = 1;
+		sampler_layout_binding.descriptorCount = 3;// TODO: MORE CONFIGURABLE WITH THE vulkan_renderer_set_and_apply_uniforms
 		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		sampler_layout_binding.pImmutableSamplers = nullptr;
 		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -584,7 +630,7 @@ namespace caliope {
 			context, 
 			context.main_renderpass,//TODO: Choose renderpass depending the shader type
 			sizeof(vertex),
-			3,
+			NUMBER_OF_VERTEX_ATTRIBUTES,
 			attribute_descriptions.data(),
 			1,
 			vk_shader->descriptor_set_layout,

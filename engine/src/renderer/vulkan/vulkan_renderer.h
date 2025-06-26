@@ -18,7 +18,7 @@ namespace caliope {
 	bool vulkan_renderer_begin_renderpass();
 	bool vulkan_renderer_end_renderpass();
 
-	void vulkan_renderer_set_and_apply_uniforms(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection);
+	void vulkan_renderer_set_and_apply_uniforms(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
 	void vulkan_renderer_texture_create(texture& t, uchar* pixels);
 	void vulkan_renderer_texture_destroy(texture& t);
