@@ -15,8 +15,9 @@ namespace caliope {
 		c.position = glm::vec3(0.0f, 0.0f, 5.0f);
 		c.rotation = 0.0f;
 		c.zoom = 1.0f;
+		c.aspect_ratio = 1.0f;
 		c.view = camera_view_get(c);
-		c.projection  = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f);
+		c.projection  = camera_projection_get(c);
 		c.is_view_dirty = false;
 		c.is_projection_dirty = false;
 	}
@@ -48,6 +49,13 @@ namespace caliope {
 		c.is_projection_dirty = true;
 	}
 
+	void camera_aspect_ratio_set(camera& c, float aspect_ratio) {
+		if (c.aspect_ratio != aspect_ratio) {
+			c.aspect_ratio = aspect_ratio;
+			c.is_projection_dirty = true;
+		}
+	}
+
 	glm::mat4 camera_view_get(camera& c) {
 		
 		if (c.is_view_dirty) {
@@ -65,7 +73,7 @@ namespace caliope {
 	glm::mat4 camera_projection_get(camera& c) {
 		
 		if (c.is_projection_dirty) {
-			c.projection = glm::ortho(-1.0f * c.zoom, 1.0f * c.zoom, -c.zoom, c.zoom, -100.0f, 100.0f);
+			c.projection = glm::ortho(-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom, -100.0f, 100.0f);
 			
 			c.is_projection_dirty = false;
 		}
@@ -95,5 +103,6 @@ namespace caliope {
 
 	void camera_roll(camera& c, float amount) {
 		c.rotation += amount;
+		c.is_view_dirty = true;
 	}
 }

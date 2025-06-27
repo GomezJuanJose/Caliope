@@ -23,26 +23,28 @@ namespace caliope{
 
 	typedef struct renderer_system_state {
 		renderer_backend backend;
+
+		float aspect_ratio;
 	} renderer_system_state;
 
 	static std::unique_ptr<renderer_system_state> state_ptr;
 	
 	
-	bool renderer_system_initialize(const std::string& application_name) {
+	bool renderer_system_initialize(renderer_frontend_config& config) {
 		state_ptr = std::make_unique<renderer_system_state>();
 
 		if (state_ptr == nullptr) {
 			return false;
 		}
 
+		state_ptr->aspect_ratio = (float)config.window_width / (float)config.window_height;
+
 		renderer_backend_system_create(renderer_backend_type::BACKEND_TYPE_VULKAN, state_ptr->backend);
 
-		if (!state_ptr->backend.initialize(application_name)) {
+		if (!state_ptr->backend.initialize(config.application_name)) {
 			CE_LOG_ERROR("Renderer backend failed to initialized. Shutting down");
 			return false;
 		}
-		
-
 
 		CE_LOG_INFO("Renderer system initialized.");
 		return true;
@@ -57,6 +59,9 @@ namespace caliope{
 	}
 
 	void renderer_on_resized(uint16 width, uint16 height) {
+
+		state_ptr->aspect_ratio = (float)width / (float)height;
+
 		if (state_ptr->backend.resize != nullptr) {
 			state_ptr->backend.resize(width, height);
 		}
@@ -76,21 +81,21 @@ namespace caliope{
 				return false;
 			}
 
+			camera_aspect_ratio_set(*packet.world_camera, state_ptr->aspect_ratio);
+
 			for (auto [key, value] : packet.quad_definitions) {
 				std::string mat_name = key;
 				std::shared_ptr<material> mat = material_system_adquire(mat_name);
 				renderer_shader_use(*mat->shader);
-
-				glm::vec3 camera_position = glm::vec3(0.0f, 0.0f, 5.0f);
 
 				for (uint i = 0; i < value.size(); ++i) {
 					// TODO: Move this outside this for loop and here should be the quad generation vertex and index buffer with all data prepared for batch rendering
 					state_ptr->backend.set_and_apply_uniforms(
 						mat,
 						transform_get_world(value[i]),
-						camera_view_get(*packet.camera),
-						camera_projection_get(*packet.camera),
-						packet.camera->position
+						camera_view_get(*packet.world_camera),
+						camera_projection_get(*packet.world_camera),
+						packet.world_camera->position
 					);
 
 					state_ptr->backend.draw_geometry();

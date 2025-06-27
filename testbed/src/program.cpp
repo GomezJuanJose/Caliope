@@ -41,7 +41,9 @@ bool update_testbed(caliope::game_state& game_state, float delta_time) {
 		caliope::camera_zoom_set(*game_state.world_camera, caliope::camera_zoom_get(*game_state.world_camera) - 0.01f);
 	}
 
-
+	if (caliope::is_key_pressed(caliope::KEY_X)) {
+		caliope::camera_roll(*game_state.world_camera, 0.01f);
+	}
 
 	return true;
 }

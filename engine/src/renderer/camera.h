@@ -11,6 +11,8 @@ namespace caliope {
 		float rotation;
 		float zoom;
 
+		float aspect_ratio;
+
 		glm::mat4 view;
 		glm::mat4 projection;
 
@@ -21,6 +23,11 @@ namespace caliope {
 	camera camera_create();
 	void camera_reset(camera& c);
 
+	void camera_aspect_ratio_set(camera& c, float aspect_ratio);
+
+	glm::mat4 camera_view_get(camera& c);
+	glm::mat4 camera_projection_get(camera& c);
+
 	CE_API glm::vec3 camera_position_get(const camera& c);
 	CE_API void camera_position_set(camera& c, glm::vec3 position);
 
@@ -29,9 +36,6 @@ namespace caliope {
 
 	CE_API float camera_zoom_get(const camera& c);
 	CE_API void camera_zoom_set(camera& c, float zoom);
-
-	glm::mat4 camera_view_get(camera& c);
-	glm::mat4 camera_projection_get(camera& c);
 
 	CE_API void camera_move_left(camera& c, float amount);
 	CE_API void camera_move_right(camera& c, float amount);

@@ -9,7 +9,13 @@ namespace caliope {
 	struct texture;
 	struct shader;
 
-	bool renderer_system_initialize(const std::string& application_name);
+	typedef struct renderer_frontend_config {
+		std::string application_name;
+		uint window_width;
+		uint window_height;
+	} renderer_frontend_config;
+
+	bool renderer_system_initialize(renderer_frontend_config& config);
 	void renderer_system_shutdown();
 
 	void renderer_on_resized(uint16 width, uint16 height);

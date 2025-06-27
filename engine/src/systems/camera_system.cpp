@@ -10,6 +10,7 @@ namespace caliope {
 		std::unordered_map<std::string, camera> registered_cameras;
 
 		camera default_camera;
+
 	}camera_system_state;
 
 	static std::unique_ptr<camera_system_state> state_ptr;
@@ -32,6 +33,7 @@ namespace caliope {
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}
+
 	
 	std::shared_ptr<camera> camera_system_acquire(const std::string& name) {
 		if (state_ptr->registered_cameras.find(name) == state_ptr->registered_cameras.end()) {
@@ -39,7 +41,8 @@ namespace caliope {
 			state_ptr->registered_cameras.insert({ name, camera_create() });
 		}
 
-		return std::make_shared<camera>(state_ptr->registered_cameras[name]);
+		std::shared_ptr<camera> cam = std::make_shared<camera>(state_ptr->registered_cameras[name]);
+		return cam;
 	}
 	
 	void camera_system_release(const std::string& name) {
@@ -49,6 +52,7 @@ namespace caliope {
 	}
 	
 	std::shared_ptr<camera> camera_system_get_default() {
-		return std::make_shared<camera>(state_ptr->default_camera);
+		std::shared_ptr<camera> cam = std::make_shared<camera>(state_ptr->default_camera);
+		return cam;
 	}
 }

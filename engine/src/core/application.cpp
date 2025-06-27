@@ -8,6 +8,7 @@
 #include "core/input.h"
 
 #include "renderer/renderer_frontend.h"
+
 #include "platform/file_system.h"
 #include "platform/platform.h"
 
@@ -49,7 +50,7 @@ namespace caliope {
 		state_ptr = std::make_unique<application_state>();
 		state_ptr->program_config = std::make_shared<program_config>(config);
 		state_ptr->is_running = true;
-
+		
 		if (!logger_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize logger; shutting down");
 			return false;
@@ -78,7 +79,11 @@ namespace caliope {
 			return false;
 		}
 
-		if (!renderer_system_initialize(config.name)) {
+		renderer_frontend_config renderer_config;
+		renderer_config.application_name = config.name;
+		renderer_config.window_width = config.width;
+		renderer_config.window_height = config.height;
+		if (!renderer_system_initialize(renderer_config)) {
 			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
 		}
@@ -198,7 +203,10 @@ namespace caliope {
 	bool application_on_resize(event_system_code code, std::any data) {
 
 		int* size = std::any_cast<int*>(data);
-		renderer_on_resized(size[0], size[1]);
+		float width = size[0];
+		float height = size[1];
+		float aspect_ratio = width / height;
+		renderer_on_resized(width, height);
 
 		state_ptr->is_suspended = false;
 		if (size[0] == 0 || size[1] == 0) {
