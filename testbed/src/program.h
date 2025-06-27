@@ -1,6 +1,8 @@
 #pragma once
 
-bool initialize_testbed();
-bool update_testbed(float delta_time);
+#include <program_types.h>
+
+bool initialize_testbed(caliope::game_state& game_state);
+bool update_testbed(caliope::game_state& game_state, float delta_time);
 bool resize_testbed();
 void shutdown_testbed();

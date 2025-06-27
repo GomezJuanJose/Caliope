@@ -9,6 +9,7 @@
 namespace caliope {
 
 	struct transform;
+	struct camera;
 
 	typedef enum renderer_backend_type {
 		BACKEND_TYPE_VULKAN,
@@ -41,7 +42,7 @@ namespace caliope {
 
 	typedef struct renderer_packet {
 		float delta_time;
-
+		std::shared_ptr<camera> world_camera;
 		std::unordered_map<std::string, std::vector<transform>> quad_definitions; // Key : material name, Value: vector of transforms
 	} renderer_packet;
 }

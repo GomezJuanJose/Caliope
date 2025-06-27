@@ -54,6 +54,7 @@ add_executable(testbed ${SRC_FILES} ${HEADERS_FILES})
 target_include_directories(testbed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/testbed/src)
 target_compile_definitions(testbed PRIVATE CE_PLATFORM_WINDOWS=1 CE_EXPORT_DLL=0)
 target_link_libraries(testbed engine)
+target_link_libraries(testbed glm::glm)
 
 IF(WIN32)
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT testbed)

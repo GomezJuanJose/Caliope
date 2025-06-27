@@ -13,7 +13,7 @@ layout(binding = 0) uniform UniformBufferObject {
 	mat4 proj;
 	vec4 ambient_color;
 	vec3 view_position;
-	float shininess;
+	float shininess;// TODO: Do not upload in the vertex, upload directly to the fragment
 } ubo;
 
 

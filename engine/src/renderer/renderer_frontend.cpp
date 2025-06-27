@@ -5,6 +5,7 @@
 
 #include "renderer/renderer_types.inl"
 #include "renderer/renderer_backend.h"
+#include "renderer/camera.h"
 
 #include "loaders/resources_types.inl"
 
@@ -87,10 +88,9 @@ namespace caliope{
 					state_ptr->backend.set_and_apply_uniforms(
 						mat,
 						transform_get_world(value[i]),
-						glm::lookAt(camera_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)),// TODO: camera system, fix later
-						//glm::perspective(glm::radians(45.0f), 1920 / (float)1080, 0.1f, 10.0f)
-						glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -100.0f, 100.0f),// TODO: TEMPORAL, PASS THE ACTIVE CAMERA FROM THE CAMERA SYSTEM
-						camera_position// TODO: TEMPORAL, PASS THE ACTIVE CAMERA FROM THE CAMERA SYSTEM
+						camera_view_get(*packet.camera),
+						camera_projection_get(*packet.camera),
+						packet.camera->position
 					);
 
 					state_ptr->backend.draw_geometry();

@@ -9,7 +9,7 @@ layout(location = 0) in struct data_transfer{
 	vec4 tangent;
 	vec3 view_position;
 	vec3 frag_position;
-	float shininess;
+	float shininess;// TODO: Do not upload in the vertex, upload directly to the fragment
 } in_data_transfer;
 
 const int SAMP_DIFFUSE = 0;
@@ -66,17 +66,17 @@ vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, v
 	float distance = length(light.position - frag_position);
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-	vec4 ambient = in_data_transfer.ambient;
-	vec4 diffuse = light.color * diff;
-	vec4 specular = light.color * spec;
+	vec3 ambient = vec3(in_data_transfer.ambient);
+	vec3 diffuse = vec3(light.color * diff);
+	vec3 specular = vec3(light.color * spec);
 
 	vec4 diff_samp = texture(samplers[SAMP_DIFFUSE], in_data_transfer.tex_coord);
-	diffuse *= diff_samp;
-	ambient *= diff_samp;
-	specular *= vec4(texture(samplers[SAMP_SPECULAR], in_data_transfer.tex_coord).rgb, diffuse.a);
+	diffuse *= diff_samp.xyz;
+	ambient *= diff_samp.xyz;
+	specular *= vec3(texture(samplers[SAMP_SPECULAR], in_data_transfer.tex_coord).rgb);
 
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-	return (ambient + diffuse + specular);
+	return vec4((ambient + diffuse + specular), diff_samp.a);
 }

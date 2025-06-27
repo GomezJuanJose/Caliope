@@ -15,6 +15,7 @@
 #include "systems/texture_system.h"
 #include "systems/shader_system.h"
 #include "systems/material_system.h"
+#include "systems/camera_system.h"
 
 #include "math/transform.h"
 
@@ -97,9 +98,12 @@ namespace caliope {
 			return false;
 		}
 
+		if (!camera_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize camera system; shutting down");
+			return false;
+		}
 
-
-		if (!state_ptr->program_config->initialize()) {
+		if (!state_ptr->program_config->initialize(state_ptr->program_config->game_state)) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
 			return false;
 		}
@@ -138,7 +142,7 @@ namespace caliope {
 			}
 
 			if (!state_ptr->is_suspended) {
-				if (!state_ptr->program_config->update(0.0f)) {
+				if (!state_ptr->program_config->update(state_ptr->program_config->game_state, 0.0f)) {
 					CE_LOG_ERROR("Failed to update the program;");
 				}
 
@@ -153,6 +157,8 @@ namespace caliope {
 				packet.quad_definitions.insert({ std::string("scene"), {t1} });
 				// TODO: TEMP CODE
 
+				packet.world_camera = state_ptr->program_config->game_state.world_camera;
+
 				if (!renderer_draw_frame(packet)) {
 					CE_LOG_FATAL("Failed to render frame");
 					return false;
@@ -162,6 +168,7 @@ namespace caliope {
 			}
 		}
 
+		camera_system_shutdown();
 
 		material_system_shutdown();
 
