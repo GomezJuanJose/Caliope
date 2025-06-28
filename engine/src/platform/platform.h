@@ -11,7 +11,7 @@ namespace caliope {
 
 	std::any platform_system_get_window();
 
-
+	float platform_system_get_time();//TODO: Do it platform specific??
 
 
 

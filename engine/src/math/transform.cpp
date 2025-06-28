@@ -112,8 +112,8 @@ namespace caliope {
 
 	glm::mat4 transform_get_local(transform& t) {
 		if (t.is_dirty) {
-			glm::mat4 tr = glm::toMat4(t.rotation) * glm::translate(glm::mat4(1.0f), t.position);
-			tr = glm::scale(glm::mat4(1.0f), t.scale) * tr;
+			glm::mat4 tr = glm::translate(glm::mat4(1.0f), t.position) * glm::toMat4(t.rotation);
+			tr = tr * glm::scale(glm::mat4(1.0f), t.scale);
 			t.local = tr;
 			t.is_dirty = false;
 		}

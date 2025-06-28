@@ -101,6 +101,10 @@ namespace caliope {
 		return state_ptr->window;
 	}
 
+	float platform_system_get_time() {
+		return (float)glfwGetTime();
+	}
+
 	void* platform_system_allocate_memory(size_t size) {
 		return malloc(size);
 	}

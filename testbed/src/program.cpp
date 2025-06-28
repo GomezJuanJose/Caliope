@@ -17,32 +17,34 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 bool update_testbed(caliope::game_state& game_state, float delta_time) {
 
+	float speed = 50.01f;
+
 	if (caliope::is_key_pressed(caliope::KEY_A)) {
-		caliope::camera_move_left(*game_state.world_camera, 0.01f);
+		caliope::camera_move_left(*game_state.world_camera, speed * delta_time);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_D)) {
-		caliope::camera_move_right(*game_state.world_camera, 0.01f);
+		caliope::camera_move_right(*game_state.world_camera, speed * delta_time);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_W)) {
-		caliope::camera_move_up(*game_state.world_camera, 0.01f);
+		caliope::camera_move_up(*game_state.world_camera, speed * delta_time);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_S)) {
-		caliope::camera_move_down(*game_state.world_camera, 0.01f);
+		caliope::camera_move_down(*game_state.world_camera, speed * delta_time);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_Q)) {
-		caliope::camera_zoom_set(*game_state.world_camera, caliope::camera_zoom_get(*game_state.world_camera) + 0.01f);
+		caliope::camera_zoom_set(*game_state.world_camera, caliope::camera_zoom_get(*game_state.world_camera) + speed * delta_time);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_E)) {
-		caliope::camera_zoom_set(*game_state.world_camera, caliope::camera_zoom_get(*game_state.world_camera) - 0.01f);
+		caliope::camera_zoom_set(*game_state.world_camera, caliope::camera_zoom_get(*game_state.world_camera) - speed * delta_time);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_X)) {
-		caliope::camera_roll(*game_state.world_camera, 0.01f);
+		caliope::camera_roll(*game_state.world_camera, speed * delta_time);
 	}
 
 	return true;

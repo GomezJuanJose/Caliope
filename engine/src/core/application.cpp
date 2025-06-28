@@ -28,6 +28,8 @@ namespace caliope {
 	typedef struct application_state {
 		std::shared_ptr<program_config> program_config;
 
+		float last_frame_time;
+
 		bool is_running;
 		bool is_suspended;
 	} application_state;
@@ -147,29 +149,34 @@ namespace caliope {
 			}
 
 			if (!state_ptr->is_suspended) {
-				if (!state_ptr->program_config->update(state_ptr->program_config->game_state, 0.0f)) {
+				float current_time = platform_system_get_time();
+				float delta_time = current_time - state_ptr->last_frame_time;
+				state_ptr->last_frame_time = current_time;
+
+				if (!state_ptr->program_config->update(state_ptr->program_config->game_state, delta_time)) {
 					CE_LOG_ERROR("Failed to update the program;");
 				}
 
 				renderer_packet packet;
+				packet.delta_time = delta_time;
+				packet.world_camera = state_ptr->program_config->game_state.world_camera;
+
 				//TODO: TEMP CODE
 				transform t1 = transform_create();
 				transform_set_rotation(t1, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
-				transform_set_scale(t1, glm::vec3(0.5f, 1.0f, 1.0f));
-				transform_set_position(t1, glm::vec3(0.0f, 0.0f, 0.0f));
+				transform_set_scale(t1, glm::vec3(1.0f, 0.5f, 1.0f));
+				transform_set_position(t1, glm::vec3(1.0f, 0.0f, 0.0f));
 				transform t2 = transform_create();
 				transform_set_rotation(t2, glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
 				packet.quad_definitions.insert({ std::string("scene"), {t1} });
 				// TODO: TEMP CODE
-
-				packet.world_camera = state_ptr->program_config->game_state.world_camera;
 
 				if (!renderer_draw_frame(packet)) {
 					CE_LOG_FATAL("Failed to render frame");
 					return false;
 				}
 
-				input_system_update_inputs(0.0f);
+				input_system_update_inputs(delta_time);
 			}
 		}
 
