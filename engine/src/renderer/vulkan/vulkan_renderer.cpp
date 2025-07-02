@@ -24,6 +24,8 @@
 #include "loaders/resources_types.inl"
 #include "systems/resource_system.h"
 
+
+
 namespace caliope {
 
 	void create_framebuffers();
@@ -41,7 +43,9 @@ namespace caliope {
 	void create_index_buffer();
 
 
-	
+
+
+
 
 	static vulkan_context context;
 
@@ -51,16 +55,10 @@ namespace caliope {
 		{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
 		{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-
-		{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.0f, 1.5, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-		{{1.5, 1.5, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-		{{1.5, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 	};
 
 	std::vector<uint16> indices = {
-		0, 1, 2, 2, 1, 3,
-		4, 5, 6, 6, 7, 4
+		0, 1, 2, 2, 1, 3
 	};
 
 	// TODO: MOVE INTO GEOMETRY/QUAD SYSTEM
@@ -95,7 +93,6 @@ namespace caliope {
 	}
 
 	typedef struct uniform_buffer_object {
-		glm::mat4 model;
 		glm::mat4 view;
 		glm::mat4 proj;
 		glm::vec4 ambient_color;
@@ -103,9 +100,14 @@ namespace caliope {
 		float shininess;
 	}uniform_buffer_object;
 
+	
+	uint max_number_quads;//TODO: REFACTOR
+	
 	// TODO: refactor
 
-	bool vulkan_renderer_backend_initialize(const std::string& application_name) {
+
+
+	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config) {
 
 		// TODO: MOVE INTO GEOMETRY/QUAD SYSTEM
 		calculate_tangents(vertices, indices);
@@ -116,9 +118,11 @@ namespace caliope {
 		context.render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		context.in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
 
+		max_number_quads = config.max_quads;
+
 		// Create vulkan instancce
 		VkApplicationInfo app_info = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
-		app_info.pApplicationName = application_name.c_str();
+		app_info.pApplicationName = config.application_name.c_str();
 		app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		app_info.pEngineName = "Caliope";
 		app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -353,18 +357,14 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_draw_geometry() {
-
-		//TODO: Refactor for batch rendering
-
+	void vulkan_renderer_draw_geometry(uint instance_count) {
 		VkBuffer vertex_buffers[] = { context.vertex_buffer.handle };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(context.command_buffers[context.current_frame].handle, 0, 1, vertex_buffers, offsets);
 		vkCmdBindIndexBuffer(context.command_buffers[context.current_frame].handle, context.index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
 
 
-		vkCmdDrawIndexed(context.command_buffers[context.current_frame].handle, 12, 1, 0, 0, 0); // HARDCODED VERTEX NUMBER
-
+		vkCmdDrawIndexed(context.command_buffers[context.current_frame].handle, 6, instance_count, 0, 0, 0); // HARDCODED VERTEX NUMBER
 	}
 
 	bool vulkan_renderer_begin_renderpass() {
@@ -377,26 +377,34 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_set_and_apply_uniforms(std::shared_ptr<material>& m, glm::mat4& model, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
+	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::any& shader_internal_data, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
 		uniform_buffer_object ubo;
-		ubo.model = model;
 		ubo.view = view;
 		ubo.proj = projection;
 		ubo.ambient_color = glm::vec4(0.02f, 0.02f, 0.02f, 1.0f);// TODO: Scene system;
-		ubo.shininess = m->shininess;// TODO: batch rendering;
 		ubo.view_position = view_position;
+		ubo.shininess = 64.0f;// TODO: Pass to ssbo
 
-		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&m->shader->internal_data);
-		vulkan_texture* vk_texture_diff = std::any_cast<vulkan_texture>(&m->diffuse_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
-		vulkan_texture* vk_texture_spec = std::any_cast<vulkan_texture>(&m->specular_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
-		vulkan_texture* vk_texture_norm = std::any_cast<vulkan_texture>(&m->normal_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader_internal_data);
+		vulkan_texture* vk_texture_diff = 0;//std::any_cast<vulkan_texture>(&m->diffuse_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		vulkan_texture* vk_texture_spec = 0;//std::any_cast<vulkan_texture>(&m->specular_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		vulkan_texture* vk_texture_norm = 0;//std::any_cast<vulkan_texture>(&m->normal_texture->internal_data);//TODO: Make it escalable with any quantity of textures(for normals and specular)
+		
+
 		copy_memory(vk_shader->uniform_buffers_mapped, &ubo, sizeof(ubo));
+		copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(quad_properties) * quad_count);
+
+
 
 		VkDescriptorBufferInfo buffer_info = {};
 		buffer_info.buffer = vk_shader->uniform_buffers.handle;
 		buffer_info.offset = 0;
 		buffer_info.range = sizeof(uniform_buffer_object);
 
+		VkDescriptorBufferInfo ssbo_info = {};
+		ssbo_info.buffer = vk_shader->ssbo.handle;
+		ssbo_info.offset = 0;
+		ssbo_info.range = sizeof(quad_properties) * max_number_quads;
 
 		std::array<VkWriteDescriptorSet, 2> descriptor_writes = {};
 		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -409,7 +417,7 @@ namespace caliope {
 		descriptor_writes[0].pImageInfo = nullptr;
 		descriptor_writes[0].pTexelBufferView = nullptr;
 
-		std::array<VkDescriptorImageInfo, 3> image_infos;
+		/*/std::array<VkDescriptorImageInfo, 3> image_infos;
 		image_infos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		image_infos[0].imageView = vk_texture_diff->image.view;
 		image_infos[0].sampler = vk_texture_diff->sampler;
@@ -427,7 +435,17 @@ namespace caliope {
 		descriptor_writes[1].dstBinding = 1;
 		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptor_writes[1].descriptorCount = image_infos.size();
-		descriptor_writes[1].pImageInfo = image_infos.data();
+		descriptor_writes[1].pImageInfo = image_infos.data();*/
+
+		descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_writes[1].dstSet = vk_shader->descriptor_sets[context.current_frame];
+		descriptor_writes[1].dstBinding = 2;
+		descriptor_writes[1].dstArrayElement = 0;
+		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptor_writes[1].descriptorCount = 1;
+		descriptor_writes[1].pBufferInfo = &ssbo_info;
+		descriptor_writes[1].pImageInfo = nullptr;
+		descriptor_writes[1].pTexelBufferView = nullptr;
 
 		vkUpdateDescriptorSets(context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 
@@ -618,7 +636,14 @@ namespace caliope {
 		sampler_layout_binding.pImmutableSamplers = nullptr;
 		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { ubo_layout_binding, sampler_layout_binding };
+		VkDescriptorSetLayoutBinding ssbo_layout_binding = {};
+		ssbo_layout_binding.binding = 2;
+		ssbo_layout_binding.descriptorCount = 1;// TODO: MORE CONFIGURABLE WITH THE vulkan_renderer_set_and_apply_uniforms
+		ssbo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		ssbo_layout_binding.pImmutableSamplers = nullptr;
+		ssbo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 3> bindings = { ubo_layout_binding, sampler_layout_binding, ssbo_layout_binding };
 		VkDescriptorSetLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 		layout_info.bindingCount = bindings.size();
 		layout_info.pBindings = bindings.data();
@@ -656,13 +681,19 @@ namespace caliope {
 		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers);
 		vk_shader->uniform_buffers_mapped = vulkan_buffer_lock_memory(context, vk_shader->uniform_buffers, 0, buffer_size, 0);
 
+		// Vertex SSBO
+		vulkan_buffer_create(context, sizeof(quad_properties) * max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
+		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(context, vk_shader->ssbo, 0, sizeof(quad_properties) * max_number_quads, 0);
+
 
 		// Descriptor pool
-		std::array<VkDescriptorPoolSize, 2> pool_sizes;
+		std::array<VkDescriptorPoolSize, 3> pool_sizes;
 		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		pool_sizes[0].descriptorCount = 1024; // HACK: max number of ubo descriptor sets.
 		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		pool_sizes[1].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
+		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		pool_sizes[2].descriptorCount = 2;
 
 		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		pool_info.poolSizeCount = pool_sizes.size();
@@ -676,7 +707,7 @@ namespace caliope {
 		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, vk_shader->descriptor_set_layout);
 		VkDescriptorSetAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		alloc_info.descriptorPool = vk_shader->descriptor_pool;
-		alloc_info.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+		alloc_info.descriptorSetCount = 2;
 		alloc_info.pSetLayouts = layouts.data();
 
 		vk_shader->descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);
@@ -690,8 +721,11 @@ namespace caliope {
 
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vulkan_buffer_unlock_memory(context, vk_shader->uniform_buffers);
+			vulkan_buffer_unlock_memory(context, vk_shader->ssbo);
 			vk_shader->uniform_buffers_mapped = 0;
+			vk_shader->ssbo_mapped = 0;
 			vulkan_buffer_destroy(context, vk_shader->uniform_buffers);
+			vulkan_buffer_destroy(context, vk_shader->ssbo);
 		}
 		vkDestroyDescriptorPool(context.device.logical_device, vk_shader->descriptor_pool, nullptr);
 		vkDestroyDescriptorSetLayout(context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);

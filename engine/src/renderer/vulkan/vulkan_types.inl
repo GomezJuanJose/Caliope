@@ -121,6 +121,9 @@ namespace caliope {
 		vulkan_buffer uniform_buffers;
 		void* uniform_buffers_mapped;
 
+		vulkan_buffer ssbo;
+		void* ssbo_mapped;
+
 		std::vector<VkDescriptorSet> descriptor_sets;
 		
 	} vulkan_shader;

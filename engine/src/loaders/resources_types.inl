@@ -60,4 +60,8 @@ namespace caliope {
 		std::shared_ptr<texture> normal_texture;
 
 	}material;
+
+	typedef struct quad_properties {
+		glm::mat4 model;
+	} quad_properties;
 }

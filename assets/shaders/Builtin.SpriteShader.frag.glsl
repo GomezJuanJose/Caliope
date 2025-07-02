@@ -12,10 +12,10 @@ layout(location = 0) in struct data_transfer{
 	float shininess;// TODO: Do not upload in the vertex, upload directly to the fragment
 } in_data_transfer;
 
-const int SAMP_DIFFUSE = 0;
-const int SAMP_SPECULAR = 1;
-const int SAMP_NORMAL = 2;
-layout(binding = 1) uniform sampler2D samplers[3];
+//const int SAMP_DIFFUSE = 0;
+//const int SAMP_SPECULAR = 1;
+//const int SAMP_NORMAL = 2;
+//layout(binding = 1) uniform sampler2D samplers[3];
 
 mat3 TBN; // TODO: Move to vertex shader
 
@@ -46,7 +46,7 @@ void main(){
 	TBN = mat3(tangent, bitangent, normal);
 
 	// Update the normal to use a sample from the normal map.
-	vec3 local_normal = 2.0 * texture(samplers[SAMP_NORMAL], in_data_transfer.tex_coord).rgb - 1.0;
+	vec3 local_normal = 2.0 * vec3(0.0, 0.0, 1.0) - 1.0;//texture(samplers[SAMP_NORMAL], in_data_transfer.tex_coord).rgb - 1.0;
 	normal = normalize(TBN * local_normal);
 
 	vec3 view_direction = normalize(in_data_transfer.view_position - in_data_transfer.frag_position);
@@ -70,10 +70,10 @@ vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, v
 	vec3 diffuse = vec3(light.color * diff);
 	vec3 specular = vec3(light.color * spec);
 
-	vec4 diff_samp = texture(samplers[SAMP_DIFFUSE], in_data_transfer.tex_coord);
+	vec4 diff_samp = vec4(1.0, 1.0, 1.0, 1.0);//texture(samplers[SAMP_DIFFUSE], in_data_transfer.tex_coord);
 	diffuse *= diff_samp.xyz;
 	ambient *= diff_samp.xyz;
-	specular *= vec3(texture(samplers[SAMP_SPECULAR], in_data_transfer.tex_coord).rgb);
+	specular *= vec3(0.0, 0.0, 0.0); //vec3(texture(samplers[SAMP_SPECULAR], in_data_transfer.tex_coord).rgb);
 
 	ambient *= attenuation;
 	diffuse *= attenuation;

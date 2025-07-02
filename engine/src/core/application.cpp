@@ -85,6 +85,7 @@ namespace caliope {
 		renderer_config.application_name = config.name;
 		renderer_config.window_width = config.width;
 		renderer_config.window_height = config.height;
+		renderer_config.max_number_quads = 10000;
 		if (!renderer_system_initialize(renderer_config)) {
 			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
@@ -167,8 +168,18 @@ namespace caliope {
 				transform_set_scale(t1, glm::vec3(1.0f, 0.5f, 1.0f));
 				transform_set_position(t1, glm::vec3(1.0f, 0.0f, 0.0f));
 				transform t2 = transform_create();
-				transform_set_rotation(t2, glm::angleAxis(glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)));
-				packet.quad_definitions.insert({ std::string("scene"), {t1} });
+				transform_set_rotation(t2, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
+				transform_set_scale(t2, glm::vec3(1.0f, 1.0f, 1.0f));
+				transform_set_position(t2, glm::vec3(0.0f, 0.0f, 0.0f));
+				transform t3 = transform_create();
+				transform_set_rotation(t3, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 1.f)));
+				transform_set_scale(t3, glm::vec3(1.0f, 1.0f, 1.0f));
+				transform_set_position(t3, glm::vec3(-1.0f, 0.0f, 0.0f));
+
+				// In the future get the vector from the shader name and push the material name, same with the transforms
+				std::string testmat_name = "scene";
+				packet.quad_materials.insert({ material_system_adquire(testmat_name)->shader->name, {testmat_name} });
+				packet.quad_transforms.insert({ testmat_name, {t1, t2, t3} });
 				// TODO: TEMP CODE
 
 				if (!renderer_draw_frame(packet)) {

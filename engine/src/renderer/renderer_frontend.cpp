@@ -24,6 +24,8 @@ namespace caliope{
 	typedef struct renderer_system_state {
 		renderer_backend backend;
 
+		std::vector<quad_properties> quads;
+
 		float aspect_ratio;
 	} renderer_system_state;
 
@@ -37,11 +39,16 @@ namespace caliope{
 			return false;
 		}
 
+		state_ptr->quads.resize(config.max_number_quads);
 		state_ptr->aspect_ratio = (float)config.window_width / (float)config.window_height;
 
 		renderer_backend_system_create(renderer_backend_type::BACKEND_TYPE_VULKAN, state_ptr->backend);
 
-		if (!state_ptr->backend.initialize(config.application_name)) {
+
+		renderer_backend_config backend_config;
+		backend_config.application_name = config.application_name;
+		backend_config.max_quads = config.max_number_quads;
+		if (!state_ptr->backend.initialize(backend_config)) {
 			CE_LOG_ERROR("Renderer backend failed to initialized. Shutting down");
 			return false;
 		}
@@ -83,23 +90,38 @@ namespace caliope{
 
 			camera_aspect_ratio_set(*packet.world_camera, state_ptr->aspect_ratio);
 
-			for (auto [key, value] : packet.quad_definitions) {
-				std::string mat_name = key;
-				std::shared_ptr<material> mat = material_system_adquire(mat_name);
-				renderer_shader_use(*mat->shader);
+			// Groups the materials by shader and all the transforms by material. This is to batch maximum information in a single drawcall
+			for (auto [shader_name, material_name] : packet.quad_materials) {
 
-				for (uint i = 0; i < value.size(); ++i) {
-					// TODO: Move this outside this for loop and here should be the quad generation vertex and index buffer with all data prepared for batch rendering
-					state_ptr->backend.set_and_apply_uniforms(
-						mat,
-						transform_get_world(value[i]),
-						camera_view_get(*packet.world_camera),
-						camera_projection_get(*packet.world_camera),
-						packet.world_camera->position
-					);
+				uint number_of_instances = 0;
+				std::string sn = shader_name;
+				std::shared_ptr<shader> shader = shader_system_adquire(sn);
+				renderer_shader_use(*shader);
 
-					state_ptr->backend.draw_geometry();
+				
+				for (std::string material_name : packet.quad_materials[shader_name]) {
+					std::shared_ptr<material> mat = material_system_adquire(material_name);
+					std::vector<transform>& transforms = packet.quad_transforms[material_name];
+
+					for (uint i = 0; i < transforms.size(); ++i) {
+						quad_properties qp;
+						qp.model = transform_get_world(transforms[i]);
+						state_ptr->quads.at(i) = qp;
+						number_of_instances++;
+					}
+
 				}
+
+				state_ptr->backend.set_and_apply_uniforms(
+					state_ptr->quads,
+					shader->internal_data,
+					number_of_instances,
+					camera_view_get(*packet.world_camera),
+					camera_projection_get(*packet.world_camera),
+					packet.world_camera->position
+				);
+
+				state_ptr->backend.draw_geometry(number_of_instances);
 			}
 
 			if (!state_ptr->backend.end_renderpass()) {
