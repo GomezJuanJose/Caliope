@@ -20,6 +20,7 @@ namespace caliope {
 	typedef struct renderer_backend_config {
 		std::string application_name;
 		uint max_quads;
+		uint max_textures_per_batch;
 	}renderer_backend_config;
 
 	typedef struct renderer_backend {
@@ -34,7 +35,7 @@ namespace caliope {
 		bool (*begin_renderpass)();
 		bool (*end_renderpass)();
 
-		void (*set_and_apply_uniforms)(std::vector<quad_properties>& quads, std::any& shader_internal_data, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+		void (*set_and_apply_uniforms)(std::vector<quad_properties>& quads, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
 		void (*draw_geometry)(uint quad_count);
 

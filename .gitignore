@@ -2,6 +2,7 @@
 .vs/
 bin/
 build/
+x64/
 *.user
 *.sln
 

@@ -15,6 +15,7 @@ namespace caliope {
 		uint window_height;
 
 		uint max_number_quads;
+		uint max_textures_per_batch;
 	} renderer_frontend_config;
 
 	bool renderer_system_initialize(renderer_frontend_config& config);

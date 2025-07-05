@@ -49,7 +49,11 @@ namespace caliope {
 		state_ptr.reset();
 	}
 	
-	std::shared_ptr<texture> texture_system_adquire(std::string& name) {
+	texture* texture_system_adquire(std::string& name) {
+		if (name == "") {
+			return nullptr;
+		}
+
 		if (state_ptr->registered_textures.find(name) == state_ptr->registered_textures.end()) {
 			texture t;
 			if (!load_texture(name, t)) {
@@ -60,7 +64,7 @@ namespace caliope {
 			state_ptr->registered_textures.insert({ name, t });
 		}
 
-		return std::make_shared<texture>(state_ptr->registered_textures[name]);
+		return &state_ptr->registered_textures[name];
 	}
 	
 	void texture_system_release(std::string& name) {
@@ -71,16 +75,16 @@ namespace caliope {
 	}
 
 
-	std::shared_ptr<texture> texture_system_get_default_diffuse() {
-		return std::make_shared<texture>(state_ptr->default_diffuse_texture);
+	texture* texture_system_get_default_diffuse() {
+		return &state_ptr->default_diffuse_texture;
 	}
 
-	std::shared_ptr<texture> texture_system_get_default_specular() {
-		return std::make_shared<texture>(state_ptr->default_specular_texture);
+	texture* texture_system_get_default_specular() {
+		return &state_ptr->default_specular_texture;
 	}
 
-	CE_API std::shared_ptr<texture> texture_system_get_default_normal() {
-		return std::make_shared<texture>(state_ptr->default_normal_texture);
+	texture* texture_system_get_default_normal() {
+		return &state_ptr->default_normal_texture;
 	}
 	
 	bool load_texture(std::string& name, texture& t) {
@@ -91,6 +95,7 @@ namespace caliope {
 		image_resource_data image_data = std::any_cast<image_resource_data>(r.data);
 
 		t.name = name;
+		t.id = 0;
 		t.width = image_data.width;
 		t.height = image_data.height;
 		t.channel_count = image_data.channel_count;
@@ -138,6 +143,7 @@ namespace caliope {
 			}
 		}
 		state_ptr->default_diffuse_texture.name = std::string("default_texture");
+		state_ptr->default_diffuse_texture.id = 0;
 		state_ptr->default_diffuse_texture.width = texture_dimensions;
 		state_ptr->default_diffuse_texture.height = texture_dimensions;
 		state_ptr->default_diffuse_texture.channel_count = texture_channels;
@@ -147,6 +153,7 @@ namespace caliope {
 
 		std::array<uchar, 16 * 16 * 4> spec_pixels = { 0 };
 		state_ptr->default_specular_texture.name = std::string("default_spec");
+		state_ptr->default_specular_texture.id = 0;
 		state_ptr->default_specular_texture.width = 16;
 		state_ptr->default_specular_texture.height = 16;
 		state_ptr->default_specular_texture.channel_count = texture_channels;
@@ -166,6 +173,7 @@ namespace caliope {
 			}
 		}
 		state_ptr->default_normal_texture.name = std::string("default_normal");
+		state_ptr->default_normal_texture.id = 0;
 		state_ptr->default_normal_texture.width = 16;
 		state_ptr->default_normal_texture.height = 16;
 		state_ptr->default_normal_texture.channel_count = texture_channels;

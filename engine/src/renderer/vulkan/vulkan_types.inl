@@ -124,6 +124,9 @@ namespace caliope {
 		vulkan_buffer ssbo;
 		void* ssbo_mapped;
 
+		vulkan_buffer textures;
+		void* textures_mapped;
+
 		std::vector<VkDescriptorSet> descriptor_sets;
 		
 	} vulkan_shader;
@@ -147,7 +150,7 @@ namespace caliope {
 
 		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
 		
-		
+		std::vector<VkDescriptorImageInfo> batch_image_infos;
 
 		//TODO: Refactor for batch rendering
 		vulkan_buffer vertex_buffer;

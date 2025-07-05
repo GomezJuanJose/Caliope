@@ -44,7 +44,7 @@ namespace caliope {
 		state_ptr.reset();
 	}
 
-	std::shared_ptr<material> material_system_adquire(std::string& name) {
+	material* material_system_adquire(std::string& name) {
 		if (state_ptr->registered_materials.find(name) == state_ptr->registered_materials.end()) {
 			
 			resource r;
@@ -58,10 +58,10 @@ namespace caliope {
 
 		}
 				
-		return std::make_shared<material>(state_ptr->registered_materials[name]);
+		return &state_ptr->registered_materials[name];
 	}
 
-	std::shared_ptr<material> material_system_adquire_from_config(material_configuration& material_config) {
+	material* material_system_adquire_from_config(material_configuration& material_config) {
 		std::string string_material_name = std::string(material_config.name.data());
 
 		if (state_ptr->registered_materials.find(string_material_name) == state_ptr->registered_materials.end()) {
@@ -73,7 +73,7 @@ namespace caliope {
 
 		}
 
-		return std::make_shared<material>(state_ptr->registered_materials[string_material_name]);
+		return &state_ptr->registered_materials[string_material_name];
 	}
 
 	void material_system_release(std::string& name) {
@@ -83,8 +83,8 @@ namespace caliope {
 		}
 	}
 
-	std::shared_ptr<material> material_system_get_default() {
-		return std::make_shared<material>(state_ptr->default_material);
+	material* material_system_get_default() {
+		return &state_ptr->default_material;
 	}
 
 	bool load_material(material_configuration& mat_config) {
@@ -108,11 +108,8 @@ namespace caliope {
 		m.diffuse_color = glm::vec4(0.0f);
 		m.shader.reset();
 		m.shader = nullptr;
-		m.diffuse_texture.reset();
 		m.diffuse_texture = nullptr;
-		m.specular_texture.reset();
 		m.specular_texture = nullptr;
-		m.normal_texture.reset();
 		m.normal_texture = nullptr;
 	}
 

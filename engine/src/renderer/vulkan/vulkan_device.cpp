@@ -96,17 +96,8 @@ namespace caliope {
 	bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 		// TODO: Make a better score based device pick, and pick a integrated GPU if thats the only available
 
-		VkPhysicalDeviceDescriptorIndexingFeatures indexing_features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT, nullptr };
-		VkPhysicalDeviceFeatures2 device_features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexing_features };
-
-		vkGetPhysicalDeviceFeatures2(device, &device_features);
-
-		bool bindless_supported = indexing_features.descriptorBindingPartiallyBound && indexing_features.runtimeDescriptorArray;
-
-
 		VkPhysicalDeviceProperties device_properties;
 		VkPhysicalDeviceFeatures device_features;
-
 		vkGetPhysicalDeviceProperties(device, &device_properties);
 		vkGetPhysicalDeviceFeatures(device, &device_features);
 
@@ -122,7 +113,7 @@ namespace caliope {
 
 		return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_features.geometryShader
 			&& indices.graphics_family.has_value() && indices.present_family.has_value()
-			&& extensions_supported && swapchain_adequate && device_features.samplerAnisotropy && bindless_supported;
+			&& extensions_supported && swapchain_adequate && device_features.samplerAnisotropy;
 	}
 
 	bool check_device_extension_support(VkPhysicalDevice device) {

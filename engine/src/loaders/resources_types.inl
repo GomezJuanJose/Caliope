@@ -26,6 +26,7 @@ namespace caliope {
 
 	typedef struct texture {
 		std::string name;
+		uint id;
 		uint width;
 		uint height;
 		uint channel_count;
@@ -55,13 +56,17 @@ namespace caliope {
 		glm::vec4 diffuse_color;
 		float shininess;
 		std::shared_ptr<shader> shader;
-		std::shared_ptr<texture> diffuse_texture;
-		std::shared_ptr<texture> specular_texture;
-		std::shared_ptr<texture> normal_texture;
+		texture* diffuse_texture;
+		texture* specular_texture;
+		texture* normal_texture;
 
 	}material;
 
 	typedef struct quad_properties {
 		glm::mat4 model;
+		uint diffuse_index;
+		uint normal_index;
+		uint specular_index;
+		float shininess;
 	} quad_properties;
 }
