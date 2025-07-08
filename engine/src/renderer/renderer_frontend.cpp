@@ -149,7 +149,7 @@ namespace caliope{
 					uint normal_id = 0;
 
 					// TODO: INSTEAD OF COMPARE NAMES COMPARE RANDOM NUMBERS OR HASHED NAMES FOR BETTER PERFORMANCE
-
+					// TODO: DRY
 					if (state_ptr->batch_textures[aux_diffuse_texture->id] && state_ptr->batch_textures[aux_diffuse_texture->id]->name == aux_diffuse_texture->name) {
 						diffuse_id = aux_diffuse_texture->id;
 					}

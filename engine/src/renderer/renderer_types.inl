@@ -4,7 +4,7 @@
 #include "loaders/resources_types.inl"
 
 #include <string>
-
+#include <map>
 
 namespace caliope {
 

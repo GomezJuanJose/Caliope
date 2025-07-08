@@ -126,7 +126,7 @@ namespace caliope {
 		// TODO: TEMPORAL CODE
 		material_configuration m;
 		m.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m.shininess = 1.0f;
+		m.shininess = 64.0f;
 		m.diffuse_texture_name = { "knight_human_man_04_alt" };
 		m.specular_texture_name = { "knightSpecularMap" };
 		m.normal_texture_name = { "knightNormalMap" };
@@ -135,7 +135,7 @@ namespace caliope {
 
 		material_configuration m2;
 		m2.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m2.shininess = 614.0f;
+		m2.shininess = 64.0f;
 		m2.diffuse_texture_name = { "cottageEXTday" };
 		m2.specular_texture_name = { "cottageSpecular" };
 		m2.normal_texture_name = { "cottageNormal" };
@@ -144,12 +144,21 @@ namespace caliope {
 
 		material_configuration m3;
 		m3.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m3.shininess = 614.0f;
+		m3.shininess = 64.0f;
 		m3.diffuse_texture_name = { "warrior_human_woman_06" };
 		m3.specular_texture_name = { "" };
 		m3.normal_texture_name = { "" };
 		m3.shader_name = { "Builtin.SpriteShader" };
 		m3.name = { "character2" };
+
+		material_configuration m4;
+		m4.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m4.shininess = 64.0f;
+		m4.diffuse_texture_name = { "map_01" };
+		m4.specular_texture_name = { "" };
+		m4.normal_texture_name = { "" };
+		m4.shader_name = { "Builtin.SpriteShader" };
+		m4.name = { "transparency" };
 
 		file_handle w;
 		file_system_open(std::string("assets\\materials\\character1.cemat"), FILE_MODE_WRITE, w);
@@ -162,6 +171,10 @@ namespace caliope {
 
 		file_system_open(std::string("assets\\materials\\character2.cemat"), FILE_MODE_WRITE, w);
 		file_system_write_bytes(w, sizeof(material_configuration), &m3);
+		file_system_close(w);
+
+		file_system_open(std::string("assets\\materials\\transparency.cemat"), FILE_MODE_WRITE, w);
+		file_system_write_bytes(w, sizeof(material_configuration), &m4);
 		file_system_close(w);
 		// TODO: END TEMPORAL CODE
 		
@@ -195,10 +208,12 @@ namespace caliope {
 				transform_set_scale(t1, glm::vec3(1.0f, 0.5f, 1.0f));
 				transform_set_position(t1, glm::vec3(1.0f, 0.0f, 0.0f));
 				transform t2 = transform_create();
+
 				transform_set_rotation(t2, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
 				transform_set_scale(t2, glm::vec3(1.0f, 1.0f, 1.0f));
 				transform_set_position(t2, glm::vec3(0.0f, 0.0f, 0.0f));
 				transform t3 = transform_create();
+
 				transform_set_rotation(t3, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 1.f)));
 				transform_set_scale(t3, glm::vec3(1.0f, 1.0f, 1.0f));
 				transform_set_position(t3, glm::vec3(-1.0f, 0.0f, 0.0f));
@@ -208,14 +223,26 @@ namespace caliope {
 				transform_set_scale(t4, glm::vec3(5.0f, 3.0f, 1.0f));
 				transform_set_position(t4, glm::vec3(0.0f, 0.0f, -1.0f));
 
+				transform t5 = transform_create();
+				transform_set_rotation(t5, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
+				transform_set_scale(t5, glm::vec3(0.5f, 0.5f, 1.0f));
+				transform_set_position(t5, glm::vec3(0.0f, 0.0f, 1.0f));
+
+				transform t6 = transform_create();
+				transform_set_rotation(t6, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
+				transform_set_scale(t6, glm::vec3(0.5f, 0.5f, 1.0f));
+				transform_set_position(t6, glm::vec3(0.2f, 0.0f, 1.0f));
+
 				// In the future get the vector from the shader name and push the material name, same with the transforms
 				std::string testmat_name = "character1";
 				std::string testmat3_name = "character2";
 				std::string testmat2_name = "background";
-				packet.quad_materials.insert({ material_system_adquire(testmat_name)->shader->name, {testmat_name, testmat2_name, testmat3_name} });
+				std::string testmat4_name = "transparency";
+				packet.quad_materials.insert({ material_system_adquire(testmat_name)->shader->name, {testmat_name, testmat2_name, testmat4_name, testmat3_name} });
 				packet.quad_transforms.insert({ testmat_name, {t1, t3} });
 				packet.quad_transforms.insert({ testmat2_name, {t4} });
 				packet.quad_transforms.insert({ testmat3_name, {t2} });
+				packet.quad_transforms.insert({ testmat4_name, {t5, t6} });
 				// TODO: TEMP CODE
 
 				if (!renderer_draw_frame(packet)) {

@@ -33,11 +33,11 @@ struct point_light {
 };
 
 point_light p_light_0 = {
-	vec3 (0.0, 0.0, 0.1),
-	vec4 (1.0, 0.5, 0.0, 1.0),
+	vec3 (0.0, 0.0, 5.0),
+	vec4 (0.2, 0.2, 0.2, 1.0),
 	1.0,
-	0.25,
-	0.24
+    0.01,
+    0.02
 };
 
 vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, vec3 view_direction);
@@ -70,17 +70,17 @@ vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, v
 	float distance = length(light.position - frag_position);
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-	vec3 ambient = vec3(in_data_transfer.ambient);
-	vec3 diffuse = vec3(light.color * diff);
-	vec3 specular = vec3(light.color * spec);
+	vec4 ambient = in_data_transfer.ambient;
+	vec4 diffuse = light.color * diff;
+	vec4 specular = light.color * spec;
 
-	vec4 diff_samp = texture(samplers[int(in_data_transfer_flat.diffuse_index)], in_data_transfer.tex_coord);
-	diffuse *= diff_samp.xyz;
-	ambient *= diff_samp.xyz;
-	specular *= vec3(texture(samplers[int(in_data_transfer_flat.specular_index)], in_data_transfer.tex_coord).rgb);
+	vec4 diff_samp = texture(samplers[in_data_transfer_flat.diffuse_index], in_data_transfer.tex_coord);
+	diffuse *= diff_samp;
+	ambient *= diff_samp;
+	specular *= vec4(texture(samplers[in_data_transfer_flat.specular_index], in_data_transfer.tex_coord).rgb, diffuse.a);
 
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-	return vec4((ambient + diffuse + specular), diff_samp.a);
+	return (ambient + diffuse + specular);
 }

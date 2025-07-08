@@ -2,9 +2,8 @@
 
 //Attributes
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec4 inTangent;
-layout(location = 3) in vec2 inTexCoord;
+layout(location = 1) in vec4 inTangent;
+layout(location = 2) in vec2 inTexCoord;
 
 // Uniforms
 layout(binding = 0) uniform UniformBufferObject {
@@ -50,7 +49,7 @@ void main() {
 
 	out_data_transfer.ambient = ubo.ambient_color;
 	out_data_transfer.tex_coord = inTexCoord;
-	out_data_transfer.normal = normalize(model_m3 * inNormal);
+	out_data_transfer.normal = normalize(model_m3 * vec3(0, 0, 1));
 	out_data_transfer.tangent = vec4(normalize(model_m3 * inTangent.xyz), inTangent.w);
 	out_data_transfer.view_position = ubo.view_position;
 	out_data_transfer.frag_position = vec3(quad_buffer_ssbo.quads[gl_InstanceIndex].model * vec4(inPosition, 1.0));
