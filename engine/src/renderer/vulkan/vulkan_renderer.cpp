@@ -71,19 +71,24 @@ namespace caliope {
 			glm::vec3 deltaPos1 = vertices[i1].pos - vertices[i0].pos;
 			glm::vec3 deltaPos2 = vertices[i2].pos - vertices[i0].pos;
 		
-			glm::vec2 deltaUV1 = vertices[i1].tex_coord - vertices[i0].tex_coord;
-			glm::vec2 deltaUV2 = vertices[i2].tex_coord - vertices[i0].tex_coord;
+			float deltaU1 = vertices[i1].tex_coord.x - vertices[i0].tex_coord.x;
+			float deltaV1 = vertices[i1].tex_coord.y - vertices[i0].tex_coord.y;
+			
+			float deltaU2 = vertices[i2].tex_coord.x - vertices[i0].tex_coord.x;
+			float deltaV2 = vertices[i2].tex_coord.y - vertices[i0].tex_coord.y;
 
-			float fc = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+			float fc = 1.0f / (deltaU1 * deltaV2 - deltaU2 * deltaV1);
 			glm::vec3 tangent = glm::vec3(
-				(fc * (deltaUV2.y * deltaPos1.x - deltaUV1.y * deltaPos2.x)),
-				(fc * (deltaUV2.y * deltaPos1.y - deltaUV1.y * deltaPos2.y)),
-				(fc * (deltaUV2.y * deltaPos1.z - deltaUV1.y * deltaPos2.z))
+				(fc * (deltaV2 * deltaPos1.x - deltaV1 * deltaPos2.x)),
+				(fc * (deltaV2 * deltaPos1.y - deltaV1 * deltaPos2.y)),
+				(fc * (deltaV2 * deltaPos1.z - deltaV1 * deltaPos2.z))
 			);
 
 			tangent = glm::normalize(tangent);
 
-			float handedness = ((deltaUV1.y * deltaUV2.x - deltaUV2.y * deltaUV1.x) < 0.0f) ? -1.0 : 1.0f;
+			float sx = deltaU1, sy = deltaU2;
+			float tx = deltaV1, ty = deltaV2;
+			float handedness = ((tx * sy - ty * sx) < 0.0f) ? -1.0 : 1.0f;
 			
 			glm::vec4 t4 = glm::vec4(tangent, handedness);
 			vertices[i0].tangent = t4;
@@ -97,7 +102,6 @@ namespace caliope {
 		glm::mat4 proj;
 		glm::vec4 ambient_color;
 		glm::vec3 view_position;
-		float shininess;
 	}uniform_buffer_object;
 
 	

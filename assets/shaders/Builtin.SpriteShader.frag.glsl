@@ -33,11 +33,11 @@ struct point_light {
 };
 
 point_light p_light_0 = {
-	vec3 (0.0, 0.0, 5.0),
-	vec4 (0.2, 0.2, 0.2, 1.0),
+	vec3 (0.0, 0.0, 1.0), // Always put the light at 1 to avoid problems with the lighting calculations with the surface of the quads, if the z value of the lights and quads are the same the light will do rare results
+	vec4 (0.2, 0.1, 0.0, 1.0),
 	1.0,
-    0.01,
-    0.02
+    4.005,
+    4.004
 };
 
 vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, vec3 view_direction);
@@ -56,7 +56,7 @@ void main(){
 	vec3 view_direction = normalize(in_data_transfer.view_position - in_data_transfer.frag_position);
 
 	
-	outColor = calculate_point_light(p_light_0, normal, in_data_transfer.frag_position, view_direction);// TODO: Do for N lights
+	outColor = calculate_point_light(p_light_0, normal, in_data_transfer.frag_position, view_direction);// TODO: Do for N lights and in case of 0 lights only use ambient or a default one big
 }
 
 vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, vec3 view_direction){
@@ -70,17 +70,17 @@ vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, v
 	float distance = length(light.position - frag_position);
 	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-	vec4 ambient = in_data_transfer.ambient;
-	vec4 diffuse = light.color * diff;
-	vec4 specular = light.color * spec;
+	vec3 ambient = vec3(in_data_transfer.ambient.rgb);
+	vec3 diffuse = light.color.rgb * diff;
+	vec3 specular = light.color.rgb * spec;
 
 	vec4 diff_samp = texture(samplers[in_data_transfer_flat.diffuse_index], in_data_transfer.tex_coord);
-	diffuse *= diff_samp;
-	ambient *= diff_samp;
-	specular *= vec4(texture(samplers[in_data_transfer_flat.specular_index], in_data_transfer.tex_coord).rgb, diffuse.a);
+	diffuse *= diff_samp.rgb;
+	ambient *= diff_samp.rgb;
+	specular *= texture(samplers[in_data_transfer_flat.specular_index], in_data_transfer.tex_coord).rgb;
 
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-	return (ambient + diffuse + specular);
+	return vec4(ambient + diffuse + specular, diff_samp.a);
 }

@@ -244,8 +244,7 @@ namespace caliope {
 				packet.quad_transforms.insert({ testmat3_name, {t2} });
 				packet.quad_transforms.insert({ testmat4_name, {t5, t6} });*/
 
-
-
+				// TODO: Shader use is implicit on the insertion order, give the shader map already inserted in the correct order wanted by the user
 				packet.quad_definitions.insert({ material_system_adquire(testmat_name)->shader->name, {} });
 				quad_definition qd;
 				qd.material_name = testmat_name;
