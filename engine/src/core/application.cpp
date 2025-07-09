@@ -202,7 +202,7 @@ namespace caliope {
 				packet.delta_time = delta_time;
 				packet.world_camera = state_ptr->program_config->game_state.world_camera;
 
-				//TODO: TEMP CODE
+				//TODO: TEMP CODE, give all this list directly from the application or when the scene is loaded. or when a object is created/destroyed but never do this per frame
 				transform t1 = transform_create();
 				transform_set_rotation(t1, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
 				transform_set_scale(t1, glm::vec3(1.0f, 0.5f, 1.0f));
@@ -235,14 +235,48 @@ namespace caliope {
 
 				// In the future get the vector from the shader name and push the material name, same with the transforms
 				std::string testmat_name = "character1";
-				std::string testmat3_name = "character2";
 				std::string testmat2_name = "background";
+				std::string testmat3_name = "character2";
 				std::string testmat4_name = "transparency";
-				packet.quad_materials.insert({ material_system_adquire(testmat_name)->shader->name, {testmat_name, testmat2_name, testmat4_name, testmat3_name} });
+				/**packet.quad_materials.insert({material_system_adquire(testmat_name)->shader->name, {testmat_name, testmat2_name, testmat4_name, testmat3_name}});
 				packet.quad_transforms.insert({ testmat_name, {t1, t3} });
 				packet.quad_transforms.insert({ testmat2_name, {t4} });
 				packet.quad_transforms.insert({ testmat3_name, {t2} });
-				packet.quad_transforms.insert({ testmat4_name, {t5, t6} });
+				packet.quad_transforms.insert({ testmat4_name, {t5, t6} });*/
+
+
+
+				packet.quad_definitions.insert({ material_system_adquire(testmat_name)->shader->name, {} });
+				quad_definition qd;
+				qd.material_name = testmat_name;
+				qd.transform = t1;
+				qd.z_order = 1;
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
+
+				qd.material_name = testmat_name;
+				qd.transform = t3;
+				qd.z_order = 1;
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
+
+				qd.material_name = testmat2_name;
+				qd.transform = t4;
+				qd.z_order = 0;
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
+
+				qd.material_name = testmat3_name;
+				qd.transform = t2;
+				qd.z_order = 1;
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
+
+				qd.material_name = testmat4_name;
+				qd.transform = t5;
+				qd.z_order = 2;
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
+
+				qd.material_name = testmat4_name;
+				qd.transform = t6;
+				qd.z_order = 2;
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 				// TODO: TEMP CODE
 
 				if (!renderer_draw_frame(packet)) {

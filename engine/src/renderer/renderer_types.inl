@@ -1,10 +1,9 @@
 #pragma once
 
 #include "defines.h"
+#include "cepch.h"
 #include "loaders/resources_types.inl"
-
-#include <string>
-#include <map>
+#include "math/transform.h"
 
 namespace caliope {
 
@@ -47,10 +46,28 @@ namespace caliope {
 		void (*shader_use)(shader& s);
 	};
 
+	typedef struct quad_definition {
+		uint z_order;
+		std::string material_name;
+		transform transform;
+	} quad_definition;
+
+	struct z_order_comparator {
+		bool operator()(const quad_definition& a, const quad_definition& b) {
+			return a.z_order > b.z_order;
+		};
+	};
+
 	typedef struct renderer_packet {
 		float delta_time;
 		std::shared_ptr<camera> world_camera;
-		std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
-		std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
+		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
+		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
+
+
+
+		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> quad_definitions; // Key : shader name, Value: vector of materials
+
+		
 	} renderer_packet;
 }

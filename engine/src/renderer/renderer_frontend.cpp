@@ -99,8 +99,9 @@ namespace caliope{
 
 			camera_aspect_ratio_set(*packet.world_camera, state_ptr->aspect_ratio);
 
-			// Groups the materials by shader and all the transforms by material. This is to batch maximum information in a single drawcall
-			for (auto [shader_name, material_name] : packet.quad_materials) {
+			// Groups the materials and transforms by shader. This is to batch maximum information in a single drawcall
+			//for (auto [shader_name, material_name] : packet.quad_materials) {
+			for (auto [shader_name, quads] : packet.quad_definitions) {
 
 				std::string sn = shader_name;
 				std::shared_ptr<shader> shader = shader_system_adquire(sn);
@@ -110,11 +111,13 @@ namespace caliope{
 				uint texture_id = 0;
 
 
+				//for (std::string material_name : packet.quad_materials[shader_name]) {
+				while (!quads.empty()){
+					quad_definition quad = quads.top();
+					quads.pop();
 
-
-				for (std::string material_name : packet.quad_materials[shader_name]) {
-					material* mat = material_system_adquire(material_name);
-					std::vector<transform>& transforms = packet.quad_transforms[material_name];
+					material* mat = material_system_adquire(quad.material_name);
+					//std::vector<transform>& transforms = packet.quad_transforms[material_name];
 					
 					texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
 					texture* aux_specular_texture = mat->specular_texture ? mat->specular_texture : material_system_get_default()->specular_texture;
@@ -199,16 +202,16 @@ namespace caliope{
 						texture_id++;
 					}
 
-					for (uint i = 0; i < transforms.size(); ++i) {
-						quad_properties qp;
-						qp.model = transform_get_world(transforms[i]);
-						qp.diffuse_index = diffuse_id;
-						qp.specular_index = specula_id;
-						qp.normal_index = normal_id;
-						qp.shininess = mat->shininess;
-						state_ptr->quads.at(number_of_instances) = qp;
-						number_of_instances++;
-					}
+					//for (uint i = 0; i < transforms.size(); ++i) {
+					quad_properties qp;
+					qp.model = transform_get_world(quad.transform/*transforms[i]*/);
+					qp.diffuse_index = diffuse_id;
+					qp.specular_index = specula_id;
+					qp.normal_index = normal_id;
+					qp.shininess = mat->shininess;
+					state_ptr->quads.at(number_of_instances) = qp;
+					number_of_instances++;
+					//}
 				}
 
 				state_ptr->backend.set_and_apply_uniforms(

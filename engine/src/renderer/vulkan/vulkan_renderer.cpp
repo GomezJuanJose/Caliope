@@ -658,7 +658,7 @@ namespace caliope {
 			shader_stages,
 			viewport,
 			scissor,
-			true,
+			false,
 			vk_shader->pipeline
 			);
 
