@@ -45,7 +45,8 @@ namespace caliope {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::array<char, MAX_NAME_LENGTH> shader_name;
 		glm::vec4 diffuse_color;
-		float shininess;
+		float shininess_intensity;
+		float shininess_sharpness;
 		std::array<char, MAX_NAME_LENGTH> diffuse_texture_name;
 		std::array<char, MAX_NAME_LENGTH> specular_texture_name;
 		std::array<char, MAX_NAME_LENGTH> normal_texture_name;
@@ -54,7 +55,8 @@ namespace caliope {
 	typedef struct material {
 		std::string name;
 		glm::vec4 diffuse_color;
-		float shininess;
+		float shininess_intensity;
+		float shininess_sharpness;
 		std::shared_ptr<shader> shader;
 		texture* diffuse_texture;
 		texture* specular_texture;
@@ -62,11 +64,14 @@ namespace caliope {
 
 	}material;
 
+	// NOTE: Remember to always align the memory by 128 bits
 	typedef struct quad_properties {
 		glm::mat4 model;
 		uint diffuse_index;
 		uint normal_index;
 		uint specular_index;
-		float shininess;
+		float shininess_intensity;
+		float shininess_sharpness;
+		glm::vec3 __padding0;
 	} quad_properties;
 }

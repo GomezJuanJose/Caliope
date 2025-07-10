@@ -126,16 +126,18 @@ namespace caliope {
 		// TODO: TEMPORAL CODE
 		material_configuration m;
 		m.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m.shininess = 64.0f;
-		m.diffuse_texture_name = { "knight_human_man_04_alt" };
-		m.specular_texture_name = { "knightSpecularMap" };
-		m.normal_texture_name = { "knightNormalMap" };
+		m.shininess_sharpness = 16.0f;
+		m.shininess_intensity = 3.0f;
+		m.diffuse_texture_name = { "cobblestone" };
+		m.specular_texture_name = { "cobblestone_SPEC" };
+		m.normal_texture_name = { "cobblestone_NRM" };
 		m.shader_name = { "Builtin.SpriteShader" };
 		m.name = { "character1" };
 
 		material_configuration m2;
 		m2.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m2.shininess = 64.0f;
+		m2.shininess_sharpness = 15.0f;
+		m2.shininess_intensity = 5.0f;
 		m2.diffuse_texture_name = { "cottageEXTday" };
 		m2.specular_texture_name = { "cottageSpecular" };
 		m2.normal_texture_name = { "cottageNormal" };
@@ -144,7 +146,8 @@ namespace caliope {
 
 		material_configuration m3;
 		m3.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m3.shininess = 64.0f;
+		m3.shininess_sharpness = 64.0f;
+		m3.shininess_intensity = 5.0f;
 		m3.diffuse_texture_name = { "warrior_human_woman_06" };
 		m3.specular_texture_name = { "" };
 		m3.normal_texture_name = { "" };
@@ -153,7 +156,8 @@ namespace caliope {
 
 		material_configuration m4;
 		m4.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m4.shininess = 64.0f;
+		m4.shininess_sharpness = 64.0f;
+		m4.shininess_intensity = 5.0f;
 		m4.diffuse_texture_name = { "map_01" };
 		m4.specular_texture_name = { "" };
 		m4.normal_texture_name = { "" };

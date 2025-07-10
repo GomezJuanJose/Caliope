@@ -501,30 +501,30 @@ namespace caliope {
 			temp_command_buffer
 		);
 
-			vulkan_image_transition_layout(
-				context,
-				temp_command_buffer,
-				vk_texture->image,
-				VK_FORMAT_R8G8B8A8_SRGB,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-			);
+		vulkan_image_transition_layout(
+			context,
+			temp_command_buffer,
+			vk_texture->image,
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+		);
 			
-			vulkan_image_copy_buffer_to_image(
-				context,
-				vk_texture->image,
-				staging_buffer.handle,
-				temp_command_buffer
-			);
-
-			vulkan_image_transition_layout(
-				context,
-				temp_command_buffer,
-				vk_texture->image,
-				VK_FORMAT_R8G8B8A8_SRGB,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-			);
+		vulkan_image_copy_buffer_to_image(
+			context,
+			vk_texture->image,
+			staging_buffer.handle,
+			temp_command_buffer
+		);
+		
+		vulkan_image_transition_layout(
+			context,
+			temp_command_buffer,
+			vk_texture->image,
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
 
 		vulkan_command_buffer_end_single_use(
 			context,

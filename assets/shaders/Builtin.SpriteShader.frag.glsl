@@ -3,13 +3,14 @@
 layout(location = 0) out vec4 outColor;
 
 layout(location = 0) flat in struct data_transfer_flat{
-	float shininess;
+	float shininess_intensity;
+	float shininess_sharpness;
 	uint diffuse_index;
 	uint normal_index;
 	uint specular_index;
 } in_data_transfer_flat;
 
-layout(location = 4) in struct data_transfer{
+layout(location = 5) in struct data_transfer{
 	vec4 ambient;
 	vec2 tex_coord;
 	vec3 normal;
@@ -27,17 +28,19 @@ mat3 TBN; // TODO: Move to vertex shader
 struct point_light {
 	vec3 position;
 	vec4 color;
+	float radius;
 	float constant;
 	float linear;
 	float quadratic;
 };
 
-point_light p_light_0 = {
+point_light p_light_0 = {	// Also the color describes the instensity of the light
 	vec3 (0.0, 0.0, 1.0), // Always put the light at 1 to avoid problems with the lighting calculations with the surface of the quads, if the z value of the lights and quads are the same the light will do rare results
-	vec4 (0.2, 0.1, 0.0, 1.0),
+	vec4 (1.0, 1.0, 1.0, 1.0),
 	1.0,
-    4.005,
-    4.004
+	1.0,
+    0.35,
+    0.44
 };
 
 vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, vec3 view_direction);
@@ -64,15 +67,16 @@ vec4 calculate_point_light(point_light light, vec3 normal, vec3 frag_position, v
 	float diff = max(dot(normal, light_direction), 0.0);
 
 	vec3 reflect_direction = reflect(-light_direction, normal);
-	float spec = pow(max(dot(view_direction, reflect_direction), 0.0), in_data_transfer_flat.shininess);
+	float spec = pow(max(dot(view_direction, reflect_direction), 0.0), in_data_transfer_flat.shininess_sharpness);
 
 	// Calculate attenuation or light falloff over distance.
 	float distance = length(light.position - frag_position);
-	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+	float distance_normalized = distance / light.radius;
+	float attenuation = 1.0 / (light.constant + light.linear * distance_normalized + light.quadratic * (distance_normalized * distance_normalized));
 
 	vec3 ambient = vec3(in_data_transfer.ambient.rgb);
 	vec3 diffuse = light.color.rgb * diff;
-	vec3 specular = light.color.rgb * spec;
+	vec3 specular = light.color.rgb * spec  * in_data_transfer_flat.shininess_intensity;
 
 	vec4 diff_samp = texture(samplers[in_data_transfer_flat.diffuse_index], in_data_transfer.tex_coord);
 	diffuse *= diff_samp.rgb;

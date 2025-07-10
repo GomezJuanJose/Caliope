@@ -18,7 +18,8 @@ struct quad_properties {
 	uint diffuse_index;
 	uint normal_index;
 	uint specular_index;
-	float shininess;
+	float shininess_intensity;
+	float shininess_sharpness;
 };
 
 layout(std430, binding = 2) readonly buffer quad_buffer{
@@ -26,13 +27,14 @@ layout(std430, binding = 2) readonly buffer quad_buffer{
 } quad_buffer_ssbo;
 
 layout(location = 0) flat out struct data_transfer_flat{
-	float shininess;
+	float shininess_intensity;
+	float shininess_sharpness;
 	uint diffuse_index;
 	uint normal_index;
 	uint specular_index;
 } out_data_transfer_flat;
 
-layout(location = 4) out struct data_transfer{
+layout(location = 5) out struct data_transfer{
 	vec4 ambient;
 	vec2 tex_coord;
 	vec3 normal;
@@ -54,7 +56,8 @@ void main() {
 	out_data_transfer.view_position = ubo.view_position;
 	out_data_transfer.frag_position = vec3(quad_buffer_ssbo.quads[gl_InstanceIndex].model * vec4(inPosition, 1.0));
 	
-	out_data_transfer_flat.shininess = quad_buffer_ssbo.quads[gl_InstanceIndex].shininess;
+	out_data_transfer_flat.shininess_intensity = quad_buffer_ssbo.quads[gl_InstanceIndex].shininess_intensity;
+	out_data_transfer_flat.shininess_sharpness = quad_buffer_ssbo.quads[gl_InstanceIndex].shininess_sharpness;
 	out_data_transfer_flat.diffuse_index = quad_buffer_ssbo.quads[gl_InstanceIndex].diffuse_index;
 	out_data_transfer_flat.normal_index = quad_buffer_ssbo.quads[gl_InstanceIndex].normal_index;
 	out_data_transfer_flat.specular_index = quad_buffer_ssbo.quads[gl_InstanceIndex].specular_index;

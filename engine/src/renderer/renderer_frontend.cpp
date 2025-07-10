@@ -208,7 +208,8 @@ namespace caliope{
 					qp.diffuse_index = diffuse_id;
 					qp.specular_index = specula_id;
 					qp.normal_index = normal_id;
-					qp.shininess = mat->shininess;
+					qp.shininess_sharpness = mat->shininess_sharpness;
+					qp.shininess_intensity = mat->shininess_intensity;
 					state_ptr->quads.at(number_of_instances) = qp;
 					number_of_instances++;
 					//}

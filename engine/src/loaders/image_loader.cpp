@@ -35,7 +35,7 @@ namespace caliope {
 		stbi_uc* pixels = stbi_load(file->append(selected_format).c_str(), &tex_width, &tex_height, &tex_channels, required_channel_count);
 
 		image_resource_data image_data;
-		image_data.channel_count = tex_channels;
+		image_data.channel_count = required_channel_count;
 		image_data.width = tex_width;
 		image_data.height = tex_height;
 		image_data.pixels = pixels;
