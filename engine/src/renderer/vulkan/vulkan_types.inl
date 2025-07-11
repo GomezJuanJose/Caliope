@@ -131,6 +131,11 @@ namespace caliope {
 		
 	} vulkan_shader;
 
+	typedef struct vulkan_geometry {
+		vulkan_buffer vertex_buffer;
+		vulkan_buffer index_buffer;
+	} vulkan_geometry;
+
 	typedef struct vulkan_context {
 		uint image_index;
 		uint current_frame;
@@ -151,10 +156,6 @@ namespace caliope {
 		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
 		
 		std::vector<VkDescriptorImageInfo> batch_image_infos;
-
-		//TODO: Refactor for batch rendering
-		vulkan_buffer vertex_buffer;
-		vulkan_buffer index_buffer;
 
 	} vulkan_context;
 }

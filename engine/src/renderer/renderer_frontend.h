@@ -31,4 +31,7 @@ namespace caliope {
 	void renderer_shader_create(shader& shader);
 	void renderer_shader_destroy(shader& shader);
 	void renderer_shader_use(shader& shader);
+
+	void renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
+	void renderer_geometry_destroy(geometry& geometry);
 }

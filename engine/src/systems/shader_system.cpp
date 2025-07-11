@@ -31,6 +31,7 @@ namespace caliope {
 
 		if (shader_system_adquire(BUILTIN_SHADER_NAME) == nullptr) {
 			CE_LOG_ERROR("Could not load Builtin.SpriteShader as default shader. Shutting down");
+			return false;
 		}
 
 		CE_LOG_INFO("Shader system initialized.");

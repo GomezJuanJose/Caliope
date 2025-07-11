@@ -16,10 +16,10 @@ namespace caliope {
 			CE_LOG_ERROR("Couldnt open %s", file->c_str());
 			return false;
 		}
-			std::vector<uchar> bytes;
-			file_system_read_all_bytes(binary_file, bytes, out_resource->data_size);
-			material_configuration* mat_config = reinterpret_cast<material_configuration*>(bytes.data());
-			out_resource->data = *mat_config;
+		std::vector<uchar> bytes;
+		file_system_read_all_bytes(binary_file, bytes, out_resource->data_size);
+		material_configuration* mat_config = reinterpret_cast<material_configuration*>(bytes.data());
+		out_resource->data = *mat_config;
 		file_system_close(binary_file);
 
 

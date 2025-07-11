@@ -27,6 +27,9 @@ namespace caliope {
 			out_renderer_backend.shader_create = vulkan_renderer_shader_create;
 			out_renderer_backend.shader_destroy = vulkan_renderer_shader_destroy;
 			out_renderer_backend.shader_use = vulkan_renderer_shader_use;
+
+			out_renderer_backend.geometry_create = vulkan_renderer_geometry_create;
+			out_renderer_backend.geometry_destroy = vulkan_renderer_geometry_destroy;
 		
 			return true;
 		}

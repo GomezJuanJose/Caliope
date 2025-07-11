@@ -3,7 +3,7 @@
 #include "defines.h"
 #include "cepch.h"
 #include "loaders/resources_types.inl"
-#include "math/transform.h"
+
 
 namespace caliope {
 
@@ -36,7 +36,7 @@ namespace caliope {
 
 		void (*set_and_apply_uniforms)(std::vector<quad_properties>& quads, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
-		void (*draw_geometry)(uint quad_count);
+		void (*draw_geometry)(uint quad_count, geometry& geometry);
 
 		void (*texture_create)(texture& t, uchar* pixels);
 		void (*texture_destroy)(texture& t);
@@ -44,13 +44,10 @@ namespace caliope {
 		void (*shader_create)(shader& s);
 		void (*shader_destroy)(shader& s);
 		void (*shader_use)(shader& s);
-	};
 
-	typedef struct quad_definition {
-		uint z_order;
-		std::string material_name;
-		transform transform;
-	} quad_definition;
+		void (*geometry_create)(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
+		void (*geometry_destroy)(geometry& geometry);
+	};
 
 	struct z_order_comparator {
 		bool operator()(const quad_definition& a, const quad_definition& b) {
@@ -64,10 +61,7 @@ namespace caliope {
 		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
 		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
 
-
-
 		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> quad_definitions; // Key : shader name, Value: vector of materials
 
-		
 	} renderer_packet;
 }

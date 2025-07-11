@@ -34,68 +34,7 @@ namespace caliope {
 	void create_command_buffers();
 	VkShaderModule create_shader_module(std::string& file_path);
 
-
-
-
-
-
-	void create_vertex_buffer();
-	void create_index_buffer();
-
-
-
-
-
-
 	static vulkan_context context;
-
-	//TODO: Refactor for batch rendering and quad system/ geometry system
-	std::vector<vertex> vertices = {
-		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-	};
-
-	std::vector<uint16> indices = {
-		0, 1, 2, 2, 1, 3
-	};
-
-	// TODO: MOVE INTO GEOMETRY/QUAD SYSTEM
-	void calculate_tangents(std::vector<vertex>& vertices, std::vector<uint16>& indices) {
-		for (uint i = 0; i < indices.size(); i+=3) {
-			uint i0 = indices[i + 0];
-			uint i1 = indices[i + 1];
-			uint i2 = indices[i + 2];
-
-			glm::vec3 deltaPos1 = vertices[i1].pos - vertices[i0].pos;
-			glm::vec3 deltaPos2 = vertices[i2].pos - vertices[i0].pos;
-		
-			float deltaU1 = vertices[i1].tex_coord.x - vertices[i0].tex_coord.x;
-			float deltaV1 = vertices[i1].tex_coord.y - vertices[i0].tex_coord.y;
-			
-			float deltaU2 = vertices[i2].tex_coord.x - vertices[i0].tex_coord.x;
-			float deltaV2 = vertices[i2].tex_coord.y - vertices[i0].tex_coord.y;
-
-			float fc = 1.0f / (deltaU1 * deltaV2 - deltaU2 * deltaV1);
-			glm::vec3 tangent = glm::vec3(
-				(fc * (deltaV2 * deltaPos1.x - deltaV1 * deltaPos2.x)),
-				(fc * (deltaV2 * deltaPos1.y - deltaV1 * deltaPos2.y)),
-				(fc * (deltaV2 * deltaPos1.z - deltaV1 * deltaPos2.z))
-			);
-
-			tangent = glm::normalize(tangent);
-
-			float sx = deltaU1, sy = deltaU2;
-			float tx = deltaV1, ty = deltaV2;
-			float handedness = ((tx * sy - ty * sx) < 0.0f) ? -1.0 : 1.0f;
-			
-			glm::vec4 t4 = glm::vec4(tangent, handedness);
-			vertices[i0].tangent = t4;
-			vertices[i1].tangent = t4;
-			vertices[i2].tangent = t4;
-		}
-	}
 
 	typedef struct uniform_buffer_object {
 		glm::mat4 view;
@@ -107,15 +46,9 @@ namespace caliope {
 	
 	uint max_number_quads;//TODO: REFACTOR in a internal state
 	uint max_textures_per_batch;
-	
-	// TODO: refactor
-
 
 
 	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config) {
-
-		// TODO: MOVE INTO GEOMETRY/QUAD SYSTEM
-		calculate_tangents(vertices, indices);
 
 		// TODO: PRE-LOAD THE KNOWN SHADERS WHEN INITIALIZE
 
@@ -227,16 +160,6 @@ namespace caliope {
 		// Create framebuffers
 		create_framebuffers();
 
-
-#pragma region REFACTOR
-	
-		// Create vertex and index buffer
-		//TODO: Refactor for batch rendering
-		create_vertex_buffer();
-		create_index_buffer();
-
-#pragma endregion
-
 		// Create synchronization objects
 		VkSemaphoreCreateInfo semaphore_info = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
 		VkFenceCreateInfo fence_info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
@@ -263,12 +186,6 @@ namespace caliope {
 			vkDestroyFence(context.device.logical_device, context.in_flight_fences[i], nullptr);
 		}
 
-		//TODO: Refactor for batch rendering
-		vkDestroyBuffer(context.device.logical_device, context.vertex_buffer.handle, nullptr);
-		vkFreeMemory(context.device.logical_device, context.vertex_buffer.memory, nullptr);
-		vkDestroyBuffer(context.device.logical_device, context.index_buffer.handle, nullptr);
-		vkFreeMemory(context.device.logical_device, context.index_buffer.memory, nullptr);
-
 		destroy_framebuffers();
 
 		for (uint i = 0; i < context.swapchain.image_count; ++i) {
@@ -278,7 +195,6 @@ namespace caliope {
 		}
 
 		vulkan_renderpass_destroy(context, context.main_renderpass);
-
 
 		vulkan_swapchain_destroy(context, context.swapchain);
 
@@ -365,14 +281,16 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_draw_geometry(uint instance_count) {
-		VkBuffer vertex_buffers[] = { context.vertex_buffer.handle };
+	void vulkan_renderer_draw_geometry(uint instance_count, geometry& geometry) {
+		vulkan_geometry* vk_geometry = std::any_cast<vulkan_geometry>(&geometry.internal_data);
+
+		VkBuffer vertex_buffers[] = { vk_geometry->vertex_buffer.handle };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(context.command_buffers[context.current_frame].handle, 0, 1, vertex_buffers, offsets);
-		vkCmdBindIndexBuffer(context.command_buffers[context.current_frame].handle, context.index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(context.command_buffers[context.current_frame].handle, vk_geometry->index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
 
 
-		vkCmdDrawIndexed(context.command_buffers[context.current_frame].handle, 6, instance_count, 0, 0, 0); // HARDCODED VERTEX NUMBER
+		vkCmdDrawIndexed(context.command_buffers[context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
 	}
 
 	bool vulkan_renderer_begin_renderpass() {
@@ -736,6 +654,49 @@ namespace caliope {
 		vulkan_pipeline_bind(context.command_buffers[context.current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline);
 	}
 
+	void vulkan_renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices) {
+
+		vulkan_geometry internal_data;
+
+
+		// Vertex buffer
+		VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
+		uint memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		vulkan_buffer staging_buffer;
+		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
+		vulkan_buffer_load_data(context, staging_buffer, 0, buffer_size, 0, vertices.data());
+		memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		uint usage_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		vulkan_buffer_create(context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, internal_data.vertex_buffer);
+		vulkan_buffer_copy(context, context.device.command_pool, 0, context.device.graphics_queue, staging_buffer.handle, 0, internal_data.vertex_buffer.handle, 0, buffer_size);
+		vulkan_buffer_destroy(context, staging_buffer);
+
+
+		// Index buffer
+		buffer_size = sizeof(indices[0]) * indices.size();
+		memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
+		void* data;
+		vulkan_buffer_load_data(context, staging_buffer, 0, buffer_size, 0, indices.data());
+		memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		usage_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		vulkan_buffer_create(context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, internal_data.index_buffer);
+		vulkan_buffer_copy(context, context.device.command_pool, 0, context.device.graphics_queue, staging_buffer.handle, 0, internal_data.index_buffer.handle, 0, buffer_size);
+		vulkan_buffer_destroy(context, staging_buffer);
+
+
+		geometry.internal_data = internal_data;
+	}
+
+	void vulkan_renderer_geometry_destroy(geometry& geometry) {
+		vulkan_geometry* vk_geometry = std::any_cast<vulkan_geometry>(&geometry.internal_data);
+
+		vkDestroyBuffer(context.device.logical_device, vk_geometry->vertex_buffer.handle, nullptr);
+		vkFreeMemory(context.device.logical_device, vk_geometry->vertex_buffer.memory, nullptr);
+		vkDestroyBuffer(context.device.logical_device, vk_geometry->index_buffer.handle, nullptr);
+		vkFreeMemory(context.device.logical_device, vk_geometry->index_buffer.memory, nullptr);
+	}
+
 
 	void create_framebuffers() {
 		context.swapchain.framebuffers.resize(context.swapchain.views.size());
@@ -813,45 +774,4 @@ namespace caliope {
 		resource_system_unload(r);
 		return shader_module;
 	}
-
-
-	//TODO: Refactor for batch rendering
-	void create_vertex_buffer() {
-		VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
-
-		uint memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		
-		vulkan_buffer staging_buffer;
-		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
-		vulkan_buffer_load_data(context, staging_buffer, 0, buffer_size, 0, vertices.data());
-	
-		memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		uint usage_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		vulkan_buffer_create(context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, context.vertex_buffer);
-
-		vulkan_buffer_copy(context, context.device.command_pool, 0, context.device.graphics_queue, staging_buffer.handle, 0, context.vertex_buffer.handle, 0, buffer_size);
-
-		vulkan_buffer_destroy(context, staging_buffer);
-
-	}
-
-	void create_index_buffer() {
-		VkDeviceSize buffer_size = sizeof(indices[0]) * indices.size();
-
-		uint memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-		vulkan_buffer staging_buffer;
-		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
-		void* data;
-		vulkan_buffer_load_data(context, staging_buffer, 0, buffer_size, 0, indices.data());
-
-		memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		uint usage_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		vulkan_buffer_create(context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, context.index_buffer);
-
-		vulkan_buffer_copy(context, context.device.command_pool, 0, context.device.graphics_queue, staging_buffer.handle, 0, context.index_buffer.handle, 0, buffer_size);
-
-		vulkan_buffer_destroy(context, staging_buffer);
-	}
-
 }

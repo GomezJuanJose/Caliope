@@ -36,7 +36,7 @@ struct point_light {
 
 point_light p_light_0 = {	// Also the color describes the instensity of the light
 	vec3 (0.0, 0.0, 1.0), // Always put the light at 1 to avoid problems with the lighting calculations with the surface of the quads, if the z value of the lights and quads are the same the light will do rare results
-	vec4 (1.0, 1.0, 1.0, 1.0),
+	vec4 (0.4, 0.2, 0.0, 1.0),
 	1.0,
 	1.0,
     0.35,

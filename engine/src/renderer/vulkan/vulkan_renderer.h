@@ -15,7 +15,7 @@ namespace caliope {
 	bool vulkan_renderer_begin_frame(float delta_time);
 	bool vulkan_renderer_end_frame(float delta_time);
 
-	void vulkan_renderer_draw_geometry(uint quad_count);
+	void vulkan_renderer_draw_geometry(uint quad_count, geometry& geometry);
 
 	bool vulkan_renderer_begin_renderpass();
 	bool vulkan_renderer_end_renderpass();
@@ -28,4 +28,7 @@ namespace caliope {
 	void vulkan_renderer_shader_create(shader& s);
 	void vulkan_renderer_shader_destroy(shader& s);
 	void vulkan_renderer_shader_use(shader& s);
+
+	void vulkan_renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
+	void vulkan_renderer_geometry_destroy(geometry& geometry);
 }

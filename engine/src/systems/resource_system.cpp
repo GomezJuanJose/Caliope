@@ -55,8 +55,8 @@ namespace caliope {
 		resource.loader_name = std::to_string(type);
 
 		std::string file_path = state_ptr->loaders[std::to_string(type)].resource_folder + name;
-		state_ptr->loaders[std::to_string(type)].load(&file_path, &resource);
-		return true;
+		
+		return state_ptr->loaders[std::to_string(type)].load(&file_path, &resource);
 	}
 
 	bool resource_system_load_custom(std::string& name, std::string& custom_type, resource& resource) {

@@ -10,7 +10,7 @@
 
 namespace caliope {
 
-	typedef struct material_system_state{
+	typedef struct material_system_state {
 		std::unordered_map<std::string, material> registered_materials;
 		material default_material;
 	}material_system_state;
@@ -46,14 +46,17 @@ namespace caliope {
 
 	material* material_system_adquire(std::string& name) {
 		if (state_ptr->registered_materials.find(name) == state_ptr->registered_materials.end()) {
-			
+
 			resource r;
-			resource_system_load(name, RESOURCE_TYPE_MATERIAL, r);
+			if(!resource_system_load(name, RESOURCE_TYPE_MATERIAL, r)){
+				CE_LOG_ERROR("material_system_adquire couldnt load file material");
+				return material_system_get_default();
+			}
 			material_configuration mat_config = std::any_cast<material_configuration>(r.data);
 
 			if (!load_material(mat_config)) {
 				CE_LOG_ERROR("material_system_adquire couldnt adquire material");
-				return false;
+				return material_system_get_default();
 			}
 
 		}

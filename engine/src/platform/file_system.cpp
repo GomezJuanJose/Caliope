@@ -23,7 +23,7 @@ namespace caliope {
 		out_handle.handle = nullptr;
 		out_handle.is_valid = platform_system_open_file(path.c_str(), out_handle.handle, mode);
 
-		return true;
+		return out_handle.is_valid;
 	}
 
 	void file_system_close(file_handle& handle) {

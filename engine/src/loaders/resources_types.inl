@@ -1,6 +1,7 @@
 #pragma once
 #include "defines.h"
 #include <glm/glm.hpp>
+#include "math/transform.h"
 
 namespace caliope {
 	typedef enum resource_type{
@@ -14,8 +15,6 @@ namespace caliope {
 		std::any data;
 		std::string loader_name;
 	} resource;
-
-
 
 	typedef struct image_resource_data {
 		uchar channel_count;
@@ -74,4 +73,16 @@ namespace caliope {
 		float shininess_sharpness;
 		glm::vec3 __padding0;
 	} quad_properties;
+
+	typedef struct quad_definition {
+		uint z_order;
+		std::string material_name;
+		transform transform;
+	} quad_definition;
+
+	typedef struct geometry{
+		std::string name;
+		uint index_count;
+		std::any internal_data;
+	} geometry;
 }

@@ -16,6 +16,7 @@
 #include "systems/texture_system.h"
 #include "systems/shader_system.h"
 #include "systems/material_system.h"
+#include "systems/geometry_system.h"
 #include "systems/camera_system.h"
 
 #include "math/transform.h"
@@ -107,6 +108,11 @@ namespace caliope {
 			return false;
 		}
 
+		if (!geometry_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize geometry system; shutting down");
+			return false;
+		}
+
 		if (!camera_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize camera system; shutting down");
 			return false;
@@ -128,9 +134,12 @@ namespace caliope {
 		m.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		m.shininess_sharpness = 16.0f;
 		m.shininess_intensity = 3.0f;
-		m.diffuse_texture_name = { "cobblestone" };
-		m.specular_texture_name = { "cobblestone_SPEC" };
-		m.normal_texture_name = { "cobblestone_NRM" };
+		//m.diffuse_texture_name = { "cobblestone" };
+		//m.specular_texture_name = { "cobblestone_SPEC" };
+		//m.normal_texture_name = { "cobblestone_NRM" }; 
+		m.diffuse_texture_name = { "knight_human_man_04_alt" };
+		m.specular_texture_name = { "knightSpecularMap" };
+		m.normal_texture_name = { "knightNormalMap" };
 		m.shader_name = { "Builtin.SpriteShader" };
 		m.name = { "character1" };
 
@@ -292,6 +301,8 @@ namespace caliope {
 		}
 
 		camera_system_shutdown();
+
+		geometry_system_shutdown();
 
 		material_system_shutdown();
 

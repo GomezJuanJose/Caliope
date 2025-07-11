@@ -12,6 +12,7 @@
 
 #include "systems/shader_system.h"
 #include "systems/material_system.h"
+#include "systems/geometry_system.h"
 
 #include "math/transform.h"
 
@@ -225,7 +226,7 @@ namespace caliope{
 					packet.world_camera->position
 				);
 
-				state_ptr->backend.draw_geometry(number_of_instances);
+				state_ptr->backend.draw_geometry(number_of_instances, *geometry_system_get_quad());
 			}
 
 			if (!state_ptr->backend.end_renderpass()) {
@@ -261,6 +262,14 @@ namespace caliope{
 
 	void renderer_shader_use(shader& shader) {
 		state_ptr->backend.shader_use(shader);
+	}
+
+	void renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices) {
+		state_ptr->backend.geometry_create(geometry, vertices, indices);
+	}
+
+	void renderer_geometry_destroy(geometry& geometry) {
+		state_ptr->backend.geometry_destroy(geometry);
 	}
 
 }
