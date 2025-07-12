@@ -19,6 +19,12 @@ namespace caliope {
 	} renderer_frontend_config;
 
 	bool renderer_system_initialize(renderer_frontend_config& config);
+
+	/*
+	 * @brief Stops the renderer and all the resources being used, use this function before shutting down systems and the renderer to avoid destroying resources while being used.
+	 */
+	void renderer_system_stop();
+
 	void renderer_system_shutdown();
 
 	void renderer_on_resized(uint16 width, uint16 height);

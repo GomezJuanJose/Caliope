@@ -9,6 +9,7 @@ namespace caliope {
 	bool renderer_backend_system_create(renderer_backend_type type, renderer_backend& out_renderer_backend) {
 		if (type == renderer_backend_type::BACKEND_TYPE_VULKAN) {
 			out_renderer_backend.initialize = vulkan_renderer_backend_initialize;
+			out_renderer_backend.stop = vulkan_renderer_backend_stop;
 			out_renderer_backend.shutdown = vulkan_renderer_backend_shutdown;
 			out_renderer_backend.resize = vulkan_renderer_backend_resize;
 			out_renderer_backend.begin_frame = vulkan_renderer_begin_frame;

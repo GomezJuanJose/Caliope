@@ -5,8 +5,8 @@ namespace caliope {
 
 
 
-
-	const std::vector<const char*> device_extensions = {
+	#define DEVICE_EXTENSIONS_COUNT 1
+	const char* device_extensions[DEVICE_EXTENSIONS_COUNT] = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
@@ -70,8 +70,8 @@ namespace caliope {
 		create_info.pQueueCreateInfos = queue_create_infos.data();
 		create_info.queueCreateInfoCount = queue_create_infos.size();
 		create_info.pEnabledFeatures = &device_features;
-		create_info.enabledExtensionCount = device_extensions.size();
-		create_info.ppEnabledExtensionNames = device_extensions.data();
+		create_info.enabledExtensionCount = DEVICE_EXTENSIONS_COUNT;
+		create_info.ppEnabledExtensionNames = device_extensions;
 
 		VK_CHECK(vkCreateDevice(context.device.physical_device, &create_info, nullptr, &context.device.logical_device));
 
@@ -124,7 +124,10 @@ namespace caliope {
 		std::vector<VkExtensionProperties> available_extensions(extension_count);
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
 
-		std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
+		std::set<std::string> required_extensions;
+		for (uint i = 0; i < DEVICE_EXTENSIONS_COUNT; ++i) {
+			required_extensions.insert(device_extensions[i]);
+		}
 
 		for (const VkExtensionProperties& extension : available_extensions) {
 			required_extensions.erase(extension.extensionName);

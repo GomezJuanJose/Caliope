@@ -25,12 +25,6 @@ target_compile_definitions(engine PRIVATE CE_PLATFORM_WINDOWS=1 CE_EXPORT_DLL=1)
 target_precompile_headers(engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine/src/cepch.h)
 
 FetchContent_Declare(
-    spdlog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.9.2
-)
-
-FetchContent_Declare(
     glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
 )
@@ -40,9 +34,8 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/g-truc/glm.git
 )
 
-FetchContent_MakeAvailable(spdlog glfw glm)
+FetchContent_MakeAvailable(glfw glm)
 
-target_link_libraries(engine PRIVATE spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
 target_link_libraries(engine PRIVATE glfw Vulkan::Vulkan)
 target_link_libraries(engine PRIVATE glm::glm)
 

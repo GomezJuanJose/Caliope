@@ -34,7 +34,7 @@ namespace caliope {
 	void create_command_buffers();
 	VkShaderModule create_shader_module(std::string& file_path);
 
-	static vulkan_context context;
+	
 
 	typedef struct uniform_buffer_object {
 		glm::mat4 view;
@@ -43,23 +43,31 @@ namespace caliope {
 		glm::vec3 view_position;
 	}uniform_buffer_object;
 
-	
-	uint max_number_quads;//TODO: REFACTOR in a internal state
-	uint max_textures_per_batch;
+	typedef struct vulkan_backend_state {
+		vulkan_context context;
+		uint max_number_quads;//TODO: REFACTOR in a internal state
+		uint max_textures_per_batch;
+	}vulkan_backend_state;
 
+	static std::unique_ptr<vulkan_backend_state> state_ptr;
 
 	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config) {
 
+		state_ptr = std::make_unique<vulkan_backend_state>();
+
+		if (!state_ptr) {
+			return false;
+		}
+
 		// TODO: PRE-LOAD THE KNOWN SHADERS WHEN INITIALIZE
+		state_ptr->max_number_quads = config.max_quads;
+		state_ptr->max_textures_per_batch = config.max_textures_per_batch;
 
-		max_number_quads = config.max_quads;
-		max_textures_per_batch = config.max_textures_per_batch;
+		state_ptr->context.image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+		state_ptr->context.render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+		state_ptr->context.in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
 
-		context.image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		context.render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		context.in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
-
-		context.batch_image_infos.resize(max_textures_per_batch);
+		state_ptr->context.batch_image_infos.resize(state_ptr->max_textures_per_batch);
 
 		// Create vulkan instancce
 		VkApplicationInfo app_info = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -116,24 +124,24 @@ namespace caliope {
 
 #endif // CE_DEBUG
 
-		VK_CHECK(vkCreateInstance(&create_info, nullptr, &context.instance));
+		VK_CHECK(vkCreateInstance(&create_info, nullptr, &state_ptr->context.instance));
 
 
 		// Create surface
-		if (glfwCreateWindowSurface(context.instance, std::any_cast<GLFWwindow*>(platform_system_get_window()), nullptr, &context.surface)) {
+		if (glfwCreateWindowSurface(state_ptr->context.instance, std::any_cast<GLFWwindow*>(platform_system_get_window()), nullptr, &state_ptr->context.surface)) {
 			CE_LOG_FATAL("Could not create a window surface");
 			return false;
 		}
 
 
 		// Create device
-		if (!vulkan_device_create(context)) {
+		if (!vulkan_device_create(state_ptr->context)) {
 			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create a device");
 			return false;
 		}
 
 		// Create swapchain
-		if (!vulkan_swapchain_create(context, context.swapchain)) {
+		if (!vulkan_swapchain_create(state_ptr->context, state_ptr->context.swapchain)) {
 			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the swapchain");
 			return false;
 		}
@@ -141,9 +149,9 @@ namespace caliope {
 
 		// Create world renderpass
 		if (!vulkan_renderpass_create(
-			context,
-			context.main_renderpass,
-			glm::vec4(0.0f, 0.0f, context.swapchain.extent.width, context.swapchain.extent.height),
+			state_ptr->context,
+			state_ptr->context.main_renderpass,
+			glm::vec4(0.0f, 0.0f, state_ptr->context.swapchain.extent.width, state_ptr->context.swapchain.extent.height),
 			glm::vec4(0.0f, 0.2f, 0.6f, 1.0f),
 			1.0f,
 			0,
@@ -165,57 +173,62 @@ namespace caliope {
 		VkFenceCreateInfo fence_info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 		fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 		for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			VK_CHECK(vkCreateSemaphore(context.device.logical_device, &semaphore_info, nullptr, &context.image_available_semaphores[i]));
-			VK_CHECK(vkCreateSemaphore(context.device.logical_device, &semaphore_info, nullptr, &context.render_finished_semaphores[i]));
-			VK_CHECK(vkCreateFence(context.device.logical_device, &fence_info, nullptr, &context.in_flight_fences[i]));
+			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.image_available_semaphores[i]));
+			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.render_finished_semaphores[i]));
+			VK_CHECK(vkCreateFence(state_ptr->context.device.logical_device, &fence_info, nullptr, &state_ptr->context.in_flight_fences[i]));
 		}
 
 		CE_LOG_INFO("Vulkan backend initialized.");
 		return true;
 	}
 
-	
+	void vulkan_renderer_backend_stop() {
+		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
+	}
 
 	void vulkan_renderer_backend_shutdown() {
 
-		vkDeviceWaitIdle(context.device.logical_device);
+		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
 
 		for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			vkDestroySemaphore(context.device.logical_device, context.image_available_semaphores[i], nullptr);
-			vkDestroySemaphore(context.device.logical_device, context.render_finished_semaphores[i], nullptr);
-			vkDestroyFence(context.device.logical_device, context.in_flight_fences[i], nullptr);
+			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.image_available_semaphores[i], nullptr);
+			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.render_finished_semaphores[i], nullptr);
+			vkDestroyFence(state_ptr->context.device.logical_device, state_ptr->context.in_flight_fences[i], nullptr);
 		}
 
 		destroy_framebuffers();
 
-		for (uint i = 0; i < context.swapchain.image_count; ++i) {
-			if (context.command_buffers[i].handle) {
-				vulkan_command_buffer_free(context, context.device.command_pool, context.command_buffers[i]);
+		for (uint i = 0; i < state_ptr->context.swapchain.image_count; ++i) {
+			if (state_ptr->context.command_buffers[i].handle) {
+				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.command_buffers[i]);
 			}
 		}
 
-		vulkan_renderpass_destroy(context, context.main_renderpass);
+		vulkan_renderpass_destroy(state_ptr->context, state_ptr->context.main_renderpass);
 
-		vulkan_swapchain_destroy(context, context.swapchain);
+		vulkan_swapchain_destroy(state_ptr->context, state_ptr->context.swapchain);
 
-		vulkan_device_destroy(context);
+		vulkan_device_destroy(state_ptr->context);
 
-		vkDestroySurfaceKHR(context.instance, context.surface, nullptr);
+		vkDestroySurfaceKHR(state_ptr->context.instance, state_ptr->context.surface, nullptr);
 
-		vkDestroyInstance(context.instance, nullptr);
+		vkDestroyInstance(state_ptr->context.instance, nullptr);
+
+		state_ptr.reset();
+		state_ptr = nullptr;
 	}
 
 	void vulkan_renderer_backend_resize(uint16 width, uint16 height) {
-		swapchain_support_details new_support_details = vulkan_device_query_swapchain_support(context.device.physical_device, context.surface);
-		context.device.swapchain_support_details = new_support_details;
-		context.framebuffer_resized = true;
+		swapchain_support_details new_support_details = vulkan_device_query_swapchain_support(state_ptr->context.device.physical_device, state_ptr->context.surface);
+		state_ptr->context.device.swapchain_support_details = new_support_details;
+		state_ptr->context.framebuffer_resized = true;
 	}
 
 	bool vulkan_renderer_begin_frame(float delta_time) {
 		
-		vkWaitForFences(context.device.logical_device, 1, &context.in_flight_fences[context.current_frame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame], VK_TRUE, UINT64_MAX);
 
-		VkResult result = vulkan_swapchain_acquire_next_image_index(context, context.swapchain, UINT64_MAX, context.image_available_semaphores[context.current_frame], VK_NULL_HANDLE, context.image_index);
+		VkResult result = vulkan_swapchain_acquire_next_image_index(state_ptr->context, state_ptr->context.swapchain, UINT64_MAX, state_ptr->context.image_available_semaphores[state_ptr->context.current_frame], VK_NULL_HANDLE, state_ptr->context.image_index);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreate_swapchain();
 			return true;
@@ -226,53 +239,53 @@ namespace caliope {
 		}
 
 		
-		vkResetCommandBuffer(context.command_buffers[context.current_frame].handle, 0);
+		vkResetCommandBuffer(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, 0);
 
 		VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 		begin_info.flags = 0;
 		begin_info.pInheritanceInfo = nullptr;
-		VK_CHECK(vkBeginCommandBuffer(context.command_buffers[context.current_frame].handle, &begin_info));
+		VK_CHECK(vkBeginCommandBuffer(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, &begin_info));
 		
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = static_cast<float>(context.swapchain.extent.height);// Invert Y to match with Vulkan;
-		viewport.width = static_cast<float>(context.swapchain.extent.width);
-		viewport.height = -static_cast<float>(context.swapchain.extent.height);
+		viewport.y = static_cast<float>(state_ptr->context.swapchain.extent.height);// Invert Y to match with Vulkan;
+		viewport.width = static_cast<float>(state_ptr->context.swapchain.extent.width);
+		viewport.height = -static_cast<float>(state_ptr->context.swapchain.extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(context.command_buffers[context.current_frame].handle, 0, 1, &viewport);
+		vkCmdSetViewport(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, 0, 1, &viewport);
 
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent = context.swapchain.extent;
-		vkCmdSetScissor(context.command_buffers[context.current_frame].handle, 0, 1, &scissor);
+		scissor.extent = state_ptr->context.swapchain.extent;
+		vkCmdSetScissor(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, 0, 1, &scissor);
 
 		return true;
 	}
 
 	bool vulkan_renderer_end_frame(float delta_time) {
 
-		VK_CHECK(vkEndCommandBuffer(context.command_buffers[context.current_frame].handle));
+		VK_CHECK(vkEndCommandBuffer(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle));
 
-		vkResetFences(context.device.logical_device, 1, &context.in_flight_fences[context.current_frame]);
+		vkResetFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame]);
 
 		VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-		VkSemaphore wait_semaphores[] = { context.image_available_semaphores[context.current_frame] };
+		VkSemaphore wait_semaphores[] = { state_ptr->context.image_available_semaphores[state_ptr->context.current_frame] };
 		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submit_info.waitSemaphoreCount = 1;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
 		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &context.command_buffers[context.current_frame].handle;
-		VkSemaphore signal_sempahores[] = { context.render_finished_semaphores[context.current_frame] };
+		submit_info.pCommandBuffers = &state_ptr->context.command_buffers[state_ptr->context.current_frame].handle;
+		VkSemaphore signal_sempahores[] = { state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame] };
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_sempahores;
-		VK_CHECK(vkQueueSubmit(context.device.graphics_queue, 1, &submit_info, context.in_flight_fences[context.current_frame]));
+		VK_CHECK(vkQueueSubmit(state_ptr->context.device.graphics_queue, 1, &submit_info, state_ptr->context.in_flight_fences[state_ptr->context.current_frame]));
 
-		VkResult result = vulkan_swapchain_present(context, context.swapchain, context.device.presentation_queue, context.render_finished_semaphores[context.current_frame], context.image_index);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || context.framebuffer_resized) {
+		VkResult result = vulkan_swapchain_present(state_ptr->context, state_ptr->context.swapchain, state_ptr->context.device.presentation_queue, state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame], state_ptr->context.image_index);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || state_ptr->context.framebuffer_resized) {
 			recreate_swapchain();
-			context.framebuffer_resized = false;
+			state_ptr->context.framebuffer_resized = false;
 		}
 		else if (result != VK_SUCCESS) {
 			CE_LOG_FATAL("vulkan_renderer_begin_frame failed to present swapchain image");
@@ -286,20 +299,20 @@ namespace caliope {
 
 		VkBuffer vertex_buffers[] = { vk_geometry->vertex_buffer.handle };
 		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(context.command_buffers[context.current_frame].handle, 0, 1, vertex_buffers, offsets);
-		vkCmdBindIndexBuffer(context.command_buffers[context.current_frame].handle, vk_geometry->index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindVertexBuffers(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, 0, 1, vertex_buffers, offsets);
+		vkCmdBindIndexBuffer(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, vk_geometry->index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
 
 
-		vkCmdDrawIndexed(context.command_buffers[context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
+		vkCmdDrawIndexed(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
 	}
 
 	bool vulkan_renderer_begin_renderpass() {
-		vulkan_renderpass_begin(context.command_buffers[context.current_frame], context.main_renderpass, context.swapchain.framebuffers[context.image_index]);
+		vulkan_renderpass_begin(state_ptr->context.command_buffers[state_ptr->context.current_frame], state_ptr->context.main_renderpass, state_ptr->context.swapchain.framebuffers[state_ptr->context.image_index]);
 		return true;
 	}
 
 	bool vulkan_renderer_end_renderpass() {
-		vulkan_renderpass_end(context.command_buffers[context.current_frame]);
+		vulkan_renderpass_end(state_ptr->context.command_buffers[state_ptr->context.current_frame]);
 		return true;
 	}
 
@@ -322,11 +335,11 @@ namespace caliope {
 		VkDescriptorBufferInfo ssbo_info = {};
 		ssbo_info.buffer = vk_shader->ssbo.handle;
 		ssbo_info.offset = 0;
-		ssbo_info.range = sizeof(quad_properties) * max_number_quads;
+		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads;
 
 		std::array<VkWriteDescriptorSet, 3> descriptor_writes = {};
 		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[0].dstSet = vk_shader->descriptor_sets[context.current_frame];
+		descriptor_writes[0].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
 		descriptor_writes[0].dstBinding = 0;
 		descriptor_writes[0].dstArrayElement = 0;
 		descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -342,21 +355,21 @@ namespace caliope {
 			}
 
 			vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&texture->internal_data);
-			context.batch_image_infos[number_of_texture].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			context.batch_image_infos[number_of_texture].imageView = vk_texture->image.view;
-			context.batch_image_infos[number_of_texture].sampler = vk_texture->sampler;
+			state_ptr->context.batch_image_infos[number_of_texture].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			state_ptr->context.batch_image_infos[number_of_texture].imageView = vk_texture->image.view;
+			state_ptr->context.batch_image_infos[number_of_texture].sampler = vk_texture->sampler;
 			number_of_texture++;
 		}
 
 		descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[1].dstSet = vk_shader->descriptor_sets[context.current_frame];
+		descriptor_writes[1].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
 		descriptor_writes[1].dstBinding = 1;
 		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptor_writes[1].descriptorCount = number_of_texture;
-		descriptor_writes[1].pImageInfo = context.batch_image_infos.data();
+		descriptor_writes[1].pImageInfo = state_ptr->context.batch_image_infos.data();
 
 		descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[2].dstSet = vk_shader->descriptor_sets[context.current_frame];
+		descriptor_writes[2].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
 		descriptor_writes[2].dstBinding = 2;
 		descriptor_writes[2].dstArrayElement = 0;
 		descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -365,9 +378,9 @@ namespace caliope {
 		descriptor_writes[2].pImageInfo = nullptr;
 		descriptor_writes[2].pTexelBufferView = nullptr;
 
-		vkUpdateDescriptorSets(context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
+		vkUpdateDescriptorSets(state_ptr->context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 
-		vkCmdBindDescriptorSets(context.command_buffers[context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline.layout, 0, 1, &vk_shader->descriptor_sets[context.current_frame], 0, nullptr);
+		vkCmdBindDescriptorSets(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline.layout, 0, 1, &vk_shader->descriptor_sets[state_ptr->context.current_frame], 0, nullptr);
 
 	}
 
@@ -379,7 +392,7 @@ namespace caliope {
 
 		vulkan_buffer staging_buffer;
 		vulkan_buffer_create(
-			context,
+			state_ptr->context,
 			image_size,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -388,7 +401,7 @@ namespace caliope {
 		);
 
 		vulkan_buffer_load_data(
-			context,
+			state_ptr->context,
 			staging_buffer,
 			0,
 			image_size,
@@ -398,7 +411,7 @@ namespace caliope {
 
 
 		vulkan_image_create(
-			context, 
+			state_ptr->context, 
 			VK_IMAGE_TYPE_2D,
 			t.width,
 			t.height,
@@ -414,13 +427,13 @@ namespace caliope {
 
 		vulkan_command_buffer temp_command_buffer;
 		vulkan_command_buffer_allocate_and_begin_single_use(
-			context,
-			context.device.command_pool,
+			state_ptr->context,
+			state_ptr->context.device.command_pool,
 			temp_command_buffer
 		);
 
 		vulkan_image_transition_layout(
-			context,
+			state_ptr->context,
 			temp_command_buffer,
 			vk_texture->image,
 			VK_FORMAT_R8G8B8A8_SRGB,
@@ -429,14 +442,14 @@ namespace caliope {
 		);
 			
 		vulkan_image_copy_buffer_to_image(
-			context,
+			state_ptr->context,
 			vk_texture->image,
 			staging_buffer.handle,
 			temp_command_buffer
 		);
 		
 		vulkan_image_transition_layout(
-			context,
+			state_ptr->context,
 			temp_command_buffer,
 			vk_texture->image,
 			VK_FORMAT_R8G8B8A8_SRGB,
@@ -445,13 +458,13 @@ namespace caliope {
 		);
 
 		vulkan_command_buffer_end_single_use(
-			context,
-			context.device.command_pool,
+			state_ptr->context,
+			state_ptr->context.device.command_pool,
 			temp_command_buffer,
-			context.device.graphics_queue
+			state_ptr->context.device.graphics_queue
 		);
 
-		vulkan_buffer_destroy(context, staging_buffer);
+		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 
 		// Create sampler
 		VkSamplerCreateInfo sampler_info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
@@ -462,7 +475,7 @@ namespace caliope {
 		sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
 		VkPhysicalDeviceProperties properties = {};
-		vkGetPhysicalDeviceProperties(context.device.physical_device, &properties);
+		vkGetPhysicalDeviceProperties(state_ptr->context.device.physical_device, &properties);
 		sampler_info.anisotropyEnable = VK_TRUE;
 		sampler_info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 
@@ -475,17 +488,17 @@ namespace caliope {
 		sampler_info.minLod = 0.0f;
 		sampler_info.maxLod = 0.0f;
 
-		VK_CHECK(vkCreateSampler(context.device.logical_device, &sampler_info, nullptr, &vk_texture->sampler));
+		VK_CHECK(vkCreateSampler(state_ptr->context.device.logical_device, &sampler_info, nullptr, &vk_texture->sampler));
 
 	}
 
 	void vulkan_renderer_texture_destroy(texture& t) {
 		vulkan_texture* vk_t = std::any_cast<vulkan_texture>(&t.internal_data);
 
-		vkDestroySampler(context.device.logical_device, vk_t->sampler, nullptr);
-		vkDestroyImageView(context.device.logical_device, vk_t->image.view, nullptr);
-		vkDestroyImage(context.device.logical_device, vk_t->image.handle, nullptr);
-		vkFreeMemory(context.device.logical_device, vk_t->image.memory, nullptr);
+		vkDestroySampler(state_ptr->context.device.logical_device, vk_t->sampler, nullptr);
+		vkDestroyImageView(state_ptr->context.device.logical_device, vk_t->image.view, nullptr);
+		vkDestroyImage(state_ptr->context.device.logical_device, vk_t->image.handle, nullptr);
+		vkFreeMemory(state_ptr->context.device.logical_device, vk_t->image.memory, nullptr);
 	}
 
 	void vulkan_renderer_shader_create(shader& s) {
@@ -506,15 +519,15 @@ namespace caliope {
 
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = (float)context.swapchain.extent.height;// Invert Y to match with Vulkan;
-		viewport.width = (float)context.swapchain.extent.width;
-		viewport.height = -(float)context.swapchain.extent.height;
+		viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
+		viewport.width = (float)state_ptr->context.swapchain.extent.width;
+		viewport.height = -(float)state_ptr->context.swapchain.extent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent = context.swapchain.extent;
+		scissor.extent = state_ptr->context.swapchain.extent;
 
 		// Attributes
 		#define NUMBER_OF_VERTEX_ATTRIBUTES 3
@@ -548,7 +561,7 @@ namespace caliope {
 
 		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
 		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = max_textures_per_batch;
+		sampler_layout_binding.descriptorCount = state_ptr->max_textures_per_batch;
 		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		sampler_layout_binding.pImmutableSamplers = nullptr;
 		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -564,13 +577,13 @@ namespace caliope {
 		VkDescriptorSetLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 		layout_info.bindingCount = bindings.size();
 		layout_info.pBindings = bindings.data();
-		VK_CHECK(vkCreateDescriptorSetLayout(context.device.logical_device, &layout_info, nullptr, &vk_shader->descriptor_set_layout));
+		VK_CHECK(vkCreateDescriptorSetLayout(state_ptr->context.device.logical_device, &layout_info, nullptr, &vk_shader->descriptor_set_layout));
 
 
 		// Create pipeline
 		bool result = vulkan_pipeline_create(
-			context, 
-			context.main_renderpass,//TODO: Choose renderpass depending the shader type
+			state_ptr->context, 
+			state_ptr->context.main_renderpass,//TODO: Choose renderpass depending the shader type
 			sizeof(vertex),
 			NUMBER_OF_VERTEX_ATTRIBUTES,
 			attribute_descriptions.data(),
@@ -589,18 +602,18 @@ namespace caliope {
 			return;
 		}
 
-		vkDestroyShaderModule(context.device.logical_device, vert_module, nullptr);
-		vkDestroyShaderModule(context.device.logical_device, frag_module, nullptr);
+		vkDestroyShaderModule(state_ptr->context.device.logical_device, vert_module, nullptr);
+		vkDestroyShaderModule(state_ptr->context.device.logical_device, frag_module, nullptr);
 
 		// Uniform buffers
 		VkDeviceSize buffer_size = sizeof(uniform_buffer_object);
 
-		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers);
-		vk_shader->uniform_buffers_mapped = vulkan_buffer_lock_memory(context, vk_shader->uniform_buffers, 0, buffer_size, 0);
+		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers);
+		vk_shader->uniform_buffers_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers, 0, buffer_size, 0);
 
 		// Vertex SSBO
-		vulkan_buffer_create(context, sizeof(quad_properties) * max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
-		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(context, vk_shader->ssbo, 0, sizeof(quad_properties) * max_number_quads, 0);
+		vulkan_buffer_create(state_ptr->context, sizeof(quad_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
+		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->ssbo, 0, sizeof(quad_properties) * state_ptr->max_number_quads, 0);
 
 
 		// Descriptor pool
@@ -618,7 +631,7 @@ namespace caliope {
 		pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-		VK_CHECK(vkCreateDescriptorPool(context.device.logical_device, &pool_info, nullptr, &vk_shader->descriptor_pool));
+		VK_CHECK(vkCreateDescriptorPool(state_ptr->context.device.logical_device, &pool_info, nullptr, &vk_shader->descriptor_pool));
 
 		// Descriptor sets
 		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, vk_shader->descriptor_set_layout);
@@ -628,7 +641,7 @@ namespace caliope {
 		alloc_info.pSetLayouts = layouts.data();
 
 		vk_shader->descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);
-		VK_CHECK(vkAllocateDescriptorSets(context.device.logical_device, &alloc_info, vk_shader->descriptor_sets.data()));
+		VK_CHECK(vkAllocateDescriptorSets(state_ptr->context.device.logical_device, &alloc_info, vk_shader->descriptor_sets.data()));
 
 	}
 
@@ -636,22 +649,22 @@ namespace caliope {
 
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
 
-		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			vulkan_buffer_unlock_memory(context, vk_shader->uniform_buffers);
-			vulkan_buffer_unlock_memory(context, vk_shader->ssbo);
-			vk_shader->uniform_buffers_mapped = 0;
-			vk_shader->ssbo_mapped = 0;
-			vulkan_buffer_destroy(context, vk_shader->uniform_buffers);
-			vulkan_buffer_destroy(context, vk_shader->ssbo);
-		}
-		vkDestroyDescriptorPool(context.device.logical_device, vk_shader->descriptor_pool, nullptr);
-		vkDestroyDescriptorSetLayout(context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);
-		vulkan_pipeline_destroy(context, vk_shader->pipeline);
+		//for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
+		vk_shader->uniform_buffers_mapped = 0;
+		vk_shader->ssbo_mapped = 0;
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->ssbo);
+		//}
+		vkDestroyDescriptorPool(state_ptr->context.device.logical_device, vk_shader->descriptor_pool, nullptr);
+		vkDestroyDescriptorSetLayout(state_ptr->context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);
+		vulkan_pipeline_destroy(state_ptr->context, vk_shader->pipeline);
 	}
 
 	void vulkan_renderer_shader_use(shader& s) {
 		vulkan_shader* vk_shader = &std::any_cast<vulkan_shader>(s.internal_data);
-		vulkan_pipeline_bind(context.command_buffers[context.current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline);
+		vulkan_pipeline_bind(state_ptr->context.command_buffers[state_ptr->context.current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline);
 	}
 
 	void vulkan_renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices) {
@@ -663,26 +676,26 @@ namespace caliope {
 		VkDeviceSize buffer_size = sizeof(vertices[0]) * vertices.size();
 		uint memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		vulkan_buffer staging_buffer;
-		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
-		vulkan_buffer_load_data(context, staging_buffer, 0, buffer_size, 0, vertices.data());
+		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
+		vulkan_buffer_load_data(state_ptr->context, staging_buffer, 0, buffer_size, 0, vertices.data());
 		memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		uint usage_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		vulkan_buffer_create(context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, internal_data.vertex_buffer);
-		vulkan_buffer_copy(context, context.device.command_pool, 0, context.device.graphics_queue, staging_buffer.handle, 0, internal_data.vertex_buffer.handle, 0, buffer_size);
-		vulkan_buffer_destroy(context, staging_buffer);
+		vulkan_buffer_create(state_ptr->context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, internal_data.vertex_buffer);
+		vulkan_buffer_copy(state_ptr->context, state_ptr->context.device.command_pool, 0, state_ptr->context.device.graphics_queue, staging_buffer.handle, 0, internal_data.vertex_buffer.handle, 0, buffer_size);
+		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 
 
 		// Index buffer
 		buffer_size = sizeof(indices[0]) * indices.size();
 		memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		vulkan_buffer_create(context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
+		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, memory_property_flags, true, staging_buffer);
 		void* data;
-		vulkan_buffer_load_data(context, staging_buffer, 0, buffer_size, 0, indices.data());
+		vulkan_buffer_load_data(state_ptr->context, staging_buffer, 0, buffer_size, 0, indices.data());
 		memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		usage_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		vulkan_buffer_create(context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, internal_data.index_buffer);
-		vulkan_buffer_copy(context, context.device.command_pool, 0, context.device.graphics_queue, staging_buffer.handle, 0, internal_data.index_buffer.handle, 0, buffer_size);
-		vulkan_buffer_destroy(context, staging_buffer);
+		vulkan_buffer_create(state_ptr->context, buffer_size, (VkBufferUsageFlagBits)usage_bit, memory_property_flags, true, internal_data.index_buffer);
+		vulkan_buffer_copy(state_ptr->context, state_ptr->context.device.command_pool, 0, state_ptr->context.device.graphics_queue, staging_buffer.handle, 0, internal_data.index_buffer.handle, 0, buffer_size);
+		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 
 
 		geometry.internal_data = internal_data;
@@ -691,36 +704,36 @@ namespace caliope {
 	void vulkan_renderer_geometry_destroy(geometry& geometry) {
 		vulkan_geometry* vk_geometry = std::any_cast<vulkan_geometry>(&geometry.internal_data);
 
-		vkDestroyBuffer(context.device.logical_device, vk_geometry->vertex_buffer.handle, nullptr);
-		vkFreeMemory(context.device.logical_device, vk_geometry->vertex_buffer.memory, nullptr);
-		vkDestroyBuffer(context.device.logical_device, vk_geometry->index_buffer.handle, nullptr);
-		vkFreeMemory(context.device.logical_device, vk_geometry->index_buffer.memory, nullptr);
+		vkDestroyBuffer(state_ptr->context.device.logical_device, vk_geometry->vertex_buffer.handle, nullptr);
+		vkFreeMemory(state_ptr->context.device.logical_device, vk_geometry->vertex_buffer.memory, nullptr);
+		vkDestroyBuffer(state_ptr->context.device.logical_device, vk_geometry->index_buffer.handle, nullptr);
+		vkFreeMemory(state_ptr->context.device.logical_device, vk_geometry->index_buffer.memory, nullptr);
 	}
 
 
 	void create_framebuffers() {
-		context.swapchain.framebuffers.resize(context.swapchain.views.size());
-		for (int i = 0; i < context.swapchain.views.size(); ++i) {
+		state_ptr->context.swapchain.framebuffers.resize(state_ptr->context.swapchain.views.size());
+		for (int i = 0; i < state_ptr->context.swapchain.views.size(); ++i) {
 			VkImageView attachments[] = {
-				context.swapchain.views[i],
-				context.swapchain.depth_attachment.view
+				state_ptr->context.swapchain.views[i],
+				state_ptr->context.swapchain.depth_attachment.view
 			};
 
 			VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-			framebuffer_info.renderPass = context.main_renderpass.handle;
+			framebuffer_info.renderPass = state_ptr->context.main_renderpass.handle;
 			framebuffer_info.attachmentCount = 2;
 			framebuffer_info.pAttachments = attachments;
-			framebuffer_info.width = context.swapchain.extent.width;
-			framebuffer_info.height = context.swapchain.extent.height;
+			framebuffer_info.width = state_ptr->context.swapchain.extent.width;
+			framebuffer_info.height = state_ptr->context.swapchain.extent.height;
 			framebuffer_info.layers = 1;
 
-			VK_CHECK(vkCreateFramebuffer(context.device.logical_device, &framebuffer_info, nullptr, &context.swapchain.framebuffers[i]));
+			VK_CHECK(vkCreateFramebuffer(state_ptr->context.device.logical_device, &framebuffer_info, nullptr, &state_ptr->context.swapchain.framebuffers[i]));
 		}
 	}
 
 	void destroy_framebuffers() {
-		for (int i = 0; i < context.swapchain.framebuffers.size(); ++i) {
-			vkDestroyFramebuffer(context.device.logical_device, context.swapchain.framebuffers[i], nullptr);
+		for (int i = 0; i < state_ptr->context.swapchain.framebuffers.size(); ++i) {
+			vkDestroyFramebuffer(state_ptr->context.device.logical_device, state_ptr->context.swapchain.framebuffers[i], nullptr);
 		}
 	}
 
@@ -731,27 +744,27 @@ namespace caliope {
 			glfwWaitEvents();
 		}
 
-		context.main_renderpass.render_area.z = width;
-		context.main_renderpass.render_area.w = height;
+		state_ptr->context.main_renderpass.render_area.z = width;
+		state_ptr->context.main_renderpass.render_area.w = height;
 
-		vkDeviceWaitIdle(context.device.logical_device);
+		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
 		destroy_framebuffers();
-		//vulkan_imageview_destroy(context);
+		//vulkan_imageview_destroy(state_ptr->context);
 
-		vulkan_swapchain_recreate(context, context.swapchain);
+		vulkan_swapchain_recreate(state_ptr->context, state_ptr->context.swapchain);
 		create_framebuffers();
 		create_command_buffers();
 	}
 
 	void create_command_buffers() {
-		context.command_buffers.resize(context.swapchain.image_count);
+		state_ptr->context.command_buffers.resize(state_ptr->context.swapchain.image_count);
 
-		for (uint i = 0; i < context.swapchain.image_count; ++i) {
-			if (context.command_buffers[i].handle) {
-				vulkan_command_buffer_free(context, context.device.command_pool, context.command_buffers[i]);
+		for (uint i = 0; i < state_ptr->context.swapchain.image_count; ++i) {
+			if (state_ptr->context.command_buffers[i].handle) {
+				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.command_buffers[i]);
 			}
 
-			vulkan_command_buffer_allocate(context, context.device.command_pool, true, context.command_buffers[i]);
+			vulkan_command_buffer_allocate(state_ptr->context, state_ptr->context.device.command_pool, true, state_ptr->context.command_buffers[i]);
 		}
 
 		CE_LOG_INFO("Vulkan command buffers created");
@@ -767,7 +780,7 @@ namespace caliope {
 		create_info.pCode = (uint*)code.data();
 
 		VkShaderModule shader_module;
-		if (vkCreateShaderModule(context.device.logical_device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {
+		if (vkCreateShaderModule(state_ptr->context.device.logical_device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {
 			CE_LOG_ERROR("Could not create the shader");
 			return VkShaderModule();
 		}

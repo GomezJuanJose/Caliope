@@ -70,7 +70,7 @@ namespace caliope {
 			block = dynamic_allocator_allocate(state_ptr->allocator, size);
 		}
 		else {
-			logger_plain_output(LOG_LEVEL_WARNING, "allocate_memory called before the memory system is initialize, calling SO to allocate.");
+			CE_LOG_WARNING("allocate_memory called when the memory system is uninitialize, calling SO to allocate.");
 			block = platform_system_allocate_memory(size);
 		}
 
@@ -79,7 +79,7 @@ namespace caliope {
 			return block;
 		}
 
-		logger_plain_output(LOG_LEVEL_FATAL, "allocate_memory failed to allocate successfully");
+		CE_LOG_FATAL("allocate_memory failed to allocate.");
 		return nullptr;
 	}
 
@@ -93,7 +93,7 @@ namespace caliope {
 			}
 		}
 		else {
-			logger_plain_output(LOG_LEVEL_WARNING, "free_memory called before the memory system is initialize, calling SO to free.");
+			CE_LOG_WARNING("free_memory called when the memory system is uninitialize, calling SO to free.");
 			platform_system_free_memory(block);
 		}
 	}
@@ -111,7 +111,7 @@ namespace caliope {
 	}
 
 	std::string get_memory_stats() {
-		std::string stats = "";
+		std::string stats = "\n";
 
 		std::string string_tags[] = {
 			"MEMORY_TAG_UNKNOWN         ",

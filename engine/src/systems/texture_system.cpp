@@ -47,6 +47,7 @@ namespace caliope {
 
 		state_ptr->registered_textures.empty();
 		state_ptr.reset();
+		state_ptr = nullptr;
 	}
 	
 	texture* texture_system_adquire(std::string& name) {

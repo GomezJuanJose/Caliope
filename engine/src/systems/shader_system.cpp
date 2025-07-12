@@ -45,6 +45,7 @@ namespace caliope {
 
 		state_ptr->registered_shaders.empty();
 		state_ptr.reset();
+		state_ptr = nullptr;
 	}
 	
 	std::shared_ptr<shader> shader_system_adquire(std::string& name) {

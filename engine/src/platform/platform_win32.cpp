@@ -90,6 +90,8 @@ namespace caliope {
 	void platform_system_shutdown() {
 		glfwDestroyWindow(state_ptr->window);
 		glfwTerminate();
+		state_ptr.reset();
+		state_ptr = nullptr;
 	}
 
 	bool platform_system_pump_event() {
@@ -103,6 +105,17 @@ namespace caliope {
 
 	float platform_system_get_time() {
 		return (float)glfwGetTime();
+	}
+
+	void platform_system_console_write(const char* message, uchar log_level) {
+		HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		// FATAL, ERROR, WARN, INFO
+		static uchar levels[4] = { 64, 4, 6, 8};
+		SetConsoleTextAttribute(console_handle, levels[log_level]);
+		OutputDebugStringA(message);
+		uint64 length = strlen(message);
+		LPDWORD number_written = 0;
+		WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), message, (DWORD)length, number_written, 0);
 	}
 
 	void* platform_system_allocate_memory(size_t size) {

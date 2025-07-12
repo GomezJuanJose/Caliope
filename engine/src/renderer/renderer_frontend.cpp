@@ -68,12 +68,17 @@ namespace caliope{
 		return true;
 	}
 
+	void renderer_system_stop() {
+		state_ptr->backend.stop();
+	}
+
 	void renderer_system_shutdown() {
 		if (state_ptr != nullptr) {
 			state_ptr->backend.shutdown();
 			renderer_backend_system_destroy(state_ptr->backend);
 			state_ptr.reset();
 		}
+		state_ptr = nullptr;
 	}
 
 	void renderer_on_resized(uint16 width, uint16 height) {

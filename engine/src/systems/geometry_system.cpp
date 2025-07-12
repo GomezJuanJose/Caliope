@@ -31,7 +31,7 @@ namespace caliope {
 	void geometry_system_shutdown() {
 		renderer_geometry_destroy(state_ptr->quad);
 		state_ptr.reset();
-		state_ptr = 0;
+		state_ptr = nullptr;
 	}
 
 	geometry* geometry_system_get_quad() {

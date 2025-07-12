@@ -37,6 +37,7 @@ namespace caliope {
 
 	void resource_system_shutdown() {
 		state_ptr.reset();
+		state_ptr = nullptr;
 	}
 
 	bool resource_system_register_loader(resource_loader loader) {

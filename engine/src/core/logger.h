@@ -22,11 +22,7 @@ namespace caliope {
 	bool logger_system_initialize();
 	void logger_system_shutdown();
 
-	CE_API void logger_output(const std::string& string, log_level level, ...);
-
-	// Use it only to log the actions of memory managment systems, it not use allocations, only raw pointers
-	// Do not use it in other contexts.
-	void logger_plain_output(log_level level, const char* string, ...);
+	CE_API void logger_output(const char* string, log_level level, ...);
 }
 
 #ifndef CE_LOG_FATAL

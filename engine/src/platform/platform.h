@@ -13,8 +13,7 @@ namespace caliope {
 
 	float platform_system_get_time();//TODO: Do it platform specific??
 
-
-
+	void platform_system_console_write(const char* message, uchar log_level);
 
 
 	void* platform_system_allocate_memory(size_t size);
@@ -22,10 +21,6 @@ namespace caliope {
 	void* platform_system_zero_memory(void* block, uint64 size);
 	void* platform_system_copy_memory(void* dest, const void* source, uint64 size);
 	void* platform_system_set_memory(void* dest, int value, uint64 size);
-
-
-
-
 
 
 	bool platform_system_open_file(const char* path, std::any& handle, int mode);

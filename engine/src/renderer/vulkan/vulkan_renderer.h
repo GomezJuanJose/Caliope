@@ -7,9 +7,8 @@ namespace caliope {
 	struct quad_properties;
 
 	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config);
-	void create_framebuffers();
+	void vulkan_renderer_backend_stop();
 	void vulkan_renderer_backend_shutdown();
-	void destroy_framebuffers();
 	void vulkan_renderer_backend_resize(uint16 width, uint16 height);
 
 	bool vulkan_renderer_begin_frame(float delta_time);

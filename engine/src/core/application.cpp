@@ -126,7 +126,7 @@ namespace caliope {
 		// Register events
 		event_register(EVENT_CODE_MOUSE_RESIZED, application_on_resize);
 
-		CE_LOG_INFO("\n" + get_memory_stats());
+		CE_LOG_INFO(get_memory_stats().c_str());
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);
 
 		// TODO: TEMPORAL CODE
@@ -300,7 +300,12 @@ namespace caliope {
 			}
 		}
 
+		state_ptr->program_config.reset();
+		state_ptr.reset();
+
 		camera_system_shutdown();
+
+		renderer_system_stop();
 
 		geometry_system_shutdown();
 
@@ -323,8 +328,6 @@ namespace caliope {
 		logger_system_shutdown();
 
 		memory_system_shutdown();
-
-
 
 		return true;
 	}

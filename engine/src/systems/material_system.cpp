@@ -35,13 +35,11 @@ namespace caliope {
 		return true;
 	}
 	void material_system_shutdown() {
-		for (auto [key, value] : state_ptr->registered_materials) {
-			destroy_material(value);
-		}
 		destroy_material(state_ptr->default_material);
 
-		state_ptr->registered_materials.empty();
+		state_ptr->registered_materials.empty(); // Destroys all the materials and their pointers.
 		state_ptr.reset();
+		state_ptr = nullptr;
 	}
 
 	material* material_system_adquire(std::string& name) {
@@ -53,6 +51,8 @@ namespace caliope {
 				return material_system_get_default();
 			}
 			material_configuration mat_config = std::any_cast<material_configuration>(r.data);
+			resource_system_unload(r);
+
 
 			if (!load_material(mat_config)) {
 				CE_LOG_ERROR("material_system_adquire couldnt adquire material");

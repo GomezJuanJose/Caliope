@@ -25,6 +25,7 @@ namespace caliope {
 	typedef struct renderer_backend {
 
 		bool (*initialize)(const renderer_backend_config& config);
+		void (*stop)();
 		void (*shutdown)();
 		void (*resize)(uint16 width, uint16 height);
 
