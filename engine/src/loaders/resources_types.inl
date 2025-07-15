@@ -23,12 +23,19 @@ namespace caliope {
 		uchar* pixels;
 	}image_resource_data;
 
+	typedef enum texture_filter {
+		FILTER_LINEAR,
+		FILTER_NEAREST
+	} texture_filter;
+
 	typedef struct texture {
 		std::string name;
 		uint id;
 		uint width;
 		uint height;
 		uint channel_count;
+		texture_filter magnification_filter;
+		texture_filter minification_filter;
 		bool has_transparency;
 		std::any internal_data;
 	} texture;
@@ -60,7 +67,6 @@ namespace caliope {
 		texture* diffuse_texture;
 		texture* specular_texture;
 		texture* normal_texture;
-
 	}material;
 
 	// NOTE: Remember to always align the memory by 128 bits and always go from the higher size to the lowest

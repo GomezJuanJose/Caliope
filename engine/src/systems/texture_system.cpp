@@ -71,9 +71,18 @@ namespace caliope {
 	}
 	
 	void texture_system_release(std::string& name) {
-		if (state_ptr->registered_textures.find(name) == state_ptr->registered_textures.end()) {
+		if (state_ptr->registered_textures.find(name) != state_ptr->registered_textures.end()) {
 			destroy_texture(state_ptr->registered_textures[name]);
 			state_ptr->registered_textures.erase(name);
+		}
+	}
+
+	void texture_system_change_filter(std::string& name, texture_filter new_filter) {
+		if (state_ptr->registered_textures.find(name) != state_ptr->registered_textures.end()) {
+			state_ptr->registered_textures[name].magnification_filter = new_filter;
+			state_ptr->registered_textures[name].minification_filter = new_filter;
+
+			renderer_texture_change_filter(state_ptr->registered_textures[name]);
 		}
 	}
 
@@ -131,6 +140,8 @@ namespace caliope {
 		t.height = image_data.height;
 		t.channel_count = image_data.channel_count;
 		t.has_transparency = false;
+		t.magnification_filter = FILTER_LINEAR;
+		t.minification_filter = FILTER_LINEAR;
 
 		// Checks if the images contains alpha
 		for (int i = 0; i < r.data_size; i+= image_data.channel_count) {
@@ -179,6 +190,8 @@ namespace caliope {
 		state_ptr->default_diffuse_texture.height = texture_dimensions;
 		state_ptr->default_diffuse_texture.channel_count = texture_channels;
 		state_ptr->default_diffuse_texture.has_transparency = false;
+		state_ptr->default_diffuse_texture.magnification_filter = FILTER_LINEAR;
+		state_ptr->default_diffuse_texture.minification_filter = FILTER_LINEAR;
 		renderer_texture_create(state_ptr->default_diffuse_texture, pixels);
 
 
@@ -189,6 +202,8 @@ namespace caliope {
 		state_ptr->default_specular_texture.height = 16;
 		state_ptr->default_specular_texture.channel_count = texture_channels;
 		state_ptr->default_specular_texture.has_transparency = false;
+		state_ptr->default_specular_texture.magnification_filter = FILTER_LINEAR;
+		state_ptr->default_specular_texture.minification_filter = FILTER_LINEAR;
 		renderer_texture_create(state_ptr->default_specular_texture, spec_pixels.data());
 
 
@@ -209,6 +224,8 @@ namespace caliope {
 		state_ptr->default_normal_texture.height = 16;
 		state_ptr->default_normal_texture.channel_count = texture_channels;
 		state_ptr->default_normal_texture.has_transparency = false;
+		state_ptr->default_normal_texture.magnification_filter = FILTER_LINEAR;
+		state_ptr->default_normal_texture.minification_filter = FILTER_LINEAR;
 		renderer_texture_create(state_ptr->default_normal_texture, normal_pixels.data());
 	}
 }

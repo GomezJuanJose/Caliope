@@ -41,6 +41,7 @@ namespace caliope {
 
 		void (*texture_create)(texture& t, uchar* pixels);
 		void (*texture_destroy)(texture& t);
+		void (*texture_change_filter)(texture& t);
 
 		void (*shader_create)(shader& s);
 		void (*shader_destroy)(shader& s);

@@ -34,7 +34,7 @@ namespace caliope {
 	void create_command_buffers();
 	VkShaderModule create_shader_module(std::string& file_path);
 
-	
+	VkFilter get_vulkan_texture_filter(texture_filter filter);
 
 	typedef struct uniform_buffer_object {
 		glm::mat4 view;
@@ -384,6 +384,16 @@ namespace caliope {
 
 	}
 
+	VkFilter get_vulkan_texture_filter(texture_filter filter) {
+		if (filter == FILTER_LINEAR) {
+			return VK_FILTER_LINEAR;
+		}
+
+		if (filter == FILTER_NEAREST) {
+			return VK_FILTER_NEAREST;
+		}
+	}
+
 	void vulkan_renderer_texture_create(texture& t, uchar* pixels) {
 		
 		t.internal_data = vulkan_texture();
@@ -466,10 +476,18 @@ namespace caliope {
 
 		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 
+		vulkan_renderer_texture_change_filter(t);
+
+	}
+
+	void vulkan_renderer_texture_change_filter(texture& t) {
+		vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&t.internal_data);
+		vkDestroySampler(state_ptr->context.device.logical_device, vk_texture->sampler, nullptr);
+
 		// Create sampler
 		VkSamplerCreateInfo sampler_info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-		sampler_info.magFilter = VK_FILTER_LINEAR;
-		sampler_info.minFilter = VK_FILTER_LINEAR;
+		sampler_info.magFilter = get_vulkan_texture_filter(t.magnification_filter);
+		sampler_info.minFilter = get_vulkan_texture_filter(t.minification_filter);
 		sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -489,7 +507,6 @@ namespace caliope {
 		sampler_info.maxLod = 0.0f;
 
 		VK_CHECK(vkCreateSampler(state_ptr->context.device.logical_device, &sampler_info, nullptr, &vk_texture->sampler));
-
 	}
 
 	void vulkan_renderer_texture_destroy(texture& t) {

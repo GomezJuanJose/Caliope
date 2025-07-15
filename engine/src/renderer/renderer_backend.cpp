@@ -24,6 +24,7 @@ namespace caliope {
 
 			out_renderer_backend.texture_create = vulkan_renderer_texture_create;
 			out_renderer_backend.texture_destroy = vulkan_renderer_texture_destroy;
+			out_renderer_backend.texture_change_filter = vulkan_renderer_texture_change_filter;
 
 			out_renderer_backend.shader_create = vulkan_renderer_shader_create;
 			out_renderer_backend.shader_destroy = vulkan_renderer_shader_destroy;

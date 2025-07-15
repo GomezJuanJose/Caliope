@@ -97,6 +97,7 @@ namespace caliope {
 		m.shininess_intensity = mat_config.shininess_intensity;
 		m.shininess_sharpness = mat_config.shininess_sharpness;
 		m.shader = shader_system_adquire(std::string(mat_config.shader_name.data()));
+
 		m.diffuse_texture = texture_system_adquire(std::string(mat_config.diffuse_texture_name.data()));
 		m.specular_texture = texture_system_adquire(std::string(mat_config.specular_texture_name.data()));
 		m.normal_texture = texture_system_adquire(std::string(mat_config.normal_texture_name.data()));

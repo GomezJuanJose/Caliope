@@ -4,6 +4,7 @@
 namespace caliope {
 
 	struct texture;
+	enum texture_filter;
 
 
 	bool texture_system_initialize();
@@ -11,6 +12,8 @@ namespace caliope {
 
 	CE_API texture* texture_system_adquire(std::string& name);
 	CE_API void texture_system_release(std::string& name);
+
+	CE_API void texture_system_change_filter(std::string& name, texture_filter new_filter);
 
 	CE_API texture* texture_system_get_default_diffuse();
 	CE_API texture* texture_system_get_default_specular();

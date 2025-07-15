@@ -183,6 +183,10 @@ namespace caliope {
 		m5.shader_name = { "Builtin.SpriteShader" };
 		m5.name = { "spritesheet" };
 
+		texture_system_adquire(std::string("B_witch_idle"));
+		texture_system_change_filter(std::string("B_witch_idle"), FILTER_NEAREST);
+
+
 		file_handle w;
 		file_system_open(std::string("assets\\materials\\character1.cemat"), FILE_MODE_WRITE, w);
 		file_system_write_bytes(w, sizeof(material_configuration), &m);

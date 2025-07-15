@@ -258,6 +258,10 @@ namespace caliope{
 		state_ptr->backend.texture_destroy(texture);
 	}
 
+	void renderer_texture_change_filter(texture& texture) {
+		state_ptr->backend.texture_change_filter(texture);
+	}
+
 	void renderer_shader_create(shader& shader) {
 		state_ptr->backend.shader_create(shader);
 	}
