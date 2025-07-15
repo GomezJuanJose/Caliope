@@ -77,10 +77,10 @@ namespace caliope {
 		}
 	}
 
-	void texture_system_change_filter(std::string& name, texture_filter new_filter) {
+	void texture_system_change_filter(std::string& name, texture_filter new_mag_filter, texture_filter new_min_filter) {
 		if (state_ptr->registered_textures.find(name) != state_ptr->registered_textures.end()) {
-			state_ptr->registered_textures[name].magnification_filter = new_filter;
-			state_ptr->registered_textures[name].minification_filter = new_filter;
+			state_ptr->registered_textures[name].magnification_filter = new_mag_filter;
+			state_ptr->registered_textures[name].minification_filter = new_min_filter;
 
 			renderer_texture_change_filter(state_ptr->registered_textures[name]);
 		}

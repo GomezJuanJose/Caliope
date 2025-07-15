@@ -184,7 +184,7 @@ namespace caliope {
 		m5.name = { "spritesheet" };
 
 		texture_system_adquire(std::string("B_witch_idle"));
-		texture_system_change_filter(std::string("B_witch_idle"), FILTER_NEAREST);
+		texture_system_change_filter(std::string("B_witch_idle"), FILTER_NEAREST, FILTER_NEAREST);
 
 
 		file_handle w;
