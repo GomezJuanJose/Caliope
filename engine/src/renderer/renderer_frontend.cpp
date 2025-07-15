@@ -216,6 +216,7 @@ namespace caliope{
 					qp.normal_index = normal_id;
 					qp.shininess_sharpness = mat->shininess_sharpness;
 					qp.shininess_intensity = mat->shininess_intensity;
+					qp.texture_region = quad.texture_region;
 					state_ptr->quads.at(number_of_instances) = qp;
 					number_of_instances++;
 					//}

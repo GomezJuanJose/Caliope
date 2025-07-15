@@ -3,7 +3,7 @@
 //Attributes
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec4 inTangent;
-layout(location = 2) in vec2 inTexCoord;
+layout(location = 2) in vec2 inGeometryTexCoord;
 
 // Uniforms
 layout(binding = 0) uniform UniformBufferObject {
@@ -15,6 +15,7 @@ layout(binding = 0) uniform UniformBufferObject {
 
 struct quad_properties {
 	mat4 model;
+	vec2 texture_coordinates[4];
 	uint diffuse_index;
 	uint normal_index;
 	uint specular_index;
@@ -50,7 +51,7 @@ void main() {
 	gl_Position = ubo.proj * ubo.view * quad_buffer_ssbo.quads[gl_InstanceIndex].model * vec4(inPosition, 1.0);
 
 	out_data_transfer.ambient = ubo.ambient_color;
-	out_data_transfer.tex_coord = inTexCoord;
+	out_data_transfer.tex_coord = quad_buffer_ssbo.quads[gl_InstanceIndex].texture_coordinates[gl_VertexIndex];
 	out_data_transfer.normal = normalize(model_m3 * vec3(0, 0, 1));
 	out_data_transfer.tangent = vec4(normalize(model_m3 * inTangent.xyz), inTangent.w);
 	out_data_transfer.view_position = ubo.view_position;

@@ -173,6 +173,16 @@ namespace caliope {
 		m4.shader_name = { "Builtin.SpriteShader" };
 		m4.name = { "transparency" };
 
+		material_configuration m5;
+		m5.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m5.shininess_sharpness = 64.0f;
+		m5.shininess_intensity = 5.0f;
+		m5.diffuse_texture_name = { "B_witch_idle" };
+		m5.specular_texture_name = { "" };
+		m5.normal_texture_name = { "" };
+		m5.shader_name = { "Builtin.SpriteShader" };
+		m5.name = { "spritesheet" };
+
 		file_handle w;
 		file_system_open(std::string("assets\\materials\\character1.cemat"), FILE_MODE_WRITE, w);
 		file_system_write_bytes(w, sizeof(material_configuration), &m);
@@ -188,6 +198,10 @@ namespace caliope {
 
 		file_system_open(std::string("assets\\materials\\transparency.cemat"), FILE_MODE_WRITE, w);
 		file_system_write_bytes(w, sizeof(material_configuration), &m4);
+		file_system_close(w);
+
+		file_system_open(std::string("assets\\materials\\spritesheet.cemat"), FILE_MODE_WRITE, w);
+		file_system_write_bytes(w, sizeof(material_configuration), &m5);
 		file_system_close(w);
 		// TODO: END TEMPORAL CODE
 		
@@ -246,11 +260,17 @@ namespace caliope {
 				transform_set_scale(t6, glm::vec3(0.5f, 0.5f, 1.0f));
 				transform_set_position(t6, glm::vec3(0.2f, 0.0f, 1.0f));
 
+				transform t7 = transform_create();
+				transform_set_rotation(t7, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
+				transform_set_scale(t7, glm::vec3(0.25f, 0.5f, 1.0f));
+				transform_set_position(t7, glm::vec3(1.0f, 0.6f, 1.0f));
+
 				// In the future get the vector from the shader name and push the material name, same with the transforms
 				std::string testmat_name = "character1";
 				std::string testmat2_name = "background";
 				std::string testmat3_name = "character2";
 				std::string testmat4_name = "transparency";
+				std::string testmat5_name = "spritesheet";
 				/**packet.quad_materials.insert({material_system_adquire(testmat_name)->shader->name, {testmat_name, testmat2_name, testmat4_name, testmat3_name}});
 				packet.quad_transforms.insert({ testmat_name, {t1, t3} });
 				packet.quad_transforms.insert({ testmat2_name, {t4} });
@@ -263,31 +283,43 @@ namespace caliope {
 				qd.material_name = testmat_name;
 				qd.transform = t1;
 				qd.z_order = 1;
+				qd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat_name)->diffuse_texture, { 258.0f, 1644.0f }, { 873.0f, 2096.0f });
 				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 
 				qd.material_name = testmat_name;
 				qd.transform = t3;
 				qd.z_order = 1;
+				qd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 
 				qd.material_name = testmat2_name;
 				qd.transform = t4;
 				qd.z_order = 0;
+				qd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat2_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 
 				qd.material_name = testmat3_name;
 				qd.transform = t2;
 				qd.z_order = 1;
+				qd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat3_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 
 				qd.material_name = testmat4_name;
 				qd.transform = t5;
 				qd.z_order = 2;
+				qd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat4_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 
 				qd.material_name = testmat4_name;
 				qd.transform = t6;
 				qd.z_order = 2;
+				qd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat4_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
+				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
+
+				qd.material_name = testmat5_name;
+				qd.transform = t7;
+				qd.z_order = 2;
+				qd.texture_region = texture_system_calculate_grid_region_coordinates(*material_system_adquire(testmat5_name)->diffuse_texture, {32.0f, 48.0f}, 0, 0);
 				packet.quad_definitions.at(material_system_adquire(testmat_name)->shader->name).push(qd);
 				// TODO: TEMP CODE
 

@@ -7,6 +7,8 @@
 
 #include "renderer/renderer_frontend.h"
 
+#include <glm/glm.hpp>
+
 namespace caliope {
 	typedef struct texture_system_state {
 		std::unordered_map<std::string, texture> registered_textures;
@@ -86,6 +88,34 @@ namespace caliope {
 
 	texture* texture_system_get_default_normal() {
 		return &state_ptr->default_normal_texture;
+	}
+
+	std::array<glm::vec2,4> texture_system_calculate_custom_region_coordinates(texture& texture, glm::vec2 left_bottom, glm::vec2 right_top) {
+		std::array<glm::vec2, 4> region;
+
+		if (left_bottom.x == 0.0f && left_bottom.y == 0.0f && right_top.x == 0.0f && right_top.y == 0.0f) {
+			region[0] = { 0.0f, 0.0f };
+			region[1] = { 0.0f, 1.0f };
+			region[2] = { 1.0f, 0.0f };
+			region[3] = { 1.0f, 1.0f };
+		}
+		else {
+			region[0] = { left_bottom.x / texture.width, left_bottom.y / texture.height };
+			region[1] = { left_bottom.x / texture.width, right_top.y / texture.height };
+			region[2] = { right_top.x / texture.width, left_bottom.y / texture.height };
+			region[3] = { right_top.x / texture.width, right_top.y / texture.height };
+		}
+
+		return region;
+	}
+
+	std::array<glm::vec2, 4> texture_system_calculate_grid_region_coordinates(texture& texture, glm::vec2 grid_size, uint row_index, uint column_index) {
+		std::array<glm::vec2, 4> region;
+		region[0] = { (grid_size.x * row_index) / texture.width, (grid_size.y * column_index) / texture.height };
+		region[1] = { (grid_size.x * row_index) / texture.width, ((grid_size.y * column_index) + grid_size.y) / texture.height };
+		region[2] = { ((grid_size.x * row_index) + grid_size.x) / texture.width, (grid_size.y * column_index) / texture.height };
+		region[3] = { ((grid_size.x * row_index) + grid_size.x) / texture.width, ((grid_size.y * column_index) + grid_size.y) / texture.height };
+		return region;
 	}
 	
 	bool load_texture(std::string& name, texture& t) {

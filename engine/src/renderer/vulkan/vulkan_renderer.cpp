@@ -335,7 +335,7 @@ namespace caliope {
 		VkDescriptorBufferInfo ssbo_info = {};
 		ssbo_info.buffer = vk_shader->ssbo.handle;
 		ssbo_info.offset = 0;
-		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads;
+		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
 
 		std::array<VkWriteDescriptorSet, 3> descriptor_writes = {};
 		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

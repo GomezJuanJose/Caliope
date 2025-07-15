@@ -1,9 +1,10 @@
 #pragma once
 #include "defines.h"
-
+#include <glm/glm.hpp>
 namespace caliope {
 
 	struct texture;
+
 
 	bool texture_system_initialize();
 	void texture_system_shutdown();
@@ -14,4 +15,10 @@ namespace caliope {
 	CE_API texture* texture_system_get_default_diffuse();
 	CE_API texture* texture_system_get_default_specular();
 	CE_API texture* texture_system_get_default_normal();
+
+	/*
+	 * @note Set left_bottom and right_top to 0 for the the whole texture
+	 */
+	CE_API std::array<glm::vec2,4> texture_system_calculate_custom_region_coordinates(texture& texture, glm::vec2 left_bottom, glm::vec2 right_top);
+	CE_API std::array<glm::vec2,4> texture_system_calculate_grid_region_coordinates(texture& texture, glm::vec2 grid_size, uint row_index, uint column_index);
 }
