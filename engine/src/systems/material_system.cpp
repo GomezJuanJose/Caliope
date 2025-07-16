@@ -80,7 +80,7 @@ namespace caliope {
 	}
 
 	void material_system_release(std::string& name) {
-		if (state_ptr->registered_materials.find(name) == state_ptr->registered_materials.end()) {
+		if (state_ptr->registered_materials.find(name) != state_ptr->registered_materials.end()) {
 			destroy_material(state_ptr->registered_materials[name]);
 			state_ptr->registered_materials.erase(name);
 		}

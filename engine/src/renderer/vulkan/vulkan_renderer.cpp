@@ -316,7 +316,7 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
+	void vulkan_renderer_set_and_apply_uniforms(std::vector<sprite_properties>& quads, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
 		uniform_buffer_object ubo;
 		ubo.view = view;
 		ubo.proj = projection;
@@ -325,7 +325,7 @@ namespace caliope {
 
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader_internal_data);
 		copy_memory(vk_shader->uniform_buffers_mapped, &ubo, sizeof(ubo));
-		copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(quad_properties) * quad_count);
+		copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(sprite_properties) * quad_count);
 
 		VkDescriptorBufferInfo buffer_info = {};
 		buffer_info.buffer = vk_shader->uniform_buffers.handle;
@@ -335,7 +335,7 @@ namespace caliope {
 		VkDescriptorBufferInfo ssbo_info = {};
 		ssbo_info.buffer = vk_shader->ssbo.handle;
 		ssbo_info.offset = 0;
-		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
+		ssbo_info.range = sizeof(sprite_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
 
 		std::array<VkWriteDescriptorSet, 3> descriptor_writes = {};
 		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -629,8 +629,8 @@ namespace caliope {
 		vk_shader->uniform_buffers_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers, 0, buffer_size, 0);
 
 		// Vertex SSBO
-		vulkan_buffer_create(state_ptr->context, sizeof(quad_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
-		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->ssbo, 0, sizeof(quad_properties) * state_ptr->max_number_quads, 0);
+		vulkan_buffer_create(state_ptr->context, sizeof(sprite_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
+		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->ssbo, 0, sizeof(sprite_properties) * state_ptr->max_number_quads, 0);
 
 
 		// Descriptor pool

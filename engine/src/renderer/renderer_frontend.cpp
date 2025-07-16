@@ -27,7 +27,7 @@ namespace caliope{
 	typedef struct renderer_system_state {
 		renderer_backend backend;
 
-		std::vector<quad_properties> quads;
+		std::vector<sprite_properties> quads;
 		std::vector<texture*> batch_textures;
 		float aspect_ratio;
 
@@ -107,7 +107,7 @@ namespace caliope{
 
 			// Groups the materials and transforms by shader. This is to batch maximum information in a single drawcall
 			//for (auto [shader_name, material_name] : packet.quad_materials) {
-			for (auto [shader_name, quads] : packet.quad_definitions) {
+			for (auto [shader_name, sprites] : packet.sprite_definitions) {
 
 				std::string sn = shader_name;
 				std::shared_ptr<shader> shader = shader_system_adquire(sn);
@@ -118,11 +118,11 @@ namespace caliope{
 
 
 				//for (std::string material_name : packet.quad_materials[shader_name]) {
-				while (!quads.empty()){
-					quad_definition quad = quads.top();
-					quads.pop();
+				while (!sprites.empty()){
+					sprite_definition sprite = sprites.top();
+					sprites.pop();
 
-					material* mat = material_system_adquire(quad.material_name);
+					material* mat = material_system_adquire(sprite.material_name);
 					//std::vector<transform>& transforms = packet.quad_transforms[material_name];
 					
 					texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
@@ -209,15 +209,15 @@ namespace caliope{
 					}
 
 					//for (uint i = 0; i < transforms.size(); ++i) {
-					quad_properties qp;
-					qp.model = transform_get_world(quad.transform/*transforms[i]*/);
-					qp.diffuse_index = diffuse_id;
-					qp.specular_index = specula_id;
-					qp.normal_index = normal_id;
-					qp.shininess_sharpness = mat->shininess_sharpness;
-					qp.shininess_intensity = mat->shininess_intensity;
-					qp.texture_region = quad.texture_region;
-					state_ptr->quads.at(number_of_instances) = qp;
+					sprite_properties sp;
+					sp.model = transform_get_world(sprite.transform/*transforms[i]*/);
+					sp.diffuse_index = diffuse_id;
+					sp.specular_index = specula_id;
+					sp.normal_index = normal_id;
+					sp.shininess_sharpness = mat->shininess_sharpness;
+					sp.shininess_intensity = mat->shininess_intensity;
+					sp.texture_region = sprite.texture_region;
+					state_ptr->quads.at(number_of_instances) = sp;
 					number_of_instances++;
 					//}
 				}

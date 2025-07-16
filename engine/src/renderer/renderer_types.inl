@@ -35,7 +35,7 @@ namespace caliope {
 		bool (*begin_renderpass)();
 		bool (*end_renderpass)();
 
-		void (*set_and_apply_uniforms)(std::vector<quad_properties>& quads, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+		void (*set_and_apply_uniforms)(std::vector<sprite_properties>& sprites, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
 		void (*draw_geometry)(uint quad_count, geometry& geometry);
 
@@ -52,7 +52,7 @@ namespace caliope {
 	};
 
 	struct z_order_comparator {
-		bool operator()(const quad_definition& a, const quad_definition& b) {
+		bool operator()(const sprite_definition& a, const sprite_definition& b) {
 			return a.z_order > b.z_order;
 		};
 	};
@@ -63,7 +63,7 @@ namespace caliope {
 		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
 		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
 
-		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> quad_definitions; // Key : shader name, Value: vector of materials
+		std::unordered_map <std::string, std::priority_queue<sprite_definition, std::vector<sprite_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 
 	} renderer_packet;
 }

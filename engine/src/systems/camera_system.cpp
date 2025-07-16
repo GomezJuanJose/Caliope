@@ -46,7 +46,7 @@ namespace caliope {
 	}
 	
 	void camera_system_release(const std::string& name) {
-		if (state_ptr->registered_cameras.find(name) == state_ptr->registered_cameras.end()) {
+		if (state_ptr->registered_cameras.find(name) != state_ptr->registered_cameras.end()) {
 			state_ptr->registered_cameras.erase(name);
 		}
 	}

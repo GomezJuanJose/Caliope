@@ -70,7 +70,7 @@ namespace caliope {
 	}material;
 
 	// NOTE: Remember to always align the memory by 128 bits and always go from the higher size to the lowest
-	typedef struct quad_properties {
+	typedef struct sprite_properties {
 		alignas(16)	glm::mat4 model;
 		alignas(8)	std::array<glm::vec2, 4> texture_region;
 		alignas(4)	uint diffuse_index;
@@ -78,14 +78,14 @@ namespace caliope {
 		alignas(4)	uint specular_index;
 		alignas(4)	float shininess_intensity;
 		alignas(4)	float shininess_sharpness;
-	} quad_properties;
+	} sprite_properties;
 
-	typedef struct quad_definition {
+	typedef struct sprite_definition {
 		uint z_order;
 		std::string material_name;
 		transform transform;
 		std::array<glm::vec2,4> texture_region;
-	} quad_definition;
+	} sprite_definition;
 
 	typedef struct geometry{
 		std::string name;

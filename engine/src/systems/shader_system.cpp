@@ -63,14 +63,14 @@ namespace caliope {
 	}
 	
 	void shader_system_release(std::string& name) {
-		if (state_ptr->registered_shaders.find(name) == state_ptr->registered_shaders.end()) {
+		if (state_ptr->registered_shaders.find(name) != state_ptr->registered_shaders.end()) {
 			destroy_shader(state_ptr->registered_shaders[name]);
 			state_ptr->registered_shaders.erase(name);
 		}
 	}
 
 	void shader_system_use(std::string& name) {
-		if (state_ptr->registered_shaders.find(name) == state_ptr->registered_shaders.end()) {
+		if (state_ptr->registered_shaders.find(name) != state_ptr->registered_shaders.end()) {
 			renderer_shader_use(state_ptr->registered_shaders[name]);
 		}
 	}

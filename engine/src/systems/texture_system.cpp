@@ -120,10 +120,10 @@ namespace caliope {
 
 	std::array<glm::vec2, 4> texture_system_calculate_grid_region_coordinates(texture& texture, glm::vec2 grid_size, uint row_index, uint column_index) {
 		std::array<glm::vec2, 4> region;
-		region[0] = { (grid_size.x * row_index) / texture.width, (grid_size.y * column_index) / texture.height };
-		region[1] = { (grid_size.x * row_index) / texture.width, ((grid_size.y * column_index) + grid_size.y) / texture.height };
-		region[2] = { ((grid_size.x * row_index) + grid_size.x) / texture.width, (grid_size.y * column_index) / texture.height };
-		region[3] = { ((grid_size.x * row_index) + grid_size.x) / texture.width, ((grid_size.y * column_index) + grid_size.y) / texture.height };
+		region[0] = { (grid_size.x * column_index) / texture.width, (grid_size.y * row_index) / texture.height };
+		region[1] = { (grid_size.x * column_index) / texture.width, ((grid_size.y * row_index) + grid_size.y) / texture.height };
+		region[2] = { ((grid_size.x * column_index) + grid_size.x) / texture.width, (grid_size.y * row_index) / texture.height };
+		region[3] = { ((grid_size.x * column_index) + grid_size.x) / texture.width, ((grid_size.y * row_index) + grid_size.y) / texture.height };
 		return region;
 	}
 	
