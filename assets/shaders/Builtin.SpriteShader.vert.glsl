@@ -15,6 +15,7 @@ layout(binding = 0) uniform UniformBufferObject {
 
 struct quad_properties {
 	mat4 model;
+	vec3 diffuse_color;
 	vec2 texture_coordinates[4];
 	uint diffuse_index;
 	uint normal_index;
@@ -40,6 +41,7 @@ layout(location = 5) out struct data_transfer{
 	vec2 tex_coord;
 	vec3 normal;
 	vec4 tangent;
+	vec3 diffuse_color;
 	vec3 view_position;
 	vec3 frag_position;
 } out_data_transfer;
@@ -56,6 +58,7 @@ void main() {
 	out_data_transfer.tangent = vec4(normalize(model_m3 * inTangent.xyz), inTangent.w);
 	out_data_transfer.view_position = ubo.view_position;
 	out_data_transfer.frag_position = vec3(quad_buffer_ssbo.quads[gl_InstanceIndex].model * vec4(inPosition, 1.0));
+	out_data_transfer.diffuse_color = quad_buffer_ssbo.quads[gl_InstanceIndex].diffuse_color;
 	
 	out_data_transfer_flat.shininess_intensity = quad_buffer_ssbo.quads[gl_InstanceIndex].shininess_intensity;
 	out_data_transfer_flat.shininess_sharpness = quad_buffer_ssbo.quads[gl_InstanceIndex].shininess_sharpness;

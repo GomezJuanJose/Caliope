@@ -50,7 +50,7 @@ namespace caliope {
 	typedef struct material_configuration {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::array<char, MAX_NAME_LENGTH> shader_name;
-		glm::vec4 diffuse_color;
+		glm::vec3 diffuse_color;
 		float shininess_intensity;
 		float shininess_sharpness;
 		std::array<char, MAX_NAME_LENGTH> diffuse_texture_name;
@@ -60,7 +60,7 @@ namespace caliope {
 
 	typedef struct material {
 		std::string name;
-		glm::vec4 diffuse_color;
+		glm::vec3 diffuse_color;
 		float shininess_intensity;
 		float shininess_sharpness;
 		std::shared_ptr<shader> shader;
@@ -72,6 +72,7 @@ namespace caliope {
 	// NOTE: Remember to always align the memory by 128 bits and always go from the higher size to the lowest
 	typedef struct sprite_properties {
 		alignas(16)	glm::mat4 model;
+		alignas(8)	glm::vec3 diffuse_color;
 		alignas(8)	std::array<glm::vec2, 4> texture_region;
 		alignas(4)	uint diffuse_index;
 		alignas(4)	uint normal_index;

@@ -137,7 +137,7 @@ namespace caliope {
 
 		// TODO: TEMPORAL CODE
 		material_configuration m;
-		m.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 		m.shininess_sharpness = 16.0f;
 		m.shininess_intensity = 3.0f;
 		//m.diffuse_texture_name = { "cobblestone" };
@@ -150,7 +150,7 @@ namespace caliope {
 		m.name = { "character1" };
 
 		material_configuration m2;
-		m2.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m2.diffuse_color = glm::vec3(0.5f, 1.0f, 1.0f);
 		m2.shininess_sharpness = 15.0f;
 		m2.shininess_intensity = 5.0f;
 		m2.diffuse_texture_name = { "cottageEXTday" };
@@ -160,7 +160,7 @@ namespace caliope {
 		m2.name = { "background" };
 
 		material_configuration m3;
-		m3.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m3.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 		m3.shininess_sharpness = 64.0f;
 		m3.shininess_intensity = 5.0f;
 		m3.diffuse_texture_name = { "warrior_human_woman_06" };
@@ -170,7 +170,7 @@ namespace caliope {
 		m3.name = { "character2" };
 
 		material_configuration m4;
-		m4.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m4.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 		m4.shininess_sharpness = 64.0f;
 		m4.shininess_intensity = 5.0f;
 		m4.diffuse_texture_name = { "map_01" };
@@ -180,7 +180,7 @@ namespace caliope {
 		m4.name = { "transparency" };
 
 		material_configuration m5;
-		m5.diffuse_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		m5.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 		m5.shininess_sharpness = 64.0f;
 		m5.shininess_intensity = 5.0f;
 		m5.diffuse_texture_name = { "B_witch_idle" };

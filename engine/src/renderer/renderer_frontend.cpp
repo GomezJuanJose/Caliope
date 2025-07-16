@@ -211,6 +211,7 @@ namespace caliope{
 					//for (uint i = 0; i < transforms.size(); ++i) {
 					sprite_properties sp;
 					sp.model = transform_get_world(sprite.transform/*transforms[i]*/);
+					sp.diffuse_color = mat->diffuse_color;
 					sp.diffuse_index = diffuse_id;
 					sp.specular_index = specula_id;
 					sp.normal_index = normal_id;
