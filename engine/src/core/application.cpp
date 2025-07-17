@@ -140,12 +140,12 @@ namespace caliope {
 		m.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 		m.shininess_sharpness = 16.0f;
 		m.shininess_intensity = 3.0f;
-		//m.diffuse_texture_name = { "cobblestone" };
-		//m.specular_texture_name = { "cobblestone_SPEC" };
-		//m.normal_texture_name = { "cobblestone_NRM" }; 
-		m.diffuse_texture_name = { "knight_human_man_04_alt" };
-		m.specular_texture_name = { "knightSpecularMap" };
-		m.normal_texture_name = { "knightNormalMap" };
+		m.diffuse_texture_name = { "cobblestone" };
+		m.specular_texture_name = { "cobblestone_SPEC" };
+		m.normal_texture_name = { "cobblestone_NRM" }; 
+		//m.diffuse_texture_name = { "knight_human_man_04_alt" };
+		//m.specular_texture_name = { "knightSpecularMap" };
+		//m.normal_texture_name = { "knightNormalMap" };
 		m.shader_name = { "Builtin.SpriteShader" };
 		m.name = { "character1" };
 

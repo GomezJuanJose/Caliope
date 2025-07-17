@@ -7,7 +7,7 @@ namespace caliope {
 	struct camera;
 
 	typedef struct game_state {
-		std::shared_ptr<camera> world_camera;
+		camera* world_camera;
 	} game_state;
 
 	typedef struct program_config {

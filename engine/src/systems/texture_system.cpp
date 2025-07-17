@@ -10,8 +10,13 @@
 #include <glm/glm.hpp>
 
 namespace caliope {
+	typedef struct texture_reference {
+		texture texture;
+		uint reference_count;
+	} texture_reference;
+
 	typedef struct texture_system_state {
-		std::unordered_map<std::string, texture> registered_textures;
+		std::unordered_map<std::string, texture_reference> registered_textures;
 
 		texture default_diffuse_texture;
 		texture default_specular_texture;
@@ -41,7 +46,8 @@ namespace caliope {
 	
 	void texture_system_shutdown() {
 		for (auto [key, value] : state_ptr->registered_textures) {
-			destroy_texture(value);
+			destroy_texture(value.texture);
+			value.reference_count = 0;
 		}
 		destroy_texture(state_ptr->default_diffuse_texture);
 		destroy_texture(state_ptr->default_specular_texture);
@@ -58,31 +64,36 @@ namespace caliope {
 		}
 
 		if (state_ptr->registered_textures.find(name) == state_ptr->registered_textures.end()) {
-			texture t;
-			if (!load_texture(name, t)) {
+			texture_reference tr;
+			if (!load_texture(name, tr.texture)) {
 				CE_LOG_ERROR("texture_system_adquire failed to load texture %s", name.c_str());
 				return false;
 			}
 
-			state_ptr->registered_textures.insert({ name, t });
+			state_ptr->registered_textures.insert({ name, tr });
 		}
 
-		return &state_ptr->registered_textures[name];
+		state_ptr->registered_textures[name].reference_count++;
+		return &state_ptr->registered_textures[name].texture;
 	}
 	
 	void texture_system_release(std::string& name) {
 		if (state_ptr->registered_textures.find(name) != state_ptr->registered_textures.end()) {
-			destroy_texture(state_ptr->registered_textures[name]);
-			state_ptr->registered_textures.erase(name);
+			state_ptr->registered_textures[name].reference_count--;
+
+			if (state_ptr->registered_textures[name].reference_count <= 0) {
+				destroy_texture(state_ptr->registered_textures[name].texture);
+				state_ptr->registered_textures.erase(name);
+			}
 		}
 	}
 
 	void texture_system_change_filter(std::string& name, texture_filter new_mag_filter, texture_filter new_min_filter) {
 		if (state_ptr->registered_textures.find(name) != state_ptr->registered_textures.end()) {
-			state_ptr->registered_textures[name].magnification_filter = new_mag_filter;
-			state_ptr->registered_textures[name].minification_filter = new_min_filter;
+			state_ptr->registered_textures[name].texture.magnification_filter = new_mag_filter;
+			state_ptr->registered_textures[name].texture.minification_filter = new_min_filter;
 
-			renderer_texture_change_filter(state_ptr->registered_textures[name]);
+			renderer_texture_change_filter(state_ptr->registered_textures[name].texture);
 		}
 	}
 

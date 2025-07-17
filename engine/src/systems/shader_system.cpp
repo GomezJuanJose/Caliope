@@ -10,8 +10,13 @@
 namespace caliope {
 	#define BUILTIN_SHADER_NAME std::string("Builtin.SpriteShader")
 
+	typedef struct shader_reference {
+		shader shader;
+		uint reference_count;
+	} shader_reference;
+
 	typedef struct shader_system_state {
-		std::unordered_map<std::string, shader> registered_shaders;
+		std::unordered_map<std::string, shader_reference> registered_shaders;
 
 	}shader_system_state;
 
@@ -40,7 +45,7 @@ namespace caliope {
 	
 	void shader_system_shutdown() {
 		for (auto [key, value] : state_ptr->registered_shaders) {
-			destroy_shader(value);
+			destroy_shader(value.shader);
 		}
 
 		state_ptr->registered_shaders.empty();
@@ -48,30 +53,35 @@ namespace caliope {
 		state_ptr = nullptr;
 	}
 	
-	std::shared_ptr<shader> shader_system_adquire(std::string& name) {
+	shader* shader_system_adquire(std::string& name) {
 		if (state_ptr->registered_shaders.find(name) == state_ptr->registered_shaders.end()) {
-			shader s;
-			if (!load_shader(name, s)) {
+			shader_reference sr;
+			if (!load_shader(name, sr.shader)) {
 				CE_LOG_ERROR("shader_system_create failed to load shader %s", name.c_str());
 				return false;
 			}
 
-			state_ptr->registered_shaders.insert({ name, s });
+			state_ptr->registered_shaders.insert({ name, sr });
 		}
-
-		return std::make_shared<shader>(state_ptr->registered_shaders[name]);
+		
+		state_ptr->registered_shaders[name].reference_count++;
+		return &state_ptr->registered_shaders[name].shader;
 	}
 	
 	void shader_system_release(std::string& name) {
 		if (state_ptr->registered_shaders.find(name) != state_ptr->registered_shaders.end()) {
-			destroy_shader(state_ptr->registered_shaders[name]);
-			state_ptr->registered_shaders.erase(name);
+			state_ptr->registered_shaders[name].reference_count--;
+
+			if (state_ptr->registered_shaders[name].reference_count <= 0) {
+				destroy_shader(state_ptr->registered_shaders[name].shader);
+				state_ptr->registered_shaders.erase(name);
+			}
 		}
 	}
 
 	void shader_system_use(std::string& name) {
 		if (state_ptr->registered_shaders.find(name) != state_ptr->registered_shaders.end()) {
-			renderer_shader_use(state_ptr->registered_shaders[name]);
+			renderer_shader_use(state_ptr->registered_shaders[name].shader);
 		}
 	}
 

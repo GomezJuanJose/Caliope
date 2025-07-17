@@ -59,7 +59,7 @@ namespace caliope {
 
 	typedef struct renderer_packet {
 		float delta_time;
-		std::shared_ptr<camera> world_camera;
+		camera* world_camera;
 		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
 		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
 

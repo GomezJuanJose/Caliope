@@ -63,7 +63,7 @@ namespace caliope {
 		glm::vec3 diffuse_color;
 		float shininess_intensity;
 		float shininess_sharpness;
-		std::shared_ptr<shader> shader;
+		shader* shader;
 		texture* diffuse_texture;
 		texture* specular_texture;
 		texture* normal_texture;

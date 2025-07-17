@@ -110,7 +110,7 @@ namespace caliope{
 			for (auto [shader_name, sprites] : packet.sprite_definitions) {
 
 				std::string sn = shader_name;
-				std::shared_ptr<shader> shader = shader_system_adquire(sn);
+				shader* shader = shader_system_adquire(sn);
 				renderer_shader_use(*shader);
 				
 				uint number_of_instances = 0;

@@ -6,8 +6,13 @@
 #include "renderer/camera.h"
 
 namespace caliope {
+	typedef struct camera_reference {
+		camera camera;
+		uint reference_count;
+	} camera_reference;
+
 	typedef struct camera_system_state {
-		std::unordered_map<std::string, camera> registered_cameras;
+		std::unordered_map<std::string, camera_reference> registered_cameras;
 
 		camera default_camera;
 
@@ -35,24 +40,28 @@ namespace caliope {
 	}
 
 	
-	std::shared_ptr<camera> camera_system_acquire(const std::string& name) {
+	camera* camera_system_acquire(const std::string& name) {
 		if (state_ptr->registered_cameras.find(name) == state_ptr->registered_cameras.end()) {
-
-			state_ptr->registered_cameras.insert({ name, camera_create() });
+			camera_reference cr;
+			cr.camera = camera_create();
+			state_ptr->registered_cameras.insert({ name, cr });
 		}
 
-		std::shared_ptr<camera> cam = std::make_shared<camera>(state_ptr->registered_cameras[name]);
-		return cam;
+		state_ptr->registered_cameras[name].reference_count++;
+		return &state_ptr->registered_cameras[name].camera;
 	}
 	
 	void camera_system_release(const std::string& name) {
 		if (state_ptr->registered_cameras.find(name) != state_ptr->registered_cameras.end()) {
-			state_ptr->registered_cameras.erase(name);
+			state_ptr->registered_cameras[name].reference_count--;
+
+			if (state_ptr->registered_cameras[name].reference_count <= 0) {
+				state_ptr->registered_cameras.erase(name);
+			}
 		}
 	}
 	
-	std::shared_ptr<camera> camera_system_get_default() {
-		std::shared_ptr<camera> cam = std::make_shared<camera>(state_ptr->default_camera);
-		return cam;
+	camera* camera_system_get_default() {
+		return &state_ptr->default_camera;
 	}
 }

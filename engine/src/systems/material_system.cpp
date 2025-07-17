@@ -9,9 +9,13 @@
 #include "systems/shader_system.h"
 
 namespace caliope {
+	typedef struct material_reference {
+		material material;
+		uint reference_count;
+	} material_reference;
 
 	typedef struct material_system_state {
-		std::unordered_map<std::string, material> registered_materials;
+		std::unordered_map<std::string, material_reference> registered_materials;
 		material default_material;
 	}material_system_state;
 
@@ -60,8 +64,9 @@ namespace caliope {
 			}
 
 		}
-				
-		return &state_ptr->registered_materials[name];
+		
+		state_ptr->registered_materials[name].reference_count++;
+		return &state_ptr->registered_materials[name].material;
 	}
 
 	material* material_system_adquire_from_config(material_configuration& material_config) {
@@ -76,13 +81,18 @@ namespace caliope {
 
 		}
 
-		return &state_ptr->registered_materials[string_material_name];
+		return &state_ptr->registered_materials[string_material_name].material;
 	}
 
 	void material_system_release(std::string& name) {
 		if (state_ptr->registered_materials.find(name) != state_ptr->registered_materials.end()) {
-			destroy_material(state_ptr->registered_materials[name]);
-			state_ptr->registered_materials.erase(name);
+			
+			state_ptr->registered_materials[name].reference_count++;
+
+			if (state_ptr->registered_materials[name].reference_count <= 0) {
+				destroy_material(state_ptr->registered_materials[name].material);
+				state_ptr->registered_materials.erase(name);
+			}
 		}
 	}
 
@@ -91,18 +101,23 @@ namespace caliope {
 	}
 
 	bool load_material(material_configuration& mat_config) {
-		material m;
-		m.name = std::string(mat_config.name.data());
-		m.diffuse_color = mat_config.diffuse_color;
-		m.shininess_intensity = mat_config.shininess_intensity;
-		m.shininess_sharpness = mat_config.shininess_sharpness;
-		m.shader = shader_system_adquire(std::string(mat_config.shader_name.data()));
+		material_reference mr;
+		mr.material.name = std::string(mat_config.name.data());
+		mr.material.diffuse_color = mat_config.diffuse_color;
+		mr.material.shininess_intensity = mat_config.shininess_intensity;
+		mr.material.shininess_sharpness = mat_config.shininess_sharpness;
+		mr.material.shader = shader_system_adquire(std::string(mat_config.shader_name.data()));
 
-		m.diffuse_texture = texture_system_adquire(std::string(mat_config.diffuse_texture_name.data()));
-		m.specular_texture = texture_system_adquire(std::string(mat_config.specular_texture_name.data()));
-		m.normal_texture = texture_system_adquire(std::string(mat_config.normal_texture_name.data()));
+		texture* diffuse_tex = texture_system_adquire(std::string(mat_config.diffuse_texture_name.data()));
+		mr.material.diffuse_texture = diffuse_tex ? diffuse_tex : texture_system_get_default_diffuse();
 
-		state_ptr->registered_materials.insert({ m.name, m });
+		texture* specular_tex = texture_system_adquire(std::string(mat_config.specular_texture_name.data()));
+		mr.material.specular_texture = specular_tex ? specular_tex : texture_system_get_default_specular();
+
+		texture* normal_tex = texture_system_adquire(std::string(mat_config.normal_texture_name.data()));
+		mr.material.normal_texture = normal_tex ? normal_tex : texture_system_get_default_normal();
+
+		state_ptr->registered_materials.insert({ mr.material.name, mr });
 
 		return true;
 	}
@@ -110,8 +125,7 @@ namespace caliope {
 	void destroy_material(material& m) {
 		state_ptr->registered_materials.erase(m.name);
 		m.name = "";
-		m.diffuse_color = glm::vec4(0.0f);
-		m.shader.reset();
+		m.diffuse_color = glm::vec4(0.0f);;
 		m.shader = nullptr;
 		m.diffuse_texture = nullptr;
 		m.specular_texture = nullptr;
