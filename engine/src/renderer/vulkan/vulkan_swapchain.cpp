@@ -92,12 +92,14 @@ namespace caliope {
 
 
 		out_swapchain->presentation_mode = VK_PRESENT_MODE_FIFO_KHR;
-		for (const VkPresentModeKHR& available_presentation_mode : context->device.swapchain_support_details.present_modes) {
+		// TODO: Make it configurable in the future? is necessary? at the end the games made with this engine will not require much frames and its wanted to export games to mobile
+		// which with mailbox its not recomended due to high battery consumtion
+		/*for (const VkPresentModeKHR& available_presentation_mode : context->device.swapchain_support_details.present_modes) {
 			if (available_presentation_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
 				out_swapchain->presentation_mode = available_presentation_mode;
 				break;
 			}
-		}
+		}*/
 
 		out_swapchain->extent = choose_swap_extent(context->device.swapchain_support_details.capabilities, context->framebuffer_resized);
 

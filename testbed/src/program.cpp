@@ -17,7 +17,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 bool update_testbed(caliope::game_state& game_state, float delta_time) {
 
-	float speed = 50.01f;
+	float speed = 5.01f;
 
 	if (caliope::is_key_pressed(caliope::KEY_A)) {
 		caliope::camera_move_left(*game_state.world_camera, speed * delta_time);

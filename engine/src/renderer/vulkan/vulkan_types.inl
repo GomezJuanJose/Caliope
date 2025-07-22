@@ -153,7 +153,7 @@ namespace caliope {
 		std::vector<VkSemaphore> render_finished_semaphores;
 		std::vector<VkFence> in_flight_fences;
 
-		std::vector<vulkan_command_buffer> command_buffers; // TODO: Make it compatible with triple buffering
+		std::vector<vulkan_command_buffer> command_buffers;
 		
 		std::vector<VkDescriptorImageInfo> batch_image_infos;
 

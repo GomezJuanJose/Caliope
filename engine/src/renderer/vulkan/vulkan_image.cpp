@@ -21,7 +21,7 @@ namespace caliope {
 		out_image.height = height;
 
 		VkImageCreateInfo image_info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		image_info.imageType = VK_IMAGE_TYPE_2D;
+		image_info.imageType = image_type;
 		image_info.extent.width = width;
 		image_info.extent.height = height;
 		image_info.extent.depth = 1;
