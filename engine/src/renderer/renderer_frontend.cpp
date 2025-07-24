@@ -120,7 +120,6 @@ namespace caliope{
 				//for (std::string material_name : packet.quad_materials[shader_name]) {
 				while (!sprites.empty()){
 					sprite_definition sprite = sprites.top();
-					sprites.pop();
 
 					material* mat = material_system_adquire(sprite.material_name);
 					//std::vector<transform>& transforms = packet.quad_transforms[material_name];
@@ -221,6 +220,7 @@ namespace caliope{
 					state_ptr->quads.at(number_of_instances) = sp;
 					number_of_instances++;
 					//}
+					sprites.pop();
 				}
 
 				state_ptr->backend.set_and_apply_uniforms(

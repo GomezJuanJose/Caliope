@@ -88,7 +88,7 @@ namespace caliope {
 		renderer_config.window_width = config.width;
 		renderer_config.window_height = config.height;
 		renderer_config.max_number_quads = 10000;// TODO: Configure based on the resources needed for the developed game
-		renderer_config.max_textures_per_batch = 40;
+		renderer_config.max_textures_per_batch = 400;
 		if (!renderer_system_initialize(renderer_config)) {
 			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
 			return false;
