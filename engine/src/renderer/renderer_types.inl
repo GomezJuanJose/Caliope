@@ -39,6 +39,9 @@ namespace caliope {
 
 		void (*draw_geometry)(uint quad_count, geometry& geometry);
 
+		void (*draw_object_pick)(uint instance_count, std::vector<pick_sprite_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
+		void (*show_picked_obj)();
+
 		void (*texture_create)(texture& t, uchar* pixels);
 		void (*texture_destroy)(texture& t);
 		void (*texture_change_filter)(texture& t);

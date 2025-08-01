@@ -17,6 +17,7 @@ struct quad_properties {
 	mat4 model;
 	vec3 diffuse_color;
 	vec2 texture_coordinates[4];
+	uint id;
 	uint diffuse_index;
 	uint normal_index;
 	uint specular_index;

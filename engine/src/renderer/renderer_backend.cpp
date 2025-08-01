@@ -21,6 +21,8 @@ namespace caliope {
 			out_renderer_backend.set_and_apply_uniforms = vulkan_renderer_set_and_apply_uniforms;
 
 			out_renderer_backend.draw_geometry = vulkan_renderer_draw_geometry;
+			out_renderer_backend.draw_object_pick = pick_object;
+			out_renderer_backend.show_picked_obj = show_picked_obj;
 
 			out_renderer_backend.texture_create = vulkan_renderer_texture_create;
 			out_renderer_backend.texture_destroy = vulkan_renderer_texture_destroy;

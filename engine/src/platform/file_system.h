@@ -5,7 +5,6 @@
 #include <any>
 
 
-// TODO: Make the file system platform specific!!
 
 namespace caliope {
 	typedef struct file_handle {

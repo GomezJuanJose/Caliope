@@ -74,6 +74,7 @@ namespace caliope {
 		alignas(16)	glm::mat4 model;
 		alignas(8)	glm::vec3 diffuse_color;
 		alignas(8)	std::array<glm::vec2, 4> texture_region;
+		alignas(4)	uint id;
 		alignas(4)	uint diffuse_index;
 		alignas(4)	uint normal_index;
 		alignas(4)	uint specular_index;
@@ -81,7 +82,17 @@ namespace caliope {
 		alignas(4)	float shininess_sharpness;
 	} sprite_properties;
 
+	// TODO: TEMPORAL
+	typedef struct pick_sprite_properties {
+		alignas(16)	glm::mat4 model;
+		alignas(8)	std::array<glm::vec2, 4> texture_region;
+		alignas(4)	uint id;
+		alignas(4)	uint diffuse_index;
+	} pick_sprite_properties;
+	// TODO: TEMPORAL
+
 	typedef struct sprite_definition {
+		uint id;
 		uint z_order;
 		std::string material_name;
 		transform transform;

@@ -65,6 +65,7 @@ namespace caliope {
 		
 		VkPhysicalDeviceFeatures device_features = {};
 		device_features.samplerAnisotropy = VK_TRUE;
+		device_features.fragmentStoresAndAtomics = VK_TRUE;
 
 		VkDeviceCreateInfo create_info = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 		create_info.pQueueCreateInfos = queue_create_infos.data();

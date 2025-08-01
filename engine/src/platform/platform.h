@@ -15,6 +15,7 @@ namespace caliope {
 
 	void platform_system_console_write(const char* message, uchar log_level);
 
+	std::tuple<double, double> platform_system_get_cursor_position();
 
 	void* platform_system_allocate_memory(size_t size);
 	void platform_system_free_memory(void* block);

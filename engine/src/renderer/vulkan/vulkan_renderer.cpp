@@ -33,8 +33,12 @@ namespace caliope {
 	void recreate_swapchain();
 	void create_command_buffers();
 	VkShaderModule create_shader_module(std::string& file_path);
-
 	VkFilter get_vulkan_texture_filter(texture_filter filter);
+
+	// TODO: TEMPORAL
+	void create_object_pick();
+	void destroy_object_pick();
+	// TODO: END TEMPORAL
 
 	typedef struct uniform_buffer_object {
 		glm::mat4 view;
@@ -178,6 +182,11 @@ namespace caliope {
 			VK_CHECK(vkCreateFence(state_ptr->context.device.logical_device, &fence_info, nullptr, &state_ptr->context.in_flight_fences[i]));
 		}
 
+		// TODO: TEMPORAL
+		create_object_pick();
+		// TODO: END TEMPORAL
+
+
 		CE_LOG_INFO("Vulkan backend initialized.");
 		return true;
 	}
@@ -189,6 +198,11 @@ namespace caliope {
 	void vulkan_renderer_backend_shutdown() {
 
 		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
+
+		// TODO: TEMPORAL
+		destroy_object_pick();
+		//TODO: REMPORAL
+
 
 		for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.image_available_semaphores[i], nullptr);
@@ -275,8 +289,13 @@ namespace caliope {
 		submit_info.waitSemaphoreCount = 1;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &state_ptr->context.command_buffers[state_ptr->context.current_frame].handle;
+
+		// TODO: Refactor on a view system
+		submit_info.commandBufferCount = 2;
+		std::array<VkCommandBuffer, 2> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle };
+		submit_info.pCommandBuffers = cbs.data();
+		// TODO: END TODO
+
 		VkSemaphore signal_sempahores[] = { state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame] };
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_sempahores;
@@ -804,4 +823,534 @@ namespace caliope {
 		resource_system_unload(r);
 		return shader_module;
 	}
+
+
+
+
+
+
+
+
+
+	// TODO: Refactor into a view system
+	typedef struct ssbo_object_picking {
+		uint id;
+	}ssbo_object_picking;
+
+
+	void create_object_pick() {
+		vulkan_image_create(
+			state_ptr->context,
+			VK_IMAGE_TYPE_2D,
+			state_ptr->context.swapchain.extent.width,
+			state_ptr->context.swapchain.extent.height,
+			VK_FORMAT_R32_SFLOAT,
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			true,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			state_ptr->context.color_object_pick_image
+		);
+
+
+		//helper functions will be provided in the bottom of the page
+		state_ptr->context.object_pick_command_buffers.resize(state_ptr->context.swapchain.image_count);
+
+		for (uint i = 0; i < state_ptr->context.swapchain.image_count; ++i) {
+			if (state_ptr->context.object_pick_command_buffers[i].handle) {
+				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.object_pick_command_buffers[i]);
+			}
+
+			vulkan_command_buffer_allocate(state_ptr->context, state_ptr->context.device.command_pool, true, state_ptr->context.object_pick_command_buffers[i]);
+		}
+
+
+
+
+		VkAttachmentDescription object_picking_colorAttachment{};
+		object_picking_colorAttachment.format = VK_FORMAT_R32_SFLOAT;
+		object_picking_colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		object_picking_colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		object_picking_colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		object_picking_colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		object_picking_colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		object_picking_colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		object_picking_colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference object_picking_colorAttachmentRef{};
+		object_picking_colorAttachmentRef.attachment = 0;
+		object_picking_colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+
+		VkSubpassDescription object_picking_subpass{};
+		object_picking_subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		object_picking_subpass.colorAttachmentCount = 1;
+		object_picking_subpass.pColorAttachments = &object_picking_colorAttachmentRef;
+		object_picking_subpass.pDepthStencilAttachment = nullptr;
+
+		VkSubpassDependency object_picking_dependency{};
+		object_picking_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		object_picking_dependency.dstSubpass = 0;
+		object_picking_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		object_picking_dependency.srcAccessMask = 0;
+		object_picking_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		object_picking_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		std::array<VkAttachmentDescription, 1 > object_picking_attachments = { object_picking_colorAttachment};
+		VkRenderPassCreateInfo object_picking_renderPassInfo{};
+		object_picking_renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		object_picking_renderPassInfo.attachmentCount = static_cast<uint32_t>(object_picking_attachments.size());
+		object_picking_renderPassInfo.pAttachments = object_picking_attachments.data();
+		object_picking_renderPassInfo.subpassCount = 1;
+		object_picking_renderPassInfo.pSubpasses = &object_picking_subpass;
+		object_picking_renderPassInfo.dependencyCount = 1;
+		object_picking_renderPassInfo.pDependencies = &object_picking_dependency;
+
+		if (vkCreateRenderPass(state_ptr->context.device.logical_device, &object_picking_renderPassInfo, nullptr, &state_ptr->context.object_pick_pass) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create render pass!");
+		}
+
+		std::array<VkImageView, 1> attachments = { state_ptr->context.color_object_pick_image.view};
+		VkFramebufferCreateInfo framebuffer_info{};
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.renderPass = state_ptr->context.object_pick_pass;
+		framebuffer_info.pAttachments = attachments.data();
+		framebuffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebuffer_info.width = state_ptr->context.swapchain.extent.width;
+		framebuffer_info.height = state_ptr->context.swapchain.extent.height;
+		framebuffer_info.layers = 1;
+		if (vkCreateFramebuffer(state_ptr->context.device.logical_device, &framebuffer_info, nullptr, &state_ptr->context.object_pick_framebuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create framebuffer!");
+		}
+
+
+		//vert/frag stages
+		VkShaderModule vert_module = create_shader_module(std::string("shaders\\Builtin.SpritePickShader.vert.spv"));
+		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
+		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vert_shader_stage_info.module = vert_module;
+		vert_shader_stage_info.pName = "main";
+
+		VkShaderModule frag_module = create_shader_module(std::string("shaders\\Builtin.SpritePickShader.frag.spv"));
+		VkPipelineShaderStageCreateInfo frag_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
+		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		frag_shader_stage_info.module = frag_module;
+		frag_shader_stage_info.pName = "main";
+
+		std::vector< VkPipelineShaderStageCreateInfo> shaderStages;
+		shaderStages.push_back(vert_shader_stage_info);
+		shaderStages.push_back(frag_shader_stage_info);
+
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+		
+		// Vertex inputs
+		VkVertexInputBindingDescription binding_description = {};
+		binding_description.binding = 0;
+		binding_description.stride = sizeof(vertex);
+		binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		// Attributes
+		#define NUMBER_OF_VERTEX_ATTRIBUTES 3
+		std::array < std::pair<VkFormat, uint>, NUMBER_OF_VERTEX_ATTRIBUTES > attributes_definitions{
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3)),
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)),
+			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2))
+		};
+		std::array<VkVertexInputAttributeDescription, NUMBER_OF_VERTEX_ATTRIBUTES> attribute_descriptions;
+
+		uint offset = 0;
+		for (uint i = 0; i < NUMBER_OF_VERTEX_ATTRIBUTES; ++i) {
+			attribute_descriptions[i].binding = 0;
+			attribute_descriptions[i].location = i;
+			attribute_descriptions[i].format = attributes_definitions[i].first;
+			attribute_descriptions[i].offset = offset;
+			offset += attributes_definitions[i].second;
+
+		}
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = NUMBER_OF_VERTEX_ATTRIBUTES;
+		vertexInputInfo.pVertexBindingDescriptions = &binding_description;
+		vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport = {};
+		viewport.x = 0.0f;
+		viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
+		viewport.width = (float)state_ptr->context.swapchain.extent.width;
+		viewport.height = -(float)state_ptr->context.swapchain.extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		//We're going to have a dynamic scissor so this doesnt really matter
+		VkRect2D scissor{};
+		scissor.offset = { 0,0 };
+		scissor.extent = state_ptr->context.swapchain.extent;
+
+		VkPipelineViewportStateCreateInfo viewportState{};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.viewportCount = 1;
+		viewportState.pViewports = &viewport;
+		viewportState.scissorCount = 1;
+		viewportState.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer{};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+
+		//Only one samples since this is offscreen
+		VkPipelineMultisampleStateCreateInfo multisampling{};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+		//blending is set to false since we don't need it here
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_FALSE;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		VkPipelineColorBlendStateCreateInfo colorBlending{};
+		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.logicOp = VK_LOGIC_OP_COPY;
+		colorBlending.attachmentCount = 1;
+		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.blendConstants[0] = 1.0f;
+		colorBlending.blendConstants[1] = 0.0f;
+		colorBlending.blendConstants[2] = 0.0f;
+		colorBlending.blendConstants[3] = 0.0f;
+
+
+		// Descriptor set layout
+		VkDescriptorSetLayoutBinding ubo_layout_binding = {};
+		ubo_layout_binding.binding = 0;
+		ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		ubo_layout_binding.descriptorCount = 1;
+		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		ubo_layout_binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
+		sampler_layout_binding.binding = 3;
+		sampler_layout_binding.descriptorCount = state_ptr->max_textures_per_batch;
+		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		sampler_layout_binding.pImmutableSamplers = nullptr;
+		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutBinding ssbo_layout_binding = {};
+		ssbo_layout_binding.binding = 1;
+		ssbo_layout_binding.descriptorCount = 1;// TODO: MORE CONFIGURABLE WITH THE vulkan_renderer_set_and_apply_uniforms
+		ssbo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		ssbo_layout_binding.pImmutableSamplers = nullptr;
+		ssbo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		VkDescriptorSetLayoutBinding ssbo_out_layout_binding = {};
+		ssbo_out_layout_binding.binding = 2;
+		ssbo_out_layout_binding.descriptorCount = 1;// TODO: MORE CONFIGURABLE WITH THE vulkan_renderer_set_and_apply_uniforms
+		ssbo_out_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		ssbo_out_layout_binding.pImmutableSamplers = nullptr;
+		ssbo_out_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+		std::array<VkDescriptorSetLayoutBinding, 4> bindings = { ubo_layout_binding, ssbo_layout_binding, ssbo_out_layout_binding,sampler_layout_binding };
+		VkDescriptorSetLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+		layout_info.bindingCount = bindings.size();
+		layout_info.pBindings = bindings.data();
+		VK_CHECK(vkCreateDescriptorSetLayout(state_ptr->context.device.logical_device, &layout_info, nullptr, &state_ptr->context.object_pick_shader.descriptor_set_layout));
+
+
+		//we only need a dynamic state for the scissor, this means whatever we set to the scissor here will be ignored, and we'll need to use vkCmdSetScissor() every frame we use the pipeline
+		std::array<VkDynamicState, 2> states = { VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT };
+
+		VkPipelineDynamicStateCreateInfo dynamic_state{};
+		dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamic_state.dynamicStateCount = states.size();
+		dynamic_state.pDynamicStates = states.data();
+
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &state_ptr->context.object_pick_shader.descriptor_set_layout;
+
+		if (vkCreatePipelineLayout(state_ptr->context.device.logical_device, &pipelineLayoutInfo, nullptr, &state_ptr->context.object_pick_shader.pipeline.layout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create pipeline layout!");
+		}
+
+		VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = shaderStages.size();
+		pipelineInfo.pStages = shaderStages.data();
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multisampling;
+		pipelineInfo.pDepthStencilState = &depthStencil;
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.layout = state_ptr->context.object_pick_shader.pipeline.layout;
+		pipelineInfo.renderPass = state_ptr->context.object_pick_pass;
+		pipelineInfo.subpass = 0;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineInfo.pDynamicState = &dynamic_state;
+
+		if (vkCreateGraphicsPipelines(state_ptr->context.device.logical_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &state_ptr->context.object_pick_shader.pipeline.handle) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create graphics pipeline!");
+		}
+
+		vkDestroyShaderModule(state_ptr->context.device.logical_device, vert_module, nullptr);
+		vkDestroyShaderModule(state_ptr->context.device.logical_device, frag_module, nullptr);
+
+
+		// Descriptor pool
+		std::array<VkDescriptorPoolSize, 3> pool_sizes;
+		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		pool_sizes[0].descriptorCount = 1024; // HACK: max number of ubo descriptor sets.
+		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		pool_sizes[1].descriptorCount = 2;
+		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		pool_sizes[2].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
+
+		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+		pool_info.poolSizeCount = pool_sizes.size();
+		pool_info.pPoolSizes = pool_sizes.data();
+		pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+		VK_CHECK(vkCreateDescriptorPool(state_ptr->context.device.logical_device, &pool_info, nullptr, &state_ptr->context.object_pick_shader.descriptor_pool));
+
+		// Descriptor sets
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, state_ptr->context.object_pick_shader.descriptor_set_layout);
+		VkDescriptorSetAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		alloc_info.descriptorPool = state_ptr->context.object_pick_shader.descriptor_pool;
+		alloc_info.descriptorSetCount = 2;
+		alloc_info.pSetLayouts = layouts.data();
+
+		state_ptr->context.object_pick_shader.descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);
+		VK_CHECK(vkAllocateDescriptorSets(state_ptr->context.device.logical_device, &alloc_info, state_ptr->context.object_pick_shader.descriptor_sets.data()));
+
+		// UBO
+		VkDeviceSize buffer_size = sizeof(uniform_buffer_object);
+		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.object_pick_shader.uniform_buffers);
+		state_ptr->context.object_pick_shader.uniform_buffers_mapped = vulkan_buffer_lock_memory(state_ptr->context, state_ptr->context.object_pick_shader.uniform_buffers, 0, buffer_size, 0);
+
+		// Vertex SSBO
+		vulkan_buffer_create(state_ptr->context, sizeof(pick_sprite_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.object_pick_shader.ssbo);
+		state_ptr->context.object_pick_shader.ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, state_ptr->context.object_pick_shader.ssbo, 0, sizeof(pick_sprite_properties) * state_ptr->max_number_quads, 0);
+
+		vulkan_buffer_create(state_ptr->context, sizeof(ssbo_object_picking), (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.ssbo_pick_out);
+	}
+
+	void destroy_object_pick() {
+		vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
+
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
+		vk_shader->uniform_buffers_mapped = 0;
+		vk_shader->ssbo_mapped = 0;
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->ssbo);
+		vkDestroyDescriptorPool(state_ptr->context.device.logical_device, vk_shader->descriptor_pool, nullptr);
+		vkDestroyDescriptorSetLayout(state_ptr->context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);
+		vulkan_pipeline_destroy(state_ptr->context, vk_shader->pipeline);
+
+		vkDestroyRenderPass(state_ptr->context.device.logical_device, state_ptr->context.object_pick_pass, nullptr);
+		vulkan_image_destroy(state_ptr->context, state_ptr->context.color_object_pick_image);
+
+		vkDestroyFramebuffer(state_ptr->context.device.logical_device, state_ptr->context.object_pick_framebuffer, nullptr);
+
+		for (uint i = 0; i < state_ptr->context.swapchain.image_count; ++i) {
+			if (state_ptr->context.object_pick_command_buffers[i].handle) {
+				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.object_pick_command_buffers[i]);
+			}
+		}
+
+		vulkan_buffer_destroy(state_ptr->context, state_ptr->context.ssbo_pick_out);
+	}
+
+	void pick_object(uint instance_count, std::vector<pick_sprite_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view) {
+		VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+
+		vkResetCommandBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0);
+
+		//start recording object picking command buffer
+		if (vkBeginCommandBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, &begin_info) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
+		//begin renderpass
+		VkRenderPassBeginInfo object_picking_renderpass_begin_info{};
+		object_picking_renderpass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		object_picking_renderpass_begin_info.renderPass = state_ptr->context.object_pick_pass;
+		object_picking_renderpass_begin_info.framebuffer = state_ptr->context.object_pick_framebuffer;
+		object_picking_renderpass_begin_info.renderArea.offset.x = state_ptr->context.main_renderpass.render_area.x;
+		object_picking_renderpass_begin_info.renderArea.offset.y = state_ptr->context.main_renderpass.render_area.y;
+		object_picking_renderpass_begin_info.renderArea.extent.width = state_ptr->context.main_renderpass.render_area.z;
+		object_picking_renderpass_begin_info.renderArea.extent.height = state_ptr->context.main_renderpass.render_area.w;
+		std::array<VkClearValue, 2> clear_values;
+		clear_values[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+		clear_values[1].depthStencil = { 0, 0 };
+		object_picking_renderpass_begin_info.clearValueCount = clear_values.size();
+		object_picking_renderpass_begin_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, &object_picking_renderpass_begin_info,
+			VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			state_ptr->context.object_pick_shader.pipeline.handle);
+
+
+		VkViewport viewport = {};
+		viewport.x = 0.0f;
+		viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
+		viewport.width = (float)state_ptr->context.swapchain.extent.width;
+		viewport.height = -(float)state_ptr->context.swapchain.extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &viewport);
+		
+			//the dynamic pipeline state means we have to set the scissor before each draw
+			VkRect2D rect{};
+			double cursor_x, cursor_y;
+			std::tie(cursor_x, cursor_y) = platform_system_get_cursor_position();
+			rect.offset.x = cursor_x > 0 ? cursor_x : 0;
+			rect.offset.y =cursor_y > 0 ? cursor_y : 0;
+			rect.extent = { 1,1 };
+
+			//can only be used with a dynamic scissor state
+			vkCmdSetScissor(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &rect);
+
+			//bind descriptor sets for current object
+			uniform_buffer_object ubo;
+			ubo.view = view;
+			ubo.proj = projection;
+			ubo.ambient_color = glm::vec4(0.02f, 0.02f, 0.02f, 1.0f);// TODO: Scene system;
+			ubo.view_position = glm::vec3(0.0f);
+
+			vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
+			copy_memory(vk_shader->uniform_buffers_mapped, &ubo, sizeof(ubo));
+			copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(pick_sprite_properties) * instance_count);
+
+			VkDescriptorBufferInfo buffer_info = {};
+			buffer_info.buffer = vk_shader->uniform_buffers.handle;
+			buffer_info.offset = 0;
+			buffer_info.range = sizeof(uniform_buffer_object);
+
+			VkDescriptorBufferInfo ssbo_info = {};
+			ssbo_info.buffer = vk_shader->ssbo.handle;
+			ssbo_info.offset = 0;
+			ssbo_info.range = sizeof(pick_sprite_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
+
+			VkDescriptorBufferInfo ssbo_out_info = {};
+			ssbo_out_info.buffer = state_ptr->context.ssbo_pick_out.handle;
+			ssbo_out_info.offset = 0;
+			ssbo_out_info.range = sizeof(ssbo_object_picking); //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
+
+
+			std::array<VkWriteDescriptorSet, 4> descriptor_writes = {};
+			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[0].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+			descriptor_writes[0].dstBinding = 0;
+			descriptor_writes[0].dstArrayElement = 0;
+			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptor_writes[0].descriptorCount = 1;
+			descriptor_writes[0].pBufferInfo = &buffer_info;
+			descriptor_writes[0].pImageInfo = nullptr;
+			descriptor_writes[0].pTexelBufferView = nullptr;
+
+
+			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[1].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+			descriptor_writes[1].dstBinding = 1;
+			descriptor_writes[1].dstArrayElement = 0;
+			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptor_writes[1].descriptorCount = 1;
+			descriptor_writes[1].pBufferInfo = &ssbo_info;
+			descriptor_writes[1].pImageInfo = nullptr;
+			descriptor_writes[1].pTexelBufferView = nullptr;
+
+			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[2].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+			descriptor_writes[2].dstBinding = 2;
+			descriptor_writes[2].dstArrayElement = 0;
+			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptor_writes[2].descriptorCount = 1;
+			descriptor_writes[2].pBufferInfo = &ssbo_out_info;
+			descriptor_writes[2].pImageInfo = nullptr;
+			descriptor_writes[2].pTexelBufferView = nullptr;
+
+
+			uint number_of_texture = 0;
+			while (state_ptr->context.batch_image_infos[number_of_texture].imageView != 0 ) {
+				number_of_texture++;
+			}
+
+			descriptor_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[3].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+			descriptor_writes[3].dstBinding = 3;
+			descriptor_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptor_writes[3].descriptorCount = number_of_texture;
+			descriptor_writes[3].pImageInfo = state_ptr->context.batch_image_infos.data();
+
+			vkUpdateDescriptorSets(state_ptr->context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
+
+			vkCmdBindDescriptorSets(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, state_ptr->context.object_pick_shader.pipeline.layout, 0, 1, &state_ptr->context.object_pick_shader.descriptor_sets[state_ptr->context.current_frame], 0, nullptr);
+
+			vulkan_geometry* vk_geometry = std::any_cast<vulkan_geometry>(&geometry.internal_data);
+			//bind vertex and index buffers for current object
+			VkBuffer vertex_buffers[] = { vk_geometry->vertex_buffer.handle };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, vertex_buffers, offsets);
+			vkCmdBindIndexBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, vk_geometry->index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
+
+			vkCmdDrawIndexed(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
+
+		
+		vkCmdEndRenderPass(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle);
+
+		if (vkEndCommandBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record command buffer!");
+		}
+
+
+
+	}
+
+	void show_picked_obj() {
+		//Object to map data into
+		ssbo_object_picking p;
+
+		//map gpu memory into data
+		void* data;
+		vkMapMemory(state_ptr->context.device.logical_device, state_ptr->context.ssbo_pick_out.memory, 0, sizeof(ssbo_object_picking), 0, &data);
+
+		//copy from data into p
+		memcpy(&p, data, sizeof(ssbo_object_picking));
+
+		//unmap gpu memory
+		vkUnmapMemory(state_ptr->context.device.logical_device, state_ptr->context.ssbo_pick_out.memory);
+		CE_LOG_INFO("%d", p.id);
+	}
+
+	// TODO: End TODO
 }

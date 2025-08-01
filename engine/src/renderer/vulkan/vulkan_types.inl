@@ -157,5 +157,15 @@ namespace caliope {
 		
 		std::vector<VkDescriptorImageInfo> batch_image_infos;
 
+		// TODO: TEMPORAL
+		vulkan_image color_object_pick_image;
+		VkRenderPass object_pick_pass;
+		VkFramebuffer object_pick_framebuffer;
+		vulkan_shader object_pick_shader;
+		std::vector<vulkan_command_buffer> object_pick_command_buffers;
+		vulkan_buffer ssbo_pick_out;
+		void* ssbo_pick_out_mapped;
+		// TODO: END TEMPORAL
+
 	} vulkan_context;
 }

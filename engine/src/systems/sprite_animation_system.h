@@ -4,9 +4,6 @@
 
 namespace caliope {
 
-	// TODO: An approach could be not to update each frame all the animations, only get the seconds passed since the last query and get the corresponding material
-	// or just update the animations by name  used.
-
 	typedef struct sprite_frame {
 		std::string material_name;
 		std::array<glm::vec2, 4> texture_region;

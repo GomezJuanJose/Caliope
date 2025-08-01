@@ -20,6 +20,8 @@ namespace caliope {
 
 	typedef struct platform_windows_state {
 		GLFWwindow* window;
+		double cursor_pos_x;
+		double cursor_pos_y;
 	} platform_windows_state;
 
 	static std::unique_ptr<platform_windows_state> state_ptr;
@@ -72,6 +74,9 @@ namespace caliope {
 		);
 
 		glfwSetCursorPosCallback(state_ptr->window, [](GLFWwindow* window, double xPos, double yPos) {
+				state_ptr->cursor_pos_x = xPos;
+				state_ptr->cursor_pos_y = yPos;
+
 				input_system_process_mouse_move(xPos, yPos);
 			}
 		);
@@ -116,6 +121,10 @@ namespace caliope {
 		uint64 length = strlen(message);
 		LPDWORD number_written = 0;
 		WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), message, (DWORD)length, number_written, 0);
+	}
+
+	std::tuple<double, double> platform_system_get_cursor_position() {// TODO: use vec2?
+		return { state_ptr->cursor_pos_x, state_ptr->cursor_pos_y };
 	}
 
 	void* platform_system_allocate_memory(size_t size) {

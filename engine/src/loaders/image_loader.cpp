@@ -12,7 +12,6 @@
 namespace caliope {
 	bool image_loader_load(std::string* file, resource* out_resource) {
 
-		//TODO : try with differents formats
 		#define IMAGE_FORMATS_COUNT 4
 		std::string formats[IMAGE_FORMATS_COUNT] = {".png", ".jpg", ".tga", ".bmp"};
 		std::string selected_format = "";

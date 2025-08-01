@@ -260,13 +260,13 @@ namespace caliope {
 				transform_set_rotation(t1, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
 				transform_set_scale(t1, glm::vec3(1.0f, 0.5f, 1.0f));
 				transform_set_position(t1, glm::vec3(1.0f, 0.0f, 0.0f));
-				transform t2 = transform_create();
 
+				transform t2 = transform_create();
 				transform_set_rotation(t2, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
 				transform_set_scale(t2, glm::vec3(1.0f, 1.0f, 1.0f));
-				transform_set_position(t2, glm::vec3(0.0f, 0.0f, 0.0f));
-				transform t3 = transform_create();
+				transform_set_position(t2, glm::vec3(0.0f, 0.0f, 1.0f));
 
+				transform t3 = transform_create();
 				transform_set_rotation(t3, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 1.f)));
 				transform_set_scale(t3, glm::vec3(1.0f, 1.0f, 1.0f));
 				transform_set_position(t3, glm::vec3(-1.0f, 0.0f, 0.0f));
@@ -274,27 +274,27 @@ namespace caliope {
 				transform t4 = transform_create();
 				transform_set_rotation(t4, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
 				transform_set_scale(t4, glm::vec3(5.0f, 3.0f, 1.0f));
-				transform_set_position(t4, glm::vec3(0.0f, 0.0f, -1.0f));
+				transform_set_position(t4, glm::vec3(0.0f, 0.0f, 0.0f));
 
 				transform t5 = transform_create();
 				transform_set_rotation(t5, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
 				transform_set_scale(t5, glm::vec3(0.5f, 0.5f, 1.0f));
-				transform_set_position(t5, glm::vec3(0.0f, 0.0f, 1.0f));
+				transform_set_position(t5, glm::vec3(0.0f, 0.0f, 0.0f));
 
 				transform t6 = transform_create();
 				transform_set_rotation(t6, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
 				transform_set_scale(t6, glm::vec3(0.5f, 0.5f, 1.0f));
-				transform_set_position(t6, glm::vec3(0.2f, 0.0f, 1.0f));
+				transform_set_position(t6, glm::vec3(0.2f, 0.0f, 0.0f));
 
 				transform t7 = transform_create();
 				transform_set_rotation(t7, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
 				transform_set_scale(t7, glm::vec3(0.25f, 0.5f, 1.0f));
-				transform_set_position(t7, glm::vec3(1.0f, 0.6f, 1.0f));
+				transform_set_position(t7, glm::vec3(1.0f, 0.6f, 0.0f));
 
 				transform t8 = transform_create();
 				transform_set_rotation(t8, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
 				transform_set_scale(t8, glm::vec3(0.25f, 0.5f, 1.0f));
-				transform_set_position(t8, glm::vec3(1.3f, 0.6f, 1.0f));
+				transform_set_position(t8, glm::vec3(1.3f, 0.6f, 0.0f));
 
 				// In the future get the vector from the shader name and push the material name, same with the transforms
 				std::string testmat_name = "character1";
@@ -306,49 +306,56 @@ namespace caliope {
 				// TODO: Shader use is implicit on the insertion order, give the shader map already inserted in the correct order wanted by the user
 				packet.sprite_definitions.insert({ material_system_adquire(testmat_name)->shader->name, {} });
 				sprite_definition sd;
+				sd.id = 1;
 				sd.material_name = testmat_name;
 				sd.transform = t1;
 				sd.z_order = 1;
 				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat_name)->diffuse_texture, { 258.0f, 1644.0f }, { 873.0f, 2096.0f });
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
+				sd.id = 2;
 				sd.material_name = testmat_name;
 				sd.transform = t3;
 				sd.z_order = 1;
 				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
+				sd.id = 3;
 				sd.material_name = testmat2_name;
 				sd.transform = t4;
 				sd.z_order = 0;
 				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat2_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
+				sd.id = 4;
 				sd.material_name = testmat3_name;
 				sd.transform = t2;
 				sd.z_order = 1;
 				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat3_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
+				sd.id = 5;
 				sd.material_name = testmat4_name;
 				sd.transform = t5;
 				sd.z_order = 2;
 				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat4_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
+				sd.id = 6;
 				sd.material_name = testmat4_name;
 				sd.transform = t6;
 				sd.z_order = 2;
 				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat4_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
+				sd.id = 7;
 				sd.material_name = testmat5_name;
 				sd.transform = t7;
 				sd.z_order = 2;
 				sd.texture_region = texture_system_calculate_grid_region_coordinates(*material_system_adquire(testmat5_name)->diffuse_texture, {32.0f, 48.0f}, 0, 0);
 				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
-
+				sd.id = 8;
 				sprite_frame f = sprite_animation_system_acquire_frame(std::string("spritesheet_animation"), delta_time);
 				sd.material_name = f.material_name;
 				sd.transform = t8;

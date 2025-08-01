@@ -5,6 +5,7 @@
 
 namespace caliope {
 	struct quad_properties;
+	struct pick_sprite_properties;
 
 	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config);
 	void vulkan_renderer_backend_stop();
@@ -31,4 +32,10 @@ namespace caliope {
 
 	void vulkan_renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
 	void vulkan_renderer_geometry_destroy(geometry& geometry);
+
+
+	//TODO: TEMPORAL
+	void pick_object(uint instance_count, std::vector<pick_sprite_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
+	void show_picked_obj();
+	//TODO: END TEMPORAL
 }

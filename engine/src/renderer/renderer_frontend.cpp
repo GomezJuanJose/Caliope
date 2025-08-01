@@ -16,10 +16,6 @@
 
 #include "math/transform.h"
 
-//TODO: TEMPORAL
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 
 namespace caliope{
@@ -33,10 +29,17 @@ namespace caliope{
 
 		uint binded_textures_count;
 		uint max_textures_per_batch;
+
+		// TODO: TEMPORAL
+		std::vector<pick_sprite_properties> pick_sprites;
+		// TODO: TEMPORAL
 	} renderer_system_state;
 
 	static std::unique_ptr<renderer_system_state> state_ptr;
 	
+	// TODO: TEMPORAL
+	uint instances;
+	//TODO: TEMPORAL
 	
 	bool renderer_system_initialize(renderer_frontend_config& config) {
 		state_ptr = std::make_unique<renderer_system_state>();
@@ -98,6 +101,8 @@ namespace caliope{
 		if (state_ptr->backend.begin_frame(packet.delta_time)) {
 
 			
+			state_ptr->pick_sprites.empty();
+
 			if (!state_ptr->backend.begin_renderpass()) {
 				CE_LOG_ERROR("renderer_draw_frame failed renderpass begin. Application shutting down");
 				return false;
@@ -209,8 +214,9 @@ namespace caliope{
 
 					//for (uint i = 0; i < transforms.size(); ++i) {
 					sprite_properties sp;
-					sp.model = transform_get_world(sprite.transform/*transforms[i]*/);
+					sp.model = transform_get_world(sprite.transform);
 					sp.diffuse_color = mat->diffuse_color;
+					sp.id = sprite.id;
 					sp.diffuse_index = diffuse_id;
 					sp.specular_index = specula_id;
 					sp.normal_index = normal_id;
@@ -219,6 +225,16 @@ namespace caliope{
 					sp.texture_region = sprite.texture_region;
 					state_ptr->quads.at(number_of_instances) = sp;
 					number_of_instances++;
+
+					// TODO: TEMPORAL
+					pick_sprite_properties psp;
+					psp.model = transform_get_world(sprite.transform);
+					psp.id = sprite.id;
+					psp.diffuse_index = diffuse_id;
+					psp.texture_region = sprite.texture_region;
+					state_ptr->pick_sprites.insert(state_ptr->pick_sprites.begin(), psp);
+					// TODO: TEMPORAL
+					
 					//}
 					sprites.pop();
 				}
@@ -232,7 +248,7 @@ namespace caliope{
 					camera_projection_get(*packet.world_camera),
 					packet.world_camera->position
 				);
-
+				instances = number_of_instances;// TODO: REMOVE
 				state_ptr->backend.draw_geometry(number_of_instances, *geometry_system_get_quad());
 			}
 
@@ -241,11 +257,17 @@ namespace caliope{
 				return false;
 			}
 
+			// TODO: Refactor and do an view system
+			state_ptr->backend.draw_object_pick(instances, state_ptr->pick_sprites, *geometry_system_get_quad(), camera_projection_get(*packet.world_camera), camera_view_get(*packet.world_camera));
+			// TODO: Refactor and do an view system
+
 
 			if (!state_ptr->backend.end_frame(packet.delta_time)) {
 				CE_LOG_ERROR("renderer_end_frame failed. Application shutting down");
 				return false;
 			}
+
+			state_ptr->backend.show_picked_obj();
 		}
 
 		return true;
