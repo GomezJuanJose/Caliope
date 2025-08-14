@@ -46,7 +46,7 @@ namespace caliope {
 		std::any internal_data;
 	} shader;
 
-#define MAX_NAME_LENGTH 256
+	#define MAX_NAME_LENGTH 256
 	typedef struct material_configuration {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::array<char, MAX_NAME_LENGTH> shader_name;
@@ -70,7 +70,7 @@ namespace caliope {
 	}material;
 
 	// NOTE: Remember to always align the memory by 128 bits and always go from the higher size to the lowest
-	typedef struct sprite_properties {
+	typedef struct quad_properties {
 		alignas(16)	glm::mat4 model;
 		alignas(8)	glm::vec3 diffuse_color;
 		alignas(8)	std::array<glm::vec2, 4> texture_region;
@@ -80,24 +80,24 @@ namespace caliope {
 		alignas(4)	uint specular_index;
 		alignas(4)	float shininess_intensity;
 		alignas(4)	float shininess_sharpness;
-	} sprite_properties;
+	} quad_properties;
 
 	// TODO: TEMPORAL
-	typedef struct pick_sprite_properties {
+	typedef struct pick_quad_properties {
 		alignas(16)	glm::mat4 model;
 		alignas(8)	std::array<glm::vec2, 4> texture_region;
 		alignas(4)	uint id;
 		alignas(4)	uint diffuse_index;
-	} pick_sprite_properties;
+	} pick_quad_properties;
 	// TODO: TEMPORAL
 
-	typedef struct sprite_definition {
+	typedef struct quad_definition {
 		uint id;
 		uint z_order;
 		std::string material_name;
 		transform transform;
 		std::array<glm::vec2,4> texture_region;
-	} sprite_definition;
+	} quad_definition;
 
 	typedef struct geometry{
 		std::string name;

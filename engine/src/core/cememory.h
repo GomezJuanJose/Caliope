@@ -7,6 +7,7 @@ namespace caliope {
 	typedef enum memory_tag {
 		MEMORY_TAG_UNKNOWN = 0,
 		MEMORY_TAG_NEW_OPERATOR,
+		MEMORY_TAG_ECS,
 		
 
 		MAX_MEMORY_TAGS

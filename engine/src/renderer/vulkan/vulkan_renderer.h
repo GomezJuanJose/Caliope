@@ -5,7 +5,7 @@
 
 namespace caliope {
 	struct quad_properties;
-	struct pick_sprite_properties;
+	struct pick_quad_properties;
 
 	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config);
 	void vulkan_renderer_backend_stop();
@@ -20,7 +20,7 @@ namespace caliope {
 	bool vulkan_renderer_begin_renderpass();
 	bool vulkan_renderer_end_renderpass();
 
-	void vulkan_renderer_set_and_apply_uniforms(std::vector<sprite_properties>& sprites, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& sprites, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
 	void vulkan_renderer_texture_create(texture& t, uchar* pixels);
 	void vulkan_renderer_texture_destroy(texture& t);
@@ -35,7 +35,7 @@ namespace caliope {
 
 
 	//TODO: TEMPORAL
-	void pick_object(uint instance_count, std::vector<pick_sprite_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
+	void pick_object(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
 	void show_picked_obj();
 	//TODO: END TEMPORAL
 }

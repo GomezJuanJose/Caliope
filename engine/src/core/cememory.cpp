@@ -55,6 +55,9 @@ namespace caliope {
 	}
 
 	void memory_system_shutdown() {
+		CE_LOG_INFO(get_memory_stats().c_str());
+		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, state_ptr->config.total_alloc_size / 1024.0 / 1024.0);
+
 		if (state_ptr) {
 			dynamic_allocator_destroy(state_ptr->allocator);
 			platform_system_free_memory(state_ptr);
@@ -115,7 +118,8 @@ namespace caliope {
 
 		std::string string_tags[] = {
 			"MEMORY_TAG_UNKNOWN         ",
-			"MEMORY_TAG_NEW_OPERATOR    "
+			"MEMORY_TAG_NEW_OPERATOR    ",
+			"MEMORY_TAG_ECS             "
 		};
 
 		for (int i = 0; i < MAX_MEMORY_TAGS; ++i) {

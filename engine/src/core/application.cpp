@@ -19,6 +19,7 @@
 #include "systems/geometry_system.h"
 #include "systems/camera_system.h"
 #include "systems/sprite_animation_system.h"
+#include "systems/ecs_system.h"
 
 #include "math/transform.h"
 
@@ -124,6 +125,13 @@ namespace caliope {
 			return false;
 		}
 
+		if (!ecs_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize ecs system; shutting down");
+			return false;
+		}
+
+
+		
 		if (!state_ptr->program_config->initialize(state_ptr->program_config->game_state)) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
 			return false;
@@ -132,104 +140,11 @@ namespace caliope {
 		// Register events
 		event_register(EVENT_CODE_MOUSE_RESIZED, application_on_resize);
 
+
 		CE_LOG_INFO(get_memory_stats().c_str());
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);
 
-		// TODO: TEMPORAL CODE
-		material_configuration m;
-		m.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-		m.shininess_sharpness = 16.0f;
-		m.shininess_intensity = 3.0f;
-		m.diffuse_texture_name = { "cobblestone" };
-		m.specular_texture_name = { "cobblestone_SPEC" };
-		m.normal_texture_name = { "cobblestone_NRM" }; 
-		//m.diffuse_texture_name = { "knight_human_man_04_alt" };
-		//m.specular_texture_name = { "knightSpecularMap" };
-		//m.normal_texture_name = { "knightNormalMap" };
-		m.shader_name = { "Builtin.SpriteShader" };
-		m.name = { "character1" };
 
-		material_configuration m2;
-		m2.diffuse_color = glm::vec3(0.5f, 1.0f, 1.0f);
-		m2.shininess_sharpness = 15.0f;
-		m2.shininess_intensity = 5.0f;
-		m2.diffuse_texture_name = { "cottageEXTday" };
-		m2.specular_texture_name = { "cottageSpecular" };
-		m2.normal_texture_name = { "cottageNormal" };
-		m2.shader_name = { "Builtin.SpriteShader" };
-		m2.name = { "background" };
-
-		material_configuration m3;
-		m3.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-		m3.shininess_sharpness = 64.0f;
-		m3.shininess_intensity = 5.0f;
-		m3.diffuse_texture_name = { "warrior_human_woman_06" };
-		m3.specular_texture_name = { "" };
-		m3.normal_texture_name = { "" };
-		m3.shader_name = { "Builtin.SpriteShader" };
-		m3.name = { "character2" };
-
-		material_configuration m4;
-		m4.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-		m4.shininess_sharpness = 64.0f;
-		m4.shininess_intensity = 5.0f;
-		m4.diffuse_texture_name = { "map_01" };
-		m4.specular_texture_name = { "" };
-		m4.normal_texture_name = { "" };
-		m4.shader_name = { "Builtin.SpriteShader" };
-		m4.name = { "transparency" };
-
-		material_configuration m5;
-		m5.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-		m5.shininess_sharpness = 64.0f;
-		m5.shininess_intensity = 5.0f;
-		m5.diffuse_texture_name = { "B_witch_idle" };
-		m5.specular_texture_name = { "" };
-		m5.normal_texture_name = { "" };
-		m5.shader_name = { "Builtin.SpriteShader" };
-		m5.name = { "spritesheet" };
-
-		texture_system_adquire(std::string("B_witch_idle"));
-		texture_system_change_filter(std::string("B_witch_idle"), FILTER_NEAREST, FILTER_NEAREST);
-
-
-		file_handle w;
-		file_system_open(std::string("assets\\materials\\character1.cemat"), FILE_MODE_WRITE, w);
-		file_system_write_bytes(w, sizeof(material_configuration), &m);
-		file_system_close(w);
-
-		file_system_open(std::string("assets\\materials\\background.cemat"), FILE_MODE_WRITE, w);
-		file_system_write_bytes(w, sizeof(material_configuration), &m2);
-		file_system_close(w);
-
-		file_system_open(std::string("assets\\materials\\character2.cemat"), FILE_MODE_WRITE, w);
-		file_system_write_bytes(w, sizeof(material_configuration), &m3);
-		file_system_close(w);
-
-		file_system_open(std::string("assets\\materials\\transparency.cemat"), FILE_MODE_WRITE, w);
-		file_system_write_bytes(w, sizeof(material_configuration), &m4);
-		file_system_close(w);
-
-		file_system_open(std::string("assets\\materials\\spritesheet.cemat"), FILE_MODE_WRITE, w);
-		file_system_write_bytes(w, sizeof(material_configuration), &m5);
-		file_system_close(w);
-
-		sprite_animation_config spritesheet_animation;
-		spritesheet_animation.name = "spritesheet_animation";
-		std::vector<sprite_frame> frames;
-		for (uint i = 0; i < 5; ++i) {
-			sprite_frame frame;
-			frame.material_name = "spritesheet";
-			frame.texture_region = texture_system_calculate_grid_region_coordinates(*material_system_adquire(std::string("spritesheet"))->diffuse_texture, { 32.0f, 48.0f }, i, 0);
-			frames.push_back(frame);
-		}
-		spritesheet_animation.frames = frames;
-		spritesheet_animation.is_looping = true;
-		spritesheet_animation.is_playing = true;
-		spritesheet_animation.frames_per_second = 6.0f;
-
-		sprite_animation_system_register(spritesheet_animation);
-		// TODO: END TEMPORAL CODE
 		
 		return true;
 	}
@@ -254,115 +169,71 @@ namespace caliope {
 				renderer_packet packet;
 				packet.delta_time = delta_time;
 				packet.world_camera = state_ptr->program_config->game_state.world_camera;
+				uint quad_id = 0;
 
-				//TODO: TEMP CODE, give all this list directly from the application or when the scene is loaded. or when a object is created/destroyed but never do this per frame or use an ECS
-				transform t1 = transform_create();
-				transform_set_rotation(t1, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
-				transform_set_scale(t1, glm::vec3(1.0f, 0.5f, 1.0f));
-				transform_set_position(t1, glm::vec3(1.0f, 0.0f, 0.0f));
+				//TODO: Move to the future view system when builds the package
+				// Gets all sprites entities
+				std::vector<std::vector<void*>>& sprite_data = ecs_system_get_archetype_data(ARCHETYPE_SPRITE);
+				for (uint entity_index = 0; entity_index < sprite_data[0].size(); ++entity_index) {
+					
+					quad_definition quad_definition;
+					quad_definition.id = quad_id;
 
-				transform t2 = transform_create();
-				transform_set_rotation(t2, glm::angleAxis(glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f)));
-				transform_set_scale(t2, glm::vec3(1.0f, 1.0f, 1.0f));
-				transform_set_position(t2, glm::vec3(0.0f, 0.0f, 1.0f));
+					transform_component* tran_comp = (transform_component*)sprite_data[0][entity_index];
+					transform transform = transform_create();
+					transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
+					transform_set_scale(transform, tran_comp->scale);
+					transform_set_position(transform, tran_comp->position);
+					quad_definition.transform = transform;
 
-				transform t3 = transform_create();
-				transform_set_rotation(t3, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 1.f)));
-				transform_set_scale(t3, glm::vec3(1.0f, 1.0f, 1.0f));
-				transform_set_position(t3, glm::vec3(-1.0f, 0.0f, 0.0f));
+					material_component* sprite_comp = (material_component*)sprite_data[1][entity_index];
+					packet.sprite_definitions.insert({ material_system_adquire(std::string(sprite_comp->material_name.data()))->shader->name, {} });
+					quad_definition.material_name = std::string(sprite_comp->material_name.data()); // TODO: Change to char array
+					quad_definition.z_order = sprite_comp->z_order;
+					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
+						*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
+						sprite_comp->texture_region[0], 
+						sprite_comp->texture_region[1]
+					);
 
-				transform t4 = transform_create();
-				transform_set_rotation(t4, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
-				transform_set_scale(t4, glm::vec3(5.0f, 3.0f, 1.0f));
-				transform_set_position(t4, glm::vec3(0.0f, 0.0f, 0.0f));
 
-				transform t5 = transform_create();
-				transform_set_rotation(t5, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
-				transform_set_scale(t5, glm::vec3(0.5f, 0.5f, 1.0f));
-				transform_set_position(t5, glm::vec3(0.0f, 0.0f, 0.0f));
+					packet.sprite_definitions.at(
+						material_system_adquire(std::string(sprite_comp->material_name.data()))->shader->name
+					).push(quad_definition);
 
-				transform t6 = transform_create();
-				transform_set_rotation(t6, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
-				transform_set_scale(t6, glm::vec3(0.5f, 0.5f, 1.0f));
-				transform_set_position(t6, glm::vec3(0.2f, 0.0f, 0.0f));
+					quad_id++;
+				}
 
-				transform t7 = transform_create();
-				transform_set_rotation(t7, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
-				transform_set_scale(t7, glm::vec3(0.25f, 0.5f, 1.0f));
-				transform_set_position(t7, glm::vec3(1.0f, 0.6f, 0.0f));
+				//TODO: Move to the future view system when builds the package
+				// Gets all animations sprites entities
+				std::vector<std::vector<void*>>& sprite_animation_data = ecs_system_get_archetype_data(ARCHETYPE_SPRITE_ANIMATION);
+				for (uint entity_index = 0; entity_index < sprite_animation_data[0].size(); ++entity_index) {
 
-				transform t8 = transform_create();
-				transform_set_rotation(t8, glm::angleAxis(glm::radians(45.f), glm::vec3(0.f, 0.f, 0.f)));
-				transform_set_scale(t8, glm::vec3(0.25f, 0.5f, 1.0f));
-				transform_set_position(t8, glm::vec3(1.3f, 0.6f, 0.0f));
+					quad_definition quad_definition;
+					quad_definition.id = quad_id;
 
-				// In the future get the vector from the shader name and push the material name, same with the transforms
-				std::string testmat_name = "character1";
-				std::string testmat2_name = "background";
-				std::string testmat3_name = "character2";
-				std::string testmat4_name = "transparency";
-				std::string testmat5_name = "spritesheet";
+					transform_component* tran_comp = (transform_component*)sprite_animation_data[0][entity_index];
+					transform transform = transform_create();
+					transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
+					transform_set_scale(transform, tran_comp->scale);
+					transform_set_position(transform, tran_comp->position);
+					quad_definition.transform = transform;
 
-				// TODO: Shader use is implicit on the insertion order, give the shader map already inserted in the correct order wanted by the user
-				packet.sprite_definitions.insert({ material_system_adquire(testmat_name)->shader->name, {} });
-				sprite_definition sd;
-				sd.id = 1;
-				sd.material_name = testmat_name;
-				sd.transform = t1;
-				sd.z_order = 1;
-				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat_name)->diffuse_texture, { 258.0f, 1644.0f }, { 873.0f, 2096.0f });
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
+					material_animation_component* anim_comp = (material_animation_component*)sprite_animation_data[1][entity_index];
+					sprite_frame& frame = sprite_animation_system_acquire_frame(std::string(anim_comp->animation_name.data()), delta_time);
+					packet.sprite_definitions.insert({ material_system_adquire(frame.material_name)->shader->name, {} });
+					quad_definition.material_name = frame.material_name;
+					quad_definition.z_order = anim_comp->z_order;
+					quad_definition.texture_region = frame.texture_region;
 
-				sd.id = 2;
-				sd.material_name = testmat_name;
-				sd.transform = t3;
-				sd.z_order = 1;
-				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
 
-				sd.id = 3;
-				sd.material_name = testmat2_name;
-				sd.transform = t4;
-				sd.z_order = 0;
-				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat2_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
+					packet.sprite_definitions.at(
+						material_system_adquire(frame.material_name)->shader->name
+					).push(quad_definition);
 
-				sd.id = 4;
-				sd.material_name = testmat3_name;
-				sd.transform = t2;
-				sd.z_order = 1;
-				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat3_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
+					quad_id++;
+				}
 
-				sd.id = 5;
-				sd.material_name = testmat4_name;
-				sd.transform = t5;
-				sd.z_order = 2;
-				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat4_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
-
-				sd.id = 6;
-				sd.material_name = testmat4_name;
-				sd.transform = t6;
-				sd.z_order = 2;
-				sd.texture_region = texture_system_calculate_custom_region_coordinates(*material_system_adquire(testmat4_name)->diffuse_texture, { 0.0f, 0.0f }, { 0.0f, 0.0f });
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
-
-				sd.id = 7;
-				sd.material_name = testmat5_name;
-				sd.transform = t7;
-				sd.z_order = 2;
-				sd.texture_region = texture_system_calculate_grid_region_coordinates(*material_system_adquire(testmat5_name)->diffuse_texture, {32.0f, 48.0f}, 0, 0);
-				packet.sprite_definitions.at(material_system_adquire(testmat_name)->shader->name).push(sd);
-
-				sd.id = 8;
-				sprite_frame f = sprite_animation_system_acquire_frame(std::string("spritesheet_animation"), delta_time);
-				sd.material_name = f.material_name;
-				sd.transform = t8;
-				sd.z_order = 2;
-				sd.texture_region = f.texture_region;
-				packet.sprite_definitions.at(material_system_adquire(f.material_name)->shader->name).push(sd);
-				// TODO: TEMP CODE
 
 				if (!renderer_draw_frame(packet)) {
 					CE_LOG_FATAL("Failed to render frame");
@@ -375,6 +246,8 @@ namespace caliope {
 
 		state_ptr->program_config.reset();
 		state_ptr.reset();
+
+		ecs_system_shutdown();
 
 		camera_system_shutdown();
 

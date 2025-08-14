@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
+#include <stack>
 
 #include <optional>
 #include <any>

@@ -20,8 +20,8 @@ namespace caliope {
 	bool sprite_animation_system_initialize();
 	void sprite_animation_system_shutdown();
 
-	bool sprite_animation_system_register(sprite_animation_config& animation_config);
-	void sprite_animation_system_unregister(std::string animation_name);
+	CE_API bool sprite_animation_system_register(sprite_animation_config& animation_config);
+	CE_API void sprite_animation_system_unregister(std::string animation_name);
 
 	sprite_frame& sprite_animation_system_acquire_frame(std::string& animation_name, float delta_time);
 }

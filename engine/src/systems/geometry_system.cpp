@@ -25,6 +25,7 @@ namespace caliope {
 
 		generate_builtin_geometry();
 
+		CE_LOG_INFO("Geometry system initialized.");
 		return true;
 	}
 

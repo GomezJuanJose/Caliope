@@ -35,7 +35,7 @@ namespace caliope {
 
 		generate_default_material();
 
-		CE_LOG_INFO("Material system_initialized.");
+		CE_LOG_INFO("Material system initialized.");
 		return true;
 	}
 	void material_system_shutdown() {

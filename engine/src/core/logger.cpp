@@ -42,13 +42,13 @@ namespace caliope {
 	void logger_output(const char* string, log_level level, ...) {
 		const char* string_levels[] = { "[FATAL]: ", "[ERROR]: ", "[WARNING]: ", "[INFO]: " };
 	
-		char buffer[512];
+		char buffer[2048]; // NOTE: Increase the buffer size in case an exception of callstack is called
 		std::va_list args;
 		va_start(args, level);
 		vsprintf_s(buffer, string, args);
 		va_end(args);
 
-		char result[100];
+		char result[2048]; // NOTE: Increase the buffer size in case an exception of callstack is called
 		strcpy(result, string_levels[level]);
 		strcat(result, buffer);
 		strcat(result, "\n");

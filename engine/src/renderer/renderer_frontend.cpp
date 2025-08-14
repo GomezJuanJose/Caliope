@@ -23,7 +23,7 @@ namespace caliope{
 	typedef struct renderer_system_state {
 		renderer_backend backend;
 
-		std::vector<sprite_properties> quads;
+		std::vector<quad_properties> quads;
 		std::vector<texture*> batch_textures;
 		float aspect_ratio;
 
@@ -31,7 +31,7 @@ namespace caliope{
 		uint max_textures_per_batch;
 
 		// TODO: TEMPORAL
-		std::vector<pick_sprite_properties> pick_sprites;
+		std::vector<pick_quad_properties> pick_sprites;
 		// TODO: TEMPORAL
 	} renderer_system_state;
 
@@ -124,7 +124,7 @@ namespace caliope{
 
 				//for (std::string material_name : packet.quad_materials[shader_name]) {
 				while (!sprites.empty()){
-					sprite_definition sprite = sprites.top();
+					quad_definition sprite = sprites.top();
 
 					material* mat = material_system_adquire(sprite.material_name);
 					//std::vector<transform>& transforms = packet.quad_transforms[material_name];
@@ -213,7 +213,7 @@ namespace caliope{
 					}
 
 					//for (uint i = 0; i < transforms.size(); ++i) {
-					sprite_properties sp;
+					quad_properties sp;
 					sp.model = transform_get_world(sprite.transform);
 					sp.diffuse_color = mat->diffuse_color;
 					sp.id = sprite.id;
@@ -227,7 +227,7 @@ namespace caliope{
 					number_of_instances++;
 
 					// TODO: TEMPORAL
-					pick_sprite_properties psp;
+					pick_quad_properties psp;
 					psp.model = transform_get_world(sprite.transform);
 					psp.id = sprite.id;
 					psp.diffuse_index = diffuse_id;
