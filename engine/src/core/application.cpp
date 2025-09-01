@@ -20,6 +20,7 @@
 #include "systems/camera_system.h"
 #include "systems/sprite_animation_system.h"
 #include "systems/ecs_system.h"
+#include "systems/audio_system.h"
 
 #include "math/transform.h"
 
@@ -55,7 +56,7 @@ namespace caliope {
 		state_ptr = std::make_unique<application_state>();
 		state_ptr->program_config = std::make_shared<program_config>(config);
 		state_ptr->is_running = true;
-		
+
 		if (!logger_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize logger; shutting down");
 			return false;
@@ -130,12 +131,16 @@ namespace caliope {
 			return false;
 		}
 
+		if (!audio_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize audio system; shutting down");
+			return false;
+		}
 
-		
 		if (!state_ptr->program_config->initialize(state_ptr->program_config->game_state)) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
 			return false;
 		}
+
 
 		// Register events
 		event_register(EVENT_CODE_MOUSE_RESIZED, application_on_resize);
@@ -145,7 +150,7 @@ namespace caliope {
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);
 
 
-		
+
 		return true;
 	}
 
@@ -175,7 +180,7 @@ namespace caliope {
 				// Gets all sprites entities
 				std::vector<std::vector<void*>>& sprite_data = ecs_system_get_archetype_data(ARCHETYPE_SPRITE);
 				for (uint entity_index = 0; entity_index < sprite_data[0].size(); ++entity_index) {
-					
+
 					quad_definition quad_definition;
 					quad_definition.id = quad_id;
 
@@ -192,7 +197,7 @@ namespace caliope {
 					quad_definition.z_order = sprite_comp->z_order;
 					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 						*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
-						sprite_comp->texture_region[0], 
+						sprite_comp->texture_region[0],
 						sprite_comp->texture_region[1]
 					);
 
@@ -247,6 +252,8 @@ namespace caliope {
 		state_ptr->program_config.reset();
 		state_ptr.reset();
 
+		audio_system_shutdown();
+
 		ecs_system_shutdown();
 
 		camera_system_shutdown();
@@ -266,7 +273,7 @@ namespace caliope {
 		resource_system_shutdown();
 
 		renderer_system_shutdown();
-		
+
 		platform_system_shutdown();
 
 		input_system_shutdown();

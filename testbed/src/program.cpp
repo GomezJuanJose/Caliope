@@ -13,6 +13,7 @@
 #include <systems/texture_system.h>
 #include <systems/material_system.h>
 #include <systems/sprite_animation_system.h>
+#include <systems/audio_system.h>
 #include <platform/file_system.h>
 #include <loaders/resources_types.inl>
 
@@ -27,7 +28,7 @@ void intialize_sprite_entities() {
 
 
 	// TODO: TEMPORAL CODE
-	caliope::material_configuration m;
+	caliope::material_resource_data m;
 	m.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 	m.shininess_sharpness = 16.0f;
 	m.shininess_intensity = 3.0f;
@@ -40,7 +41,7 @@ void intialize_sprite_entities() {
 	m.shader_name = { "Builtin.SpriteShader" };
 	m.name = { "character1" };
 
-	caliope::material_configuration m2;
+	caliope::material_resource_data m2;
 	m2.diffuse_color = glm::vec3(0.5f, 1.0f, 1.0f);
 	m2.shininess_sharpness = 15.0f;
 	m2.shininess_intensity = 5.0f;
@@ -50,7 +51,7 @@ void intialize_sprite_entities() {
 	m2.shader_name = { "Builtin.SpriteShader" };
 	m2.name = { "background" };
 
-	caliope::material_configuration m3;
+	caliope::material_resource_data m3;
 	m3.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 	m3.shininess_sharpness = 64.0f;
 	m3.shininess_intensity = 5.0f;
@@ -60,7 +61,7 @@ void intialize_sprite_entities() {
 	m3.shader_name = { "Builtin.SpriteShader" };
 	m3.name = { "character2" };
 
-	caliope::material_configuration m4;
+	caliope::material_resource_data m4;
 	m4.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 	m4.shininess_sharpness = 64.0f;
 	m4.shininess_intensity = 5.0f;
@@ -70,7 +71,7 @@ void intialize_sprite_entities() {
 	m4.shader_name = { "Builtin.SpriteShader" };
 	m4.name = { "transparency" };
 
-	caliope::material_configuration m5;
+	caliope::material_resource_data m5;
 	m5.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
 	m5.shininess_sharpness = 64.0f;
 	m5.shininess_intensity = 5.0f;
@@ -86,23 +87,23 @@ void intialize_sprite_entities() {
 
 	caliope::file_handle w;
 	caliope::file_system_open(std::string("assets\\materials\\character1.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_configuration), &m);
+	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m);
 	caliope::file_system_close(w);
 
 	caliope::file_system_open(std::string("assets\\materials\\background.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_configuration), &m2);
+	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m2);
 	caliope::file_system_close(w);
 
 	caliope::file_system_open(std::string("assets\\materials\\character2.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_configuration), &m3);
+	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m3);
 	caliope::file_system_close(w);
 
 	caliope::file_system_open(std::string("assets\\materials\\transparency.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_configuration), &m4);
+	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m4);
 	caliope::file_system_close(w);
 
 	caliope::file_system_open(std::string("assets\\materials\\spritesheet.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_configuration), &m5);
+	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m5);
 	caliope::file_system_close(w);
 
 	caliope::sprite_animation_config spritesheet_animation;
@@ -234,12 +235,23 @@ void intialize_sprite_entities() {
 	caliope::ecs_system_insert_data(e, caliope::MATERIAL_ANIMATION_COMPONENT, &sac1, sizeof(sac1));
 }
 
+void initialize_sounds() {
+	caliope::sound_emmiter_component test_sound_emmiter;
+	caliope::sound_emmiter_component test_music_steeam_emmiter;
+	
+	test_sound_emmiter.id = caliope::audio_system_create_emmiter(std::string("test_short_sound"));
+	test_music_steeam_emmiter.id = caliope::audio_system_create_emmiter(std::string("test"));
+	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id);
+}
+
 bool initialize_testbed(caliope::game_state& game_state) {
 	CE_LOG_INFO("Initialize testbed");
 
 	game_state.world_camera = caliope::camera_system_get_default();
 
 	intialize_sprite_entities();
+
+	initialize_sounds();
 
 	return true;
 }
@@ -280,6 +292,15 @@ bool update_testbed(caliope::game_state& game_state, float delta_time) {
 		caliope::ecs_system_delete_entity(7);
 		caliope::ecs_system_delete_entity(3);
 		caliope::ecs_system_delete_entity(3333);
+		caliope::audio_system_pause_emmiter(0, 0);
+		caliope::audio_system_destroy_emmiter(0);
+		uint x = caliope::audio_system_create_emmiter(std::string("test_short_sound"));
+	}
+
+	if (caliope::is_key_pressed(caliope::KEY_O)) {
+		caliope::audio_system_loop_emmiter(0, true);
+		caliope::audio_system_set_emmiter_gain(0, 0.3f);
+		caliope::audio_system_play_emmiter(0, 0);
 	}
 
 	return true;

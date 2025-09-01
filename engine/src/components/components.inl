@@ -22,4 +22,11 @@ namespace caliope {
 		uint z_order;
 		std::array<char, MAX_NAME_LENGTH> animation_name;
 	} material_animation_component;
+
+	typedef struct sound_emmiter_component {
+		uint id;
+		bool loopeable;
+		float volume;
+		float pitch;
+	} sound_emmiter_component;
 }

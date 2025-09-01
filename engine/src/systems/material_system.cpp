@@ -21,7 +21,7 @@ namespace caliope {
 
 	static std::unique_ptr<material_system_state> state_ptr;
 
-	bool load_material(material_configuration& mat_config);
+	bool load_material(material_resource_data& mat_config);
 	void destroy_material(material& m);
 
 	void generate_default_material();
@@ -54,7 +54,7 @@ namespace caliope {
 				CE_LOG_ERROR("material_system_adquire couldnt load file material");
 				return material_system_get_default();
 			}
-			material_configuration mat_config = std::any_cast<material_configuration>(r.data);
+			material_resource_data mat_config = std::any_cast<material_resource_data>(r.data);
 			resource_system_unload(r);
 
 
@@ -69,7 +69,7 @@ namespace caliope {
 		return &state_ptr->registered_materials[name].material;
 	}
 
-	material* material_system_adquire_from_config(material_configuration& material_config) {
+	material* material_system_adquire_from_config(material_resource_data& material_config) {
 		std::string string_material_name = std::string(material_config.name.data());
 
 		if (state_ptr->registered_materials.find(string_material_name) == state_ptr->registered_materials.end()) {
@@ -100,7 +100,7 @@ namespace caliope {
 		return &state_ptr->default_material;
 	}
 
-	bool load_material(material_configuration& mat_config) {
+	bool load_material(material_resource_data& mat_config) {
 		material_reference mr;
 		mr.material.name = std::string(mat_config.name.data());
 		mr.material.diffuse_color = mat_config.diffuse_color;

@@ -18,7 +18,7 @@ namespace caliope {
 		}
 		std::vector<uchar> bytes;
 		file_system_read_all_bytes(binary_file, bytes, out_resource->data_size);
-		material_configuration* mat_config = reinterpret_cast<material_configuration*>(bytes.data());
+		material_resource_data* mat_config = reinterpret_cast<material_resource_data*>(bytes.data());
 		out_resource->data = *mat_config;
 		file_system_close(binary_file);
 

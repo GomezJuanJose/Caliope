@@ -7,6 +7,7 @@
 #include "loaders/image_loader.h"
 #include "loaders/binary_loader.h"
 #include "loaders/material_loader.h"
+#include "loaders/audio_loader.h"
 
 namespace caliope {
 
@@ -30,6 +31,7 @@ namespace caliope {
 		resource_system_register_loader(binary_resource_loader_create());
 		resource_system_register_loader(image_resource_loader_create());
 		resource_system_register_loader(material_resource_loader_create());
+		resource_system_register_loader(audio_resource_loader_create());
 
 		CE_LOG_INFO("Resource system initialized.");
 		return true;

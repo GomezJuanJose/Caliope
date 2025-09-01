@@ -34,10 +34,17 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/g-truc/glm.git
 )
 
-FetchContent_MakeAvailable(glfw glm)
+FetchContent_Declare(
+    miniaudio
+    GIT_REPOSITORY https://github.com/mackron/miniaudio.git
+)
+
+
+FetchContent_MakeAvailable(glfw glm miniaudio)
 
 target_link_libraries(engine PRIVATE glfw Vulkan::Vulkan)
 target_link_libraries(engine PRIVATE glm::glm)
+target_link_libraries(engine PRIVATE miniaudio)
 
 
 file(GLOB_RECURSE SRC_FILES testbed/src/*.cpp)
