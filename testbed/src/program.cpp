@@ -130,7 +130,7 @@ void intialize_sprite_entities() {
 
 
 	caliope::transform_component t2;
-	t2.position = glm::vec3(0.0f, 0.0f, 1.0f);
+	t2.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	t2.scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	t2.roll_rotation = 0.0f;
 
@@ -244,6 +244,34 @@ void initialize_sounds() {
 	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id);
 }
 
+void initialize_lights() {
+	uint light_id = caliope::ecs_system_add_entity(caliope::ARCHETYPE_POINT_LIGHT);
+	caliope::transform_component transform;
+	transform.position = { 0, 0, 1.0f };
+	caliope::point_light_component light;
+	//light.color = { 1.0f, 0.0f, 0.0f, 1.0f };
+	light.color = {0.4f, 0.2f, 0.0f, 1.0f};
+	light.radius = 10.0f;
+	light.constant = 1.0f;
+	light.linear = 0.35f;
+	light.quadratic = 0.44f;
+	caliope::ecs_system_insert_data(light_id, caliope::TRANSFORM_COMPONENT, &transform, sizeof(caliope::transform_component));
+	caliope::ecs_system_insert_data(light_id, caliope::POINT_LIGHT_COMPONENT, &light, sizeof(caliope::point_light_component));
+
+
+	uint light2_id = caliope::ecs_system_add_entity(caliope::ARCHETYPE_POINT_LIGHT);
+	caliope::transform_component transform2;
+	transform2.position = { 0.0f, -0.5f, 0.1f };
+	caliope::point_light_component light2;
+	light2.color = { 0.0f, 0.0f, 1.0f, 1.0f };
+	light2.radius = 0.2f;
+	light2.constant = 1.0f;
+	light2.linear = 0.35f;
+	light2.quadratic = 0.44f;
+	caliope::ecs_system_insert_data(light2_id, caliope::TRANSFORM_COMPONENT, &transform2, sizeof(caliope::transform_component));
+	caliope::ecs_system_insert_data(light2_id, caliope::POINT_LIGHT_COMPONENT, &light2, sizeof(caliope::point_light_component));
+}
+
 bool initialize_testbed(caliope::game_state& game_state) {
 	CE_LOG_INFO("Initialize testbed");
 
@@ -252,6 +280,8 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	intialize_sprite_entities();
 
 	initialize_sounds();
+
+	initialize_lights();
 
 	return true;
 }

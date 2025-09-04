@@ -45,6 +45,10 @@ namespace caliope {
 		new_archetype_id = { TRANSFORM_COMPONENT, MATERIAL_ANIMATION_COMPONENT };
 		ecs_system_build_archetype(ARCHETYPE_SPRITE_ANIMATION, new_archetype_id, new_archetype_size);
 
+		new_archetype_size = { sizeof(transform_component), sizeof(point_light_component) };
+		new_archetype_id = { TRANSFORM_COMPONENT, POINT_LIGHT_COMPONENT };
+		ecs_system_build_archetype(ARCHETYPE_POINT_LIGHT, new_archetype_id, new_archetype_size);
+
 		CE_LOG_INFO("ECS system initialized.");
 
 		return true;

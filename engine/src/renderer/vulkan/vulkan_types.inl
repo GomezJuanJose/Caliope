@@ -118,8 +118,11 @@ namespace caliope {
 
 		VkDescriptorSetLayout descriptor_set_layout;
 
-		vulkan_buffer uniform_buffers;
-		void* uniform_buffers_mapped;
+		vulkan_buffer uniform_buffers_vertex;
+		void* uniform_buffers_vertex_mapped;
+
+		vulkan_buffer uniform_buffers_fragment;
+		void* uniform_buffers_fragment_mapped;
 
 		vulkan_buffer ssbo;
 		void* ssbo_mapped;

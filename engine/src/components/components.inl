@@ -29,4 +29,12 @@ namespace caliope {
 		float volume;
 		float pitch;
 	} sound_emmiter_component;
+
+	typedef struct point_light_component {
+		glm::vec4 color;
+		float radius;
+		float constant;
+		float linear;
+		float quadratic;
+	} point_light_component;
 }

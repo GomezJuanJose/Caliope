@@ -40,12 +40,18 @@ namespace caliope {
 	void destroy_object_pick();
 	// TODO: END TEMPORAL
 
-	typedef struct uniform_buffer_object {
+	typedef struct uniform_vertex_buffer_object {
 		glm::mat4 view;
 		glm::mat4 proj;
-		glm::vec4 ambient_color;
 		glm::vec3 view_position;
-	}uniform_buffer_object;
+	}uniform_vertex_buffer_object;
+
+	#define MAX_POINT_LIGHTS 10
+	typedef struct uniform_fragment_buffer_object {
+		glm::vec4 ambient_color;
+		point_light_definition point_lights[MAX_POINT_LIGHTS];
+		int number_of_lights;
+	}uniform_fragment_buffer_object;
 
 	typedef struct vulkan_backend_state {
 		vulkan_context context;
@@ -335,28 +341,40 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
-		uniform_buffer_object ubo;
-		ubo.view = view;
-		ubo.proj = projection;
-		ubo.ambient_color = glm::vec4(0.02f, 0.02f, 0.02f, 1.0f);// TODO: Scene system;
-		ubo.view_position = view_position;
+	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
+		uniform_vertex_buffer_object ubo_vertex;
+		ubo_vertex.view = view;
+		ubo_vertex.proj = projection;
+		ubo_vertex.view_position = view_position;
+
+		uniform_fragment_buffer_object ubo_frag;
+		ubo_frag.ambient_color = glm::vec4(0.00f, 0.00f, 0.00f, 1.0f);// TODO: Scene system;
+		ubo_frag.number_of_lights = point_lights.size();
+		for (uint i = 0; i < ubo_frag.number_of_lights; ++i) {
+			ubo_frag.point_lights[i] = point_lights[i];
+		}
 
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader_internal_data);
-		copy_memory(vk_shader->uniform_buffers_mapped, &ubo, sizeof(ubo));
+		copy_memory(vk_shader->uniform_buffers_vertex_mapped, &ubo_vertex, sizeof(ubo_vertex));
+		copy_memory(vk_shader->uniform_buffers_fragment_mapped, &ubo_frag, sizeof(ubo_frag));
 		copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(quad_properties) * quad_count);
 
 		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = vk_shader->uniform_buffers.handle;
+		buffer_info.buffer = vk_shader->uniform_buffers_vertex.handle;
 		buffer_info.offset = 0;
-		buffer_info.range = sizeof(uniform_buffer_object);
+		buffer_info.range = sizeof(uniform_vertex_buffer_object);
+
+		VkDescriptorBufferInfo buffer_fragment_info = {};
+		buffer_fragment_info.buffer = vk_shader->uniform_buffers_fragment.handle;
+		buffer_fragment_info.offset = 0;
+		buffer_fragment_info.range = sizeof(uniform_fragment_buffer_object);
 
 		VkDescriptorBufferInfo ssbo_info = {};
 		ssbo_info.buffer = vk_shader->ssbo.handle;
 		ssbo_info.offset = 0;
 		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
 
-		std::array<VkWriteDescriptorSet, 3> descriptor_writes = {};
+		std::array<VkWriteDescriptorSet, 4> descriptor_writes = {};
 		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptor_writes[0].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
 		descriptor_writes[0].dstBinding = 0;
@@ -396,6 +414,16 @@ namespace caliope {
 		descriptor_writes[2].pBufferInfo = &ssbo_info;
 		descriptor_writes[2].pImageInfo = nullptr;
 		descriptor_writes[2].pTexelBufferView = nullptr;
+
+		descriptor_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_writes[3].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		descriptor_writes[3].dstBinding = 3;
+		descriptor_writes[3].dstArrayElement = 0;
+		descriptor_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_writes[3].descriptorCount = 1;
+		descriptor_writes[3].pBufferInfo = &buffer_fragment_info;
+		descriptor_writes[3].pImageInfo = nullptr;
+		descriptor_writes[3].pTexelBufferView = nullptr;
 
 		vkUpdateDescriptorSets(state_ptr->context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 
@@ -588,12 +616,12 @@ namespace caliope {
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
 
 		// Descriptor set layout
-		VkDescriptorSetLayoutBinding ubo_layout_binding = {};
-		ubo_layout_binding.binding = 0;
-		ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubo_layout_binding.descriptorCount = 1;
-		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		ubo_layout_binding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding ubo_vertex_layout_binding = {};
+		ubo_vertex_layout_binding.binding = 0;
+		ubo_vertex_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		ubo_vertex_layout_binding.descriptorCount = 1;
+		ubo_vertex_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		ubo_vertex_layout_binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
 		sampler_layout_binding.binding = 1;
@@ -609,7 +637,14 @@ namespace caliope {
 		ssbo_layout_binding.pImmutableSamplers = nullptr;
 		ssbo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings = { ubo_layout_binding, sampler_layout_binding, ssbo_layout_binding };
+		VkDescriptorSetLayoutBinding ubo_fragment_layout_binding = {};
+		ubo_fragment_layout_binding.binding = 3;
+		ubo_fragment_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		ubo_fragment_layout_binding.descriptorCount = 1;
+		ubo_fragment_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		ubo_fragment_layout_binding.pImmutableSamplers = nullptr;
+
+		std::array<VkDescriptorSetLayoutBinding, 4> bindings = { ubo_vertex_layout_binding, sampler_layout_binding, ssbo_layout_binding, ubo_fragment_layout_binding };
 		VkDescriptorSetLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 		layout_info.bindingCount = bindings.size();
 		layout_info.pBindings = bindings.data();
@@ -642,10 +677,14 @@ namespace caliope {
 		vkDestroyShaderModule(state_ptr->context.device.logical_device, frag_module, nullptr);
 
 		// Uniform buffers
-		VkDeviceSize buffer_size = sizeof(uniform_buffer_object);
+		VkDeviceSize buffer_vertex_size = sizeof(uniform_vertex_buffer_object);
+		vulkan_buffer_create(state_ptr->context, buffer_vertex_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers_vertex);
+		vk_shader->uniform_buffers_vertex_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex, 0, buffer_vertex_size, 0);
 
-		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers);
-		vk_shader->uniform_buffers_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers, 0, buffer_size, 0);
+		VkDeviceSize buffer_fragment_size = sizeof(uniform_fragment_buffer_object);
+		vulkan_buffer_create(state_ptr->context, buffer_fragment_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers_fragment);
+		vk_shader->uniform_buffers_fragment_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers_fragment, 0, buffer_fragment_size, 0);
+
 
 		// Vertex SSBO
 		vulkan_buffer_create(state_ptr->context, sizeof(quad_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
@@ -653,13 +692,15 @@ namespace caliope {
 
 
 		// Descriptor pool
-		std::array<VkDescriptorPoolSize, 3> pool_sizes;
+		std::array<VkDescriptorPoolSize, 4> pool_sizes;
 		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[0].descriptorCount = 1024; // HACK: max number of ubo descriptor sets.
+		pool_sizes[0].descriptorCount = 1; // HACK: max number of ubo descriptor sets.
 		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		pool_sizes[1].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
 		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		pool_sizes[2].descriptorCount = 2;
+		pool_sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		pool_sizes[3].descriptorCount = 1; // HACK: max number of ubo descriptor sets.
 
 		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		pool_info.poolSizeCount = pool_sizes.size();
@@ -686,11 +727,14 @@ namespace caliope {
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
 
 		//for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_fragment);
 		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
-		vk_shader->uniform_buffers_mapped = 0;
+		vk_shader->uniform_buffers_vertex_mapped = 0;
+		vk_shader->uniform_buffers_fragment_mapped = 0;
 		vk_shader->ssbo_mapped = 0;
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers_vertex);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers_fragment);
 		vulkan_buffer_destroy(state_ptr->context, vk_shader->ssbo);
 		//}
 		vkDestroyDescriptorPool(state_ptr->context.device.logical_device, vk_shader->descriptor_pool, nullptr);
@@ -823,6 +867,12 @@ namespace caliope {
 		resource_system_unload(r);
 		return shader_module;
 	}
+
+
+
+
+
+
 
 
 
@@ -1149,9 +1199,9 @@ namespace caliope {
 		VK_CHECK(vkAllocateDescriptorSets(state_ptr->context.device.logical_device, &alloc_info, state_ptr->context.object_pick_shader.descriptor_sets.data()));
 
 		// UBO
-		VkDeviceSize buffer_size = sizeof(uniform_buffer_object);
-		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.object_pick_shader.uniform_buffers);
-		state_ptr->context.object_pick_shader.uniform_buffers_mapped = vulkan_buffer_lock_memory(state_ptr->context, state_ptr->context.object_pick_shader.uniform_buffers, 0, buffer_size, 0);
+		VkDeviceSize buffer_size = sizeof(uniform_vertex_buffer_object);
+		vulkan_buffer_create(state_ptr->context, buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.object_pick_shader.uniform_buffers_vertex);
+		state_ptr->context.object_pick_shader.uniform_buffers_vertex_mapped = vulkan_buffer_lock_memory(state_ptr->context, state_ptr->context.object_pick_shader.uniform_buffers_vertex, 0, buffer_size, 0);
 
 		// Vertex SSBO
 		vulkan_buffer_create(state_ptr->context, sizeof(pick_quad_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.object_pick_shader.ssbo);
@@ -1163,11 +1213,11 @@ namespace caliope {
 	void destroy_object_pick() {
 		vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
 
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex);
 		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
-		vk_shader->uniform_buffers_mapped = 0;
+		vk_shader->uniform_buffers_vertex_mapped = 0;
 		vk_shader->ssbo_mapped = 0;
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers_vertex);
 		vulkan_buffer_destroy(state_ptr->context, vk_shader->ssbo);
 		vkDestroyDescriptorPool(state_ptr->context.device.logical_device, vk_shader->descriptor_pool, nullptr);
 		vkDestroyDescriptorSetLayout(state_ptr->context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);
@@ -1241,20 +1291,19 @@ namespace caliope {
 			vkCmdSetScissor(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &rect);
 
 			//bind descriptor sets for current object
-			uniform_buffer_object ubo;
+			uniform_vertex_buffer_object ubo;
 			ubo.view = view;
 			ubo.proj = projection;
-			ubo.ambient_color = glm::vec4(0.02f, 0.02f, 0.02f, 1.0f);// TODO: Scene system;
 			ubo.view_position = glm::vec3(0.0f);
 
 			vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
-			copy_memory(vk_shader->uniform_buffers_mapped, &ubo, sizeof(ubo));
+			copy_memory(vk_shader->uniform_buffers_vertex_mapped, &ubo, sizeof(ubo));
 			copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(pick_quad_properties) * instance_count);
 
 			VkDescriptorBufferInfo buffer_info = {};
-			buffer_info.buffer = vk_shader->uniform_buffers.handle;
+			buffer_info.buffer = vk_shader->uniform_buffers_vertex.handle;
 			buffer_info.offset = 0;
-			buffer_info.range = sizeof(uniform_buffer_object);
+			buffer_info.range = sizeof(uniform_vertex_buffer_object);
 
 			VkDescriptorBufferInfo ssbo_info = {};
 			ssbo_info.buffer = vk_shader->ssbo.handle;

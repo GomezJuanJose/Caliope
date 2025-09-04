@@ -6,13 +6,16 @@ namespace caliope {
 
 	typedef enum archetype {
 		ARCHETYPE_SPRITE = 0,
-		ARCHETYPE_SPRITE_ANIMATION
+		ARCHETYPE_SPRITE_ANIMATION,
+		ARCHETYPE_POINT_LIGHT
 	}archetype;
 
 	typedef enum component_id {
 		TRANSFORM_COMPONENT = 0,
 		MATERIAL_COMPONENT,
-		MATERIAL_ANIMATION_COMPONENT
+		MATERIAL_ANIMATION_COMPONENT,
+		SOUND_EMMITER_COMPONENT,
+		POINT_LIGHT_COMPONENT
 	} component_id;
 
 	bool ecs_system_initialize();

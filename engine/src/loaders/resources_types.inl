@@ -123,6 +123,15 @@ namespace caliope {
 		std::array<glm::vec2,4> texture_region;
 	} quad_definition;
 
+	typedef struct point_light_definition {
+		glm::vec4 color;
+		glm::vec4 position;
+		float radius;
+		float constant;
+		float linear;
+		float quadratic;
+	}point_light_definition;
+
 	typedef struct geometry{
 		std::string name;
 		uint index_count;

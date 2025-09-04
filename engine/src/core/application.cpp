@@ -240,6 +240,29 @@ namespace caliope {
 				}
 
 
+				//TODO: Move to the future view system when builds the package
+				// Gets all animations sprites entities
+				std::vector<std::vector<void*>>& point_light_data = ecs_system_get_archetype_data(ARCHETYPE_POINT_LIGHT);
+				for (uint entity_index = 0; entity_index < point_light_data[0].size(); ++entity_index) {
+					point_light_definition definition;
+					
+					transform_component* tran_comp = (transform_component*)point_light_data[0][entity_index];
+					definition.position = glm::vec4(tran_comp->position,1.0f);
+
+					point_light_component* light_comp = (point_light_component*)point_light_data[1][entity_index];
+					definition.color = light_comp->color;
+					definition.constant = light_comp->constant;
+					definition.linear = light_comp->linear;
+					definition.quadratic = light_comp->quadratic;
+					definition.radius = light_comp->radius;
+
+					// TODO: Hardcoded config, move to an project settings config
+					if (packet.point_light_definitions.size() < 10) {
+						packet.point_light_definitions.push_back(definition);
+					}
+				}
+
+
 				if (!renderer_draw_frame(packet)) {
 					CE_LOG_FATAL("Failed to render frame");
 					return false;
