@@ -21,6 +21,7 @@
 #include "systems/sprite_animation_system.h"
 #include "systems/ecs_system.h"
 #include "systems/audio_system.h"
+#include "systems/scene_system.h"
 
 #include "math/transform.h"
 
@@ -136,6 +137,13 @@ namespace caliope {
 			return false;
 		}
 
+		scene_system_configuration scene_config;
+		scene_config.max_number_entities = 500;
+		if (!scene_system_initialize(scene_config)) {
+			CE_LOG_FATAL("Failed to initialize scene system; shutting down");
+			return false;
+		}
+
 		if (!state_ptr->program_config->initialize(state_ptr->program_config->game_state)) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
 			return false;
@@ -172,95 +180,11 @@ namespace caliope {
 				}
 
 				renderer_packet packet;
+				packet.ambient_color = { 0, 0, 0, 1 }; // TODO: Make a project settings configuration
 				packet.delta_time = delta_time;
 				packet.world_camera = state_ptr->program_config->game_state.world_camera;
-				uint quad_id = 0;
-
-				//TODO: Move to the future view system when builds the package
-				// Gets all sprites entities
-				std::vector<std::vector<void*>>& sprite_data = ecs_system_get_archetype_data(ARCHETYPE_SPRITE);
-				for (uint entity_index = 0; entity_index < sprite_data[0].size(); ++entity_index) {
-
-					quad_definition quad_definition;
-					quad_definition.id = quad_id;
-
-					transform_component* tran_comp = (transform_component*)sprite_data[0][entity_index];
-					transform transform = transform_create();
-					transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-					transform_set_scale(transform, tran_comp->scale);
-					transform_set_position(transform, tran_comp->position);
-					quad_definition.transform = transform;
-
-					material_component* sprite_comp = (material_component*)sprite_data[1][entity_index];
-					packet.sprite_definitions.insert({ material_system_adquire(std::string(sprite_comp->material_name.data()))->shader->name, {} });
-					quad_definition.material_name = std::string(sprite_comp->material_name.data()); // TODO: Change to char array
-					quad_definition.z_order = sprite_comp->z_order;
-					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
-						*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
-						sprite_comp->texture_region[0],
-						sprite_comp->texture_region[1]
-					);
-
-
-					packet.sprite_definitions.at(
-						material_system_adquire(std::string(sprite_comp->material_name.data()))->shader->name
-					).push(quad_definition);
-
-					quad_id++;
-				}
-
-				//TODO: Move to the future view system when builds the package
-				// Gets all animations sprites entities
-				std::vector<std::vector<void*>>& sprite_animation_data = ecs_system_get_archetype_data(ARCHETYPE_SPRITE_ANIMATION);
-				for (uint entity_index = 0; entity_index < sprite_animation_data[0].size(); ++entity_index) {
-
-					quad_definition quad_definition;
-					quad_definition.id = quad_id;
-
-					transform_component* tran_comp = (transform_component*)sprite_animation_data[0][entity_index];
-					transform transform = transform_create();
-					transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-					transform_set_scale(transform, tran_comp->scale);
-					transform_set_position(transform, tran_comp->position);
-					quad_definition.transform = transform;
-
-					material_animation_component* anim_comp = (material_animation_component*)sprite_animation_data[1][entity_index];
-					sprite_frame& frame = sprite_animation_system_acquire_frame(std::string(anim_comp->animation_name.data()), delta_time);
-					packet.sprite_definitions.insert({ material_system_adquire(frame.material_name)->shader->name, {} });
-					quad_definition.material_name = frame.material_name;
-					quad_definition.z_order = anim_comp->z_order;
-					quad_definition.texture_region = frame.texture_region;
-
-
-					packet.sprite_definitions.at(
-						material_system_adquire(frame.material_name)->shader->name
-					).push(quad_definition);
-
-					quad_id++;
-				}
-
-
-				//TODO: Move to the future view system when builds the package
-				// Gets all animations sprites entities
-				std::vector<std::vector<void*>>& point_light_data = ecs_system_get_archetype_data(ARCHETYPE_POINT_LIGHT);
-				for (uint entity_index = 0; entity_index < point_light_data[0].size(); ++entity_index) {
-					point_light_definition definition;
-					
-					transform_component* tran_comp = (transform_component*)point_light_data[0][entity_index];
-					definition.position = glm::vec4(tran_comp->position,1.0f);
-
-					point_light_component* light_comp = (point_light_component*)point_light_data[1][entity_index];
-					definition.color = light_comp->color;
-					definition.constant = light_comp->constant;
-					definition.linear = light_comp->linear;
-					definition.quadratic = light_comp->quadratic;
-					definition.radius = light_comp->radius;
-
-					// TODO: Hardcoded config, move to an project settings config
-					if (packet.point_light_definitions.size() < 10) {
-						packet.point_light_definitions.push_back(definition);
-					}
-				}
+				
+				scene_system_populate_render_packet(packet, delta_time);
 
 
 				if (!renderer_draw_frame(packet)) {
@@ -274,6 +198,8 @@ namespace caliope {
 
 		state_ptr->program_config.reset();
 		state_ptr.reset();
+
+		scene_system_shutdown();
 
 		audio_system_shutdown();
 

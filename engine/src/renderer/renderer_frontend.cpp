@@ -242,6 +242,7 @@ namespace caliope{
 				state_ptr->backend.set_and_apply_uniforms(
 					state_ptr->quads,
 					packet.point_light_definitions,
+					packet.ambient_color,
 					shader->internal_data,
 					state_ptr->batch_textures,
 					number_of_instances,

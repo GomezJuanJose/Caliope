@@ -1,10 +1,15 @@
 #pragma once
 #include "defines.h"
-#include <glm/glm.hpp>
 #include "math/transform.h"
+#include "systems/ecs_system.h"// TODO: Move archetypes to other place, avoid to include the whole system
+#include "components/components.inl"
+
+#include <glm/glm.hpp>
 
 namespace caliope {
 	struct audio_file_internal;
+
+	enum scene_state;
 
 	#define MAX_NAME_LENGTH 256
 
@@ -12,7 +17,8 @@ namespace caliope {
 		RESOURCE_TYPE_BINARY = 0,
 		RESOURCE_TYPE_IMAGE,
 		RESOURCE_TYPE_MATERIAL,
-		RESOURCE_TYPE_AUDIO
+		RESOURCE_TYPE_AUDIO,
+		RESOURCE_TYPE_SCENE
 	} resource_type;
 
 	typedef struct resource {
@@ -55,6 +61,26 @@ namespace caliope {
 		uint buffer_size;
 
 	} audio_clip_resource_data;
+
+	typedef struct scene_resource_data {
+		std::array<char, MAX_NAME_LENGTH> name;
+
+
+		/*uint entities_count;
+		uint components_count;
+		std::array<archetype, 50> entities_archetype; // Entities in the scene
+		std::array<transform_component, 50> entities_transform; // The data of all components in the scene
+		std::array<material_component, 50> entities_material; // The data of all components in the scene
+		std::array<material_animation_component, 50> entities_animation; // The data of all components in the scene
+		std::array<point_light_component,50> entities_light; // The data of all components in the scene*/
+		
+		//void* entities_data;
+		//std::array<char, 2048> enitity_archetype;
+		//std::array<char,49152> entity_data;
+		//std::array<archetype, 500> entity_archetype;
+		//std::array<std::array<const char*,10>, 500> entity_data; // 10 its the number of components per entities
+		//std::array<std::array<component_id,10>, 500> entity_component_ids;
+	} scene_resource_data;
 
 
 
@@ -139,4 +165,9 @@ namespace caliope {
 	} geometry;
 
 
+	typedef struct scene {
+		std::vector<uint> entities;
+		std::array<char, MAX_NAME_LENGTH> name;
+		bool is_enabled;
+	} scene;
 }

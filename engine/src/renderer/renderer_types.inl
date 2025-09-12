@@ -35,7 +35,7 @@ namespace caliope {
 		bool (*begin_renderpass)();
 		bool (*end_renderpass)();
 
-		void (*set_and_apply_uniforms)(std::vector<quad_properties>& sprites, std::vector<point_light_definition>& point_lights, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+		void (*set_and_apply_uniforms)(std::vector<quad_properties>& sprites, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint number_quads, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
 		void (*draw_geometry)(uint quad_count, geometry& geometry);
 
@@ -63,10 +63,11 @@ namespace caliope {
 	typedef struct renderer_packet {
 		float delta_time;
 		camera* world_camera;
-		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
-		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
+		glm::vec4 ambient_color;
 		std::vector<point_light_definition> point_light_definitions;
 		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 
+		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
+		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
 	} renderer_packet;
 }

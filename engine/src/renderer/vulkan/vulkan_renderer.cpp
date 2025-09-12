@@ -341,14 +341,14 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
+	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
 		uniform_vertex_buffer_object ubo_vertex;
 		ubo_vertex.view = view;
 		ubo_vertex.proj = projection;
 		ubo_vertex.view_position = view_position;
 
 		uniform_fragment_buffer_object ubo_frag;
-		ubo_frag.ambient_color = glm::vec4(0.00f, 0.00f, 0.00f, 1.0f);// TODO: Scene system;
+		ubo_frag.ambient_color = ambient_color;
 		ubo_frag.number_of_lights = point_lights.size();
 		for (uint i = 0; i < ubo_frag.number_of_lights; ++i) {
 			ubo_frag.point_lights[i] = point_lights[i];

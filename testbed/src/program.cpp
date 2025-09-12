@@ -14,6 +14,7 @@
 #include <systems/material_system.h>
 #include <systems/sprite_animation_system.h>
 #include <systems/audio_system.h>
+#include <systems/scene_system.h>
 #include <platform/file_system.h>
 #include <loaders/resources_types.inl>
 
@@ -22,10 +23,6 @@
 #include <vector>
 
 void intialize_sprite_entities() {
-	for (uint i = 0; i < 7; ++i) {
-		caliope::ecs_system_add_entity(caliope::ARCHETYPE_SPRITE);
-	}
-
 
 	// TODO: TEMPORAL CODE
 	caliope::material_resource_data m;
@@ -118,7 +115,7 @@ void intialize_sprite_entities() {
 	spritesheet_animation.frames = frames;
 	spritesheet_animation.is_looping = true;
 	spritesheet_animation.is_playing = true;
-	spritesheet_animation.frames_per_second = 6.0f;
+	spritesheet_animation.frames_per_second = 2.0f;
 
 	caliope::sprite_animation_system_register(spritesheet_animation);
 
@@ -218,21 +215,27 @@ void intialize_sprite_entities() {
 
 	std::vector<caliope::material_component> sprites = { sc1, sc2, sc3, sc4, sc5, sc6, sc7};
 
-	std::vector<std::vector<void*>>& sprite_data = caliope::ecs_system_get_archetype_data(caliope::ARCHETYPE_SPRITE);
 	for (uint entity_index = 0; entity_index < 7; ++entity_index) {
-		caliope::ecs_system_insert_data(entity_index, caliope::TRANSFORM_COMPONENT, &transforms[entity_index], sizeof(caliope::transform_component));
-		caliope::ecs_system_insert_data(entity_index, caliope::MATERIAL_COMPONENT, &sprites[entity_index], sizeof(caliope::material_component));
+
+		std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::MATERIAL_COMPONENT };
+		std::vector<void*> data = { &transforms[entity_index] , &sprites[entity_index] };
+
+		caliope::scene_system_instance_entity(std::string("scene_test1"), caliope::ARCHETYPE_SPRITE, 
+			components,
+			data
+		);
 	}
 
 
-	uint e = caliope::ecs_system_add_entity(caliope::ARCHETYPE_SPRITE_ANIMATION);
 	caliope::material_animation_component sac1;
 	sac1.animation_name = { "spritesheet_animation" };
 	sac1.z_order = 2;
-	
-	std::vector<std::vector<void*>>& animation_sprite_data = caliope::ecs_system_get_archetype_data(caliope::ARCHETYPE_SPRITE_ANIMATION);
-	caliope::ecs_system_insert_data(e, caliope::TRANSFORM_COMPONENT, &t8, sizeof(t8));
-	caliope::ecs_system_insert_data(e, caliope::MATERIAL_ANIMATION_COMPONENT, &sac1, sizeof(sac1));
+	std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::MATERIAL_ANIMATION_COMPONENT };
+	std::vector<void*> data = { &t8, &sac1 };
+	caliope::scene_system_instance_entity(std::string("scene_test1"), caliope::ARCHETYPE_SPRITE_ANIMATION,
+		components,
+		data
+	);
 }
 
 void initialize_sounds() {
@@ -241,25 +244,25 @@ void initialize_sounds() {
 	
 	test_sound_emmiter.id = caliope::audio_system_create_emmiter(std::string("test_short_sound"));
 	test_music_steeam_emmiter.id = caliope::audio_system_create_emmiter(std::string("test"));
-	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id);
+	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id, 0);
 }
 
 void initialize_lights() {
-	uint light_id = caliope::ecs_system_add_entity(caliope::ARCHETYPE_POINT_LIGHT);
 	caliope::transform_component transform;
 	transform.position = { 0, 0, 1.0f };
 	caliope::point_light_component light;
-	//light.color = { 1.0f, 0.0f, 0.0f, 1.0f };
 	light.color = {0.4f, 0.2f, 0.0f, 1.0f};
 	light.radius = 10.0f;
 	light.constant = 1.0f;
 	light.linear = 0.35f;
 	light.quadratic = 0.44f;
-	caliope::ecs_system_insert_data(light_id, caliope::TRANSFORM_COMPONENT, &transform, sizeof(caliope::transform_component));
-	caliope::ecs_system_insert_data(light_id, caliope::POINT_LIGHT_COMPONENT, &light, sizeof(caliope::point_light_component));
+	std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::POINT_LIGHT_COMPONENT };
+	std::vector<void*> data = { &transform, &light };
+	caliope::scene_system_instance_entity(std::string("scene_test2"), caliope::ARCHETYPE_POINT_LIGHT,
+		components,
+		data
+	);
 
-
-	uint light2_id = caliope::ecs_system_add_entity(caliope::ARCHETYPE_POINT_LIGHT);
 	caliope::transform_component transform2;
 	transform2.position = { 0.0f, -0.5f, 0.1f };
 	caliope::point_light_component light2;
@@ -268,8 +271,11 @@ void initialize_lights() {
 	light2.constant = 1.0f;
 	light2.linear = 0.35f;
 	light2.quadratic = 0.44f;
-	caliope::ecs_system_insert_data(light2_id, caliope::TRANSFORM_COMPONENT, &transform2, sizeof(caliope::transform_component));
-	caliope::ecs_system_insert_data(light2_id, caliope::POINT_LIGHT_COMPONENT, &light2, sizeof(caliope::point_light_component));
+	data = { &transform2, &light2 };
+	caliope::scene_system_instance_entity(std::string("scene_test2"), caliope::ARCHETYPE_POINT_LIGHT,
+		components,
+		data
+	);
 }
 
 bool initialize_testbed(caliope::game_state& game_state) {
@@ -277,11 +283,14 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 	game_state.world_camera = caliope::camera_system_get_default();
 
+	caliope::scene_system_create_empty(std::string("scene_test1"), true);
+	caliope::scene_system_create_empty(std::string("scene_test2"), true);
+
 	intialize_sprite_entities();
+	initialize_lights();
 
 	initialize_sounds();
 
-	initialize_lights();
 
 	return true;
 }
@@ -318,13 +327,47 @@ bool update_testbed(caliope::game_state& game_state, float delta_time) {
 		caliope::camera_roll(*game_state.world_camera, speed * delta_time);
 	}
 
+	if (caliope::is_key_pressed(caliope::KEY_1)) {
+		caliope::scene_system_load(std::string("scene_test1"), true);
+	}
+
+	if (caliope::is_key_pressed(caliope::KEY_2)) {
+		caliope::scene_system_load(std::string("scene_test2"), true);
+	}
+
+	if (caliope::is_key_pressed(caliope::KEY_4)) {
+		caliope::scene_system_unload(std::string("scene_test1"));
+		caliope::scene_system_unload(std::string("scene_test2"));
+	}
+
+	if (caliope::is_key_pressed(caliope::KEY_5)) {
+		caliope::scene_system_enable(std::string("scene_test1"), true);
+	}
+
+	if (caliope::is_key_pressed(caliope::KEY_6)) {
+		caliope::scene_system_enable(std::string("scene_test1"), false);
+	}
+
 	if (caliope::is_key_pressed(caliope::KEY_P)) {
-		caliope::ecs_system_delete_entity(7);
-		caliope::ecs_system_delete_entity(3);
-		caliope::ecs_system_delete_entity(3333);
+		caliope::scene_system_destroy_entity(std::string("scene_test1"), 7);
+		caliope::scene_system_destroy_entity(std::string("scene_test1"), 3);
+		caliope::scene_system_destroy_entity(std::string("scene_test1"), 3333);
 		caliope::audio_system_pause_emmiter(0, 0);
 		caliope::audio_system_destroy_emmiter(0);
 		uint x = caliope::audio_system_create_emmiter(std::string("test_short_sound"));
+	}
+
+
+	if (caliope::is_key_pressed(caliope::KEY_L)) {
+		caliope::ecs_system_enable_entity(7, false);
+		caliope::ecs_system_enable_entity(3, false);
+		caliope::ecs_system_enable_entity(3333, false);
+	}
+
+	if (caliope::is_key_pressed(caliope::KEY_K)) {
+		caliope::ecs_system_enable_entity(7, true);
+		caliope::ecs_system_enable_entity(3, true);
+		caliope::ecs_system_enable_entity(3333, true);
 	}
 
 	if (caliope::is_key_pressed(caliope::KEY_O)) {

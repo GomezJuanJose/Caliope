@@ -23,10 +23,15 @@ namespace caliope {
 
 	CE_API uint ecs_system_add_entity(archetype archetype);
 	CE_API void ecs_system_change_entity(uint entity, archetype archetype);
-	CE_API void ecs_system_insert_data(uint entity, component_id component, void* data, uint size_data);
+	CE_API void ecs_system_insert_data(uint entity, component_id component, void* data);
 	CE_API void ecs_system_delete_entity(uint entity);
+	CE_API void ecs_system_enable_entity(uint entity, bool enabled);
 
 	CE_API void ecs_system_build_archetype(archetype archetype, std::vector<component_id>& components_id, std::vector<uint>& components_sizes);
-	CE_API std::vector<std::vector<void*>>& ecs_system_get_archetype_data(archetype archetype);
+
+	CE_API std::vector<uint>& ecs_system_get_entities_by_archetype(archetype archetype);
+	CE_API void* ecs_system_get_component_data(uint entity, component_id component, uint64& out_component_size);
+	CE_API std::vector<component_id>& ecs_system_get_entity_components(uint entity);
+	CE_API archetype ecs_system_get_entity_archetype(uint entity);
 
 }
