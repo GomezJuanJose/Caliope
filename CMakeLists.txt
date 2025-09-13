@@ -46,10 +46,11 @@ target_link_libraries(engine PRIVATE glfw Vulkan::Vulkan)
 target_link_libraries(engine PRIVATE glm::glm)
 target_link_libraries(engine PRIVATE miniaudio)
 
-
 file(GLOB_RECURSE SRC_FILES testbed/src/*.cpp)
 file(GLOB_RECURSE HEADERS_FILES testbed/src/*.h)
 add_executable(testbed ${SRC_FILES} ${HEADERS_FILES})
+
+
 target_include_directories(testbed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/testbed/src)
 target_compile_definitions(testbed PRIVATE CE_PLATFORM_WINDOWS=1 CE_EXPORT_DLL=0)
 target_link_libraries(testbed engine)

@@ -58,7 +58,7 @@ namespace caliope {
 		resource_loader resource;
 		resource.type = RESOURCE_TYPE_IMAGE;
 		resource.custom_type = "";
-		resource.resource_folder = std::string("textures\\");
+		resource.resource_folder = std::string("textures/");
 		resource.load = image_loader_load;
 		resource.unload = image_loader_unload;
 

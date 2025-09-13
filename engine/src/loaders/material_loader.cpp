@@ -37,7 +37,7 @@ namespace caliope {
 
 		loader.type = RESOURCE_TYPE_MATERIAL;
 		loader.custom_type = std::string("");
-		loader.resource_folder = std::string("materials\\");
+		loader.resource_folder = std::string("materials/");
 		loader.load = material_loader_load;
 		loader.unload = material_loader_unload;
 

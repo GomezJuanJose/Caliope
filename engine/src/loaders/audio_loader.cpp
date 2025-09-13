@@ -56,7 +56,7 @@ namespace caliope {
 
 		loader.type = RESOURCE_TYPE_AUDIO;
 		loader.custom_type = std::string("");
-		loader.resource_folder = std::string("audio\\");
+		loader.resource_folder = std::string("audio/");
 		loader.load = audio_loader_load;
 		loader.unload = audio_loader_unload;
 

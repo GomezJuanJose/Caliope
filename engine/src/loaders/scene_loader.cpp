@@ -36,7 +36,7 @@ namespace caliope {
 
 		loader.type = RESOURCE_TYPE_SCENE;
 		loader.custom_type = std::string("");
-		loader.resource_folder = std::string("scenes\\");
+		loader.resource_folder = std::string("scenes/");
 		loader.load = scene_loader_load;
 		loader.unload = scene_loader_unload;
 

@@ -567,13 +567,13 @@ namespace caliope {
 
 	void vulkan_renderer_shader_create(shader& s) {
 
-		VkShaderModule vert_module = create_shader_module(std::string("shaders\\" + s.name + ".vert.spv"));
+		VkShaderModule vert_module = create_shader_module(std::string("shaders/" + s.name + ".vert.spv"));
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		vert_shader_stage_info.module = vert_module;
 		vert_shader_stage_info.pName = "main";
 
-		VkShaderModule frag_module = create_shader_module(std::string("shaders\\" + s.name + ".frag.spv"));
+		VkShaderModule frag_module = create_shader_module(std::string("shaders/" + s.name + ".frag.spv"));
 		VkPipelineShaderStageCreateInfo frag_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		frag_shader_stage_info.module = frag_module;
@@ -976,13 +976,13 @@ namespace caliope {
 
 
 		//vert/frag stages
-		VkShaderModule vert_module = create_shader_module(std::string("shaders\\Builtin.SpritePickShader.vert.spv"));
+		VkShaderModule vert_module = create_shader_module(std::string("shaders/Builtin.SpritePickShader.vert.spv"));
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		vert_shader_stage_info.module = vert_module;
 		vert_shader_stage_info.pName = "main";
 
-		VkShaderModule frag_module = create_shader_module(std::string("shaders\\Builtin.SpritePickShader.frag.spv"));
+		VkShaderModule frag_module = create_shader_module(std::string("shaders/Builtin.SpritePickShader.frag.spv"));
 		VkPipelineShaderStageCreateInfo frag_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		frag_shader_stage_info.module = frag_module;

@@ -83,23 +83,23 @@ void intialize_sprite_entities() {
 
 
 	caliope::file_handle w;
-	caliope::file_system_open(std::string("assets\\materials\\character1.cemat"), caliope::FILE_MODE_WRITE, w);
+	caliope::file_system_open(std::string("assets/materials/character1.cemat"), caliope::FILE_MODE_WRITE, w);
 	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m);
 	caliope::file_system_close(w);
 
-	caliope::file_system_open(std::string("assets\\materials\\background.cemat"), caliope::FILE_MODE_WRITE, w);
+	caliope::file_system_open(std::string("assets/materials/background.cemat"), caliope::FILE_MODE_WRITE, w);
 	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m2);
 	caliope::file_system_close(w);
 
-	caliope::file_system_open(std::string("assets\\materials\\character2.cemat"), caliope::FILE_MODE_WRITE, w);
+	caliope::file_system_open(std::string("assets/materials/character2.cemat"), caliope::FILE_MODE_WRITE, w);
 	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m3);
 	caliope::file_system_close(w);
 
-	caliope::file_system_open(std::string("assets\\materials\\transparency.cemat"), caliope::FILE_MODE_WRITE, w);
+	caliope::file_system_open(std::string("assets/materials/transparency.cemat"), caliope::FILE_MODE_WRITE, w);
 	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m4);
 	caliope::file_system_close(w);
 
-	caliope::file_system_open(std::string("assets\\materials\\spritesheet.cemat"), caliope::FILE_MODE_WRITE, w);
+	caliope::file_system_open(std::string("assets/materials/spritesheet.cemat"), caliope::FILE_MODE_WRITE, w);
 	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m5);
 	caliope::file_system_close(w);
 

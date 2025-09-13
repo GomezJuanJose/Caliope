@@ -79,7 +79,7 @@ namespace caliope {
 		}
 
 		resource_system_config resource_config;
-		resource_config.base_path = "assets\\";
+		resource_config.base_path = "assets/";
 		resource_config.max_number_loaders = 32;
 		if (!resource_system_initialize(resource_config)) {
 			CE_LOG_FATAL("Failed to initialize resource system; shutting down");
