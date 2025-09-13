@@ -52,6 +52,7 @@ namespace caliope {
 		VkImage handle;
 		VkDeviceMemory memory;
 		VkImageView view;
+		VkFormat format;
 		uint width;
 		uint height;
 	}vulkan_image;
