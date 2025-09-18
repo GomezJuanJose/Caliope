@@ -9,11 +9,17 @@ namespace caliope {
 
 	struct transform;
 	struct camera;
+	enum view_type;
 
 	typedef enum renderer_backend_type {
 		BACKEND_TYPE_VULKAN,
 		BACKEND_TYPE_DX
 	} renderer_backend_type;
+
+	typedef struct renderpass {
+
+		std::any internal_data;
+	}renderpass;
 
 
 	typedef struct renderer_backend_config {
@@ -60,14 +66,40 @@ namespace caliope {
 		};
 	};
 
-	typedef struct renderer_packet {
+
+	typedef struct renderer_view_packet {
+		view_type view_type;
+		std::any view_packet;
+	} renderer_view_packet;
+
+	typedef struct render_view_world_packet {
 		float delta_time;
 		camera* world_camera;
 		glm::vec4 ambient_color;
 		std::vector<point_light_definition> point_light_definitions;
 		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
+	};
 
-		//std::unordered_map<std::string, std::vector<std::string>> quad_materials; // Key : shader name, Value: vector of materials
-		//std::unordered_map<std::string, std::vector<transform>> quad_transforms; // Key : material name, Value: vector of transfors
-	} renderer_packet;
+	typedef struct render_view_object_pick_packet {
+
+	}render_view_object_pick_packet;
+
+	typedef struct render_view {
+		std::string name;
+		view_type type;
+		std::any internal_data;
+
+		void (*on_create)(render_view& self);
+		void (*on_destroy)(render_view& self);
+		void (*on_resize_window)(render_view& self, uint width, uint height);
+		bool (*on_build_package)(render_view& self, renderer_view_packet& out_packet, std::vector<std::any>& variadic_data);
+		bool (*on_render)(render_view& self, std::any& packet);
+	} render_view;
+
+	typedef struct render_view_world_internal_data {
+		uint window_width;
+		uint window_height;
+		uint max_number_quads;
+		uint max_textures_per_batch;
+	} render_view_world_internal_data;
 }

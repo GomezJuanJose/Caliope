@@ -11,7 +11,7 @@ namespace caliope {
 		geometry quad;
 	}geometry_system_state;
 
-	std::unique_ptr<geometry_system_state> state_ptr;
+	static std::unique_ptr<geometry_system_state> state_ptr;
 
 	void generate_builtin_geometry();
 	void calculate_tangents(std::vector<vertex>& vertices, std::vector<uint16>& indices);

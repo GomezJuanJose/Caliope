@@ -22,6 +22,7 @@
 #include "systems/ecs_system.h"
 #include "systems/audio_system.h"
 #include "systems/scene_system.h"
+#include "systems/render_view_system.h"
 
 #include "math/transform.h"
 
@@ -93,9 +94,10 @@ namespace caliope {
 		renderer_config.max_number_quads = 10000;// TODO: Configure based on the resources needed for the developed game
 		renderer_config.max_textures_per_batch = 400;
 		if (!renderer_system_initialize(renderer_config)) {
-			CE_LOG_FATAL("Failed to initialize rederer; shutting down");
+			CE_LOG_FATAL("Failed to initialize renderer; shutting down");
 			return false;
 		}
+
 
 		if (!texture_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize texture system; shutting down");
@@ -127,6 +129,30 @@ namespace caliope {
 			return false;
 		}
 
+		if (!render_view_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize render view system; shutting down");
+			return false;
+		}
+
+		// Creates the views
+		render_view_world_internal_data data;
+		data.window_width = renderer_config.window_width;
+		data.window_height = renderer_config.window_height;
+		data.max_number_quads = renderer_config.max_number_quads;
+		data.max_textures_per_batch = renderer_config.max_textures_per_batch;
+
+		render_view world_view;
+		world_view.name = "world_view";
+		world_view.type = VIEW_TYPE_WORLD;
+		world_view.internal_data = data;
+		render_view_system_add_view(world_view);
+
+		render_view object_pick_view;
+		object_pick_view.name = "object_pick_view";
+		object_pick_view.type = VIEW_TYPE_OBJECT_PICK;
+		render_view_system_add_view(object_pick_view);
+
+
 		if (!ecs_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize ecs system; shutting down");
 			return false;
@@ -157,8 +183,6 @@ namespace caliope {
 		CE_LOG_INFO(get_memory_stats().c_str());
 		CE_LOG_INFO("Total usage of memory: %.2fMb/%.2fMb", get_memory_usage() / 1024.0 / 1024.0, memory_config.total_alloc_size / 1024.0 / 1024.0);
 
-
-
 		return true;
 	}
 
@@ -179,15 +203,10 @@ namespace caliope {
 					CE_LOG_ERROR("Failed to update the program;");
 				}
 
-				renderer_packet packet;
-				packet.ambient_color = { 0, 0, 0, 1 }; // TODO: Make a project settings configuration
-				packet.delta_time = delta_time;
-				packet.world_camera = state_ptr->program_config->game_state.world_camera;
-				
-				scene_system_populate_render_packet(packet, delta_time);
+				std::vector<renderer_view_packet> packets;
+				scene_system_populate_render_packet(packets, state_ptr->program_config->game_state.world_camera, delta_time);
 
-
-				if (!renderer_draw_frame(packet)) {
+				if (!renderer_draw_frame(packets, delta_time)) {
 					CE_LOG_FATAL("Failed to render frame");
 					return false;
 				}
@@ -206,6 +225,8 @@ namespace caliope {
 		ecs_system_shutdown();
 
 		camera_system_shutdown();
+
+		render_view_system_shutdown();
 
 		renderer_system_stop();
 

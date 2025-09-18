@@ -13,6 +13,7 @@
 #include "resource_system.h"
 
 #include "renderer/renderer_types.inl"
+#include "systems/render_view_system.h"
 
 namespace caliope {
 	typedef struct scene_system_state {
@@ -224,100 +225,90 @@ namespace caliope {
 		}
 	}
 
-	void scene_system_populate_render_packet(renderer_packet& packet, float delta_time) {
+	void scene_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* world_cam_in_use, float delta_time) {
+			
+		std::vector<quad_definition> quads_data;
+		std::vector<point_light_definition> lights_data;
 
-			uint quad_id = 0;
-			//TODO: Move to the future view system when builds the package
-			// Gets all sprites entities
-				std::vector<uint>& sprites = ecs_system_get_entities_by_archetype(ARCHETYPE_SPRITE);
-				for (uint entity_index = 0; entity_index < sprites.size(); ++entity_index) {
+		uint quad_id = 0;
+		// Gets all sprites entities
+		std::vector<uint>& sprites = ecs_system_get_entities_by_archetype(ARCHETYPE_SPRITE);
+		for (uint entity_index = 0; entity_index < sprites.size(); ++entity_index) {
 
-					uint64 size;
-					quad_definition quad_definition;
-					quad_definition.id = quad_id;
+			uint64 size;
+			quad_definition quad_definition;
+			quad_definition.id = quad_id;
 
-					transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites[entity_index], TRANSFORM_COMPONENT, size);
-					transform transform = transform_create();
-					transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-					transform_set_scale(transform, tran_comp->scale);
-					transform_set_position(transform, tran_comp->position);
-					quad_definition.transform = transform;
+			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites[entity_index], TRANSFORM_COMPONENT, size);
+			transform transform = transform_create();
+			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
+			transform_set_scale(transform, tran_comp->scale);
+			transform_set_position(transform, tran_comp->position);
+			quad_definition.transform = transform;
 
-					material_component* sprite_comp = (material_component*)ecs_system_get_component_data(sprites[entity_index], MATERIAL_COMPONENT, size);
-					packet.sprite_definitions.insert({ material_system_adquire(std::string(sprite_comp->material_name.data()))->shader->name, {} });
-					quad_definition.material_name = std::string(sprite_comp->material_name.data()); // TODO: Change to char array
-					quad_definition.z_order = sprite_comp->z_order;
-					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
-						*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
-						sprite_comp->texture_region[0],
-						sprite_comp->texture_region[1]
-					);
+			material_component* sprite_comp = (material_component*)ecs_system_get_component_data(sprites[entity_index], MATERIAL_COMPONENT, size);
+			quad_definition.material_name = std::string(sprite_comp->material_name.data()); // TODO: Change to char array
+			quad_definition.z_order = sprite_comp->z_order;
+			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
+				*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
+				sprite_comp->texture_region[0],
+				sprite_comp->texture_region[1]
+			);
 
+			quads_data.push_back(quad_definition);
+			quad_id++;
+		}
+			
+		// Gets all animations sprites entities
+		std::vector<uint>& sprites_animation = ecs_system_get_entities_by_archetype(ARCHETYPE_SPRITE_ANIMATION);
+		for (uint entity_index = 0; entity_index < sprites_animation.size(); ++entity_index) {
 
-					packet.sprite_definitions.at(
-						material_system_adquire(std::string(sprite_comp->material_name.data()))->shader->name
-					).push(quad_definition);
+			uint64 size;
+			quad_definition quad_definition;
+			quad_definition.id = quad_id;
 
-					quad_id++;
-				}
+			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites_animation[entity_index], TRANSFORM_COMPONENT, size);
+			transform transform = transform_create();
+			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
+			transform_set_scale(transform, tran_comp->scale);
+			transform_set_position(transform, tran_comp->position);
+			quad_definition.transform = transform;	
+
+			material_animation_component* anim_comp = (material_animation_component*)ecs_system_get_component_data(sprites_animation[entity_index], MATERIAL_ANIMATION_COMPONENT, size);
+			sprite_frame& frame = sprite_animation_system_acquire_frame(std::string(anim_comp->animation_name.data()), delta_time);
+			quad_definition.material_name = frame.material_name;
+			quad_definition.z_order = anim_comp->z_order;
+			quad_definition.texture_region = frame.texture_region;
+
+			quads_data.push_back(quad_definition);
+			quad_id++;
+		}
 			
 
-			//TODO: Move to the future view system when builds the package
-			// Gets all animations sprites entities
-				std::vector<uint>& sprites_animation = ecs_system_get_entities_by_archetype(ARCHETYPE_SPRITE_ANIMATION);
-				for (uint entity_index = 0; entity_index < sprites_animation.size(); ++entity_index) {
+		// Gets all point lighst entities
+		std::vector<uint>& point_lights = ecs_system_get_entities_by_archetype(ARCHETYPE_POINT_LIGHT);
+		for (uint entity_index = 0; entity_index < point_lights.size(); ++entity_index) {
+			uint64 size;
 
-					uint64 size;
-					quad_definition quad_definition;
-					quad_definition.id = quad_id;
+			point_light_definition definition;
 
-					transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites_animation[entity_index], TRANSFORM_COMPONENT, size);
-					transform transform = transform_create();
-					transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-					transform_set_scale(transform, tran_comp->scale);
-					transform_set_position(transform, tran_comp->position);
-					quad_definition.transform = transform;
+			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(point_lights[entity_index], TRANSFORM_COMPONENT, size);
+			definition.position = glm::vec4(tran_comp->position, 1.0f);
 
-					material_animation_component* anim_comp = (material_animation_component*)ecs_system_get_component_data(sprites_animation[entity_index], MATERIAL_ANIMATION_COMPONENT, size);
-					sprite_frame& frame = sprite_animation_system_acquire_frame(std::string(anim_comp->animation_name.data()), delta_time);
-					packet.sprite_definitions.insert({ material_system_adquire(frame.material_name)->shader->name, {} });
-					quad_definition.material_name = frame.material_name;
-					quad_definition.z_order = anim_comp->z_order;
-					quad_definition.texture_region = frame.texture_region;
+			point_light_component* light_comp = (point_light_component*)ecs_system_get_component_data(point_lights[entity_index], POINT_LIGHT_COMPONENT, size);
+			definition.color = light_comp->color;
+			definition.constant = light_comp->constant;
+			definition.linear = light_comp->linear;
+			definition.quadratic = light_comp->quadratic;
+			definition.radius = light_comp->radius;
+
+			lights_data.push_back(definition);
+		}
 
 
-					packet.sprite_definitions.at(
-						material_system_adquire(frame.material_name)->shader->name
-					).push(quad_definition);
-
-					quad_id++;
-				}
-			
-
-
-			//TODO: Move to the future view system when builds the package
-			// Gets all animations sprites entities
-
-				std::vector<uint>& point_lights = ecs_system_get_entities_by_archetype(ARCHETYPE_POINT_LIGHT);
-				for (uint entity_index = 0; entity_index < point_lights.size(); ++entity_index) {
-					uint64 size;
-
-					point_light_definition definition;
-
-					transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(point_lights[entity_index], TRANSFORM_COMPONENT, size);
-					definition.position = glm::vec4(tran_comp->position, 1.0f);
-
-					point_light_component* light_comp = (point_light_component*)ecs_system_get_component_data(point_lights[entity_index], POINT_LIGHT_COMPONENT, size);
-					definition.color = light_comp->color;
-					definition.constant = light_comp->constant;
-					definition.linear = light_comp->linear;
-					definition.quadratic = light_comp->quadratic;
-					definition.radius = light_comp->radius;
-
-					// TODO: Hardcoded config, move to an project settings config
-					if (packet.point_light_definitions.size() < 10) {
-						packet.point_light_definitions.push_back(definition);
-					}
-				}
+		renderer_view_packet packet;
+		packet.view_type = VIEW_TYPE_WORLD;
+		render_view_system_on_build_packet(VIEW_TYPE_WORLD, packet, std::vector<std::any>({ quads_data, lights_data, world_cam_in_use, delta_time }));
+		packets.push_back(packet);
 	}
 }

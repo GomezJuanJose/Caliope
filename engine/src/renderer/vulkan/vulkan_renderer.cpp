@@ -35,6 +35,9 @@ namespace caliope {
 	VkShaderModule create_shader_module(std::string& file_path);
 	VkFilter get_vulkan_texture_filter(texture_filter filter);
 
+	bool vulkan_renderpass_create(vulkan_context& context, vulkan_renderpass& out_renderpass, glm::vec4 render_area, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass);
+	void vulkan_renderpass_destroy(vulkan_context& context, vulkan_renderpass& renderpass);
+
 	// TODO: TEMPORAL
 	void create_object_pick();
 	void destroy_object_pick();
@@ -331,13 +334,98 @@ namespace caliope {
 		vkCmdDrawIndexed(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
 	}
 
+
+	bool vulkan_renderpass_create(vulkan_context& context, vulkan_renderpass& out_renderpass, glm::vec4 render_area, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass) {
+		out_renderpass.render_area = render_area;
+		out_renderpass.clear_color = clear_color;
+		out_renderpass.depth = depth;
+		out_renderpass.stencil = stencil;
+		out_renderpass.has_prev_pass = has_prev_pass;
+		out_renderpass.has_next_pass = has_next_pass;
+
+		VkAttachmentDescription color_attachment = {};
+		color_attachment.format = context.swapchain.surface_format.format;
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentDescription depth_attachment = {};
+		depth_attachment.format = context.device.depth_format;
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference color_attachment_reference = {};
+		color_attachment_reference.attachment = 0;
+		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depth_attachment_reference = {};
+		depth_attachment_reference.attachment = 1;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment_reference;
+		subpass.pDepthStencilAttachment = &depth_attachment_reference;
+
+		std::array<VkAttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
+		VkRenderPassCreateInfo renderpass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+		renderpass_info.attachmentCount = attachments.size();
+		renderpass_info.pAttachments = attachments.data();
+		renderpass_info.subpassCount = 1;
+		renderpass_info.pSubpasses = &subpass;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		renderpass_info.dependencyCount = 1;
+		renderpass_info.pDependencies = &dependency;
+
+		VK_CHECK(vkCreateRenderPass(context.device.logical_device, &renderpass_info, nullptr, &out_renderpass.handle));
+
+		return true;
+	}
+
+	void vulkan_renderpass_destroy(vulkan_context& context, vulkan_renderpass& renderpass) {
+		vkDestroyRenderPass(context.device.logical_device, renderpass.handle, nullptr);
+	}
+
 	bool vulkan_renderer_begin_renderpass() {
-		vulkan_renderpass_begin(state_ptr->context.command_buffers[state_ptr->context.current_frame], state_ptr->context.main_renderpass, state_ptr->context.swapchain.framebuffers[state_ptr->context.image_index]);
+		VkRenderPassBeginInfo renderpass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+		renderpass_info.renderPass = state_ptr->context.main_renderpass.handle;
+		renderpass_info.framebuffer = state_ptr->context.swapchain.framebuffers[state_ptr->context.image_index];
+		renderpass_info.renderArea.offset.x = state_ptr->context.main_renderpass.render_area.x;
+		renderpass_info.renderArea.offset.y = state_ptr->context.main_renderpass.render_area.y;
+		renderpass_info.renderArea.extent.width = state_ptr->context.main_renderpass.render_area.z;
+		renderpass_info.renderArea.extent.height = state_ptr->context.main_renderpass.render_area.w;
+		std::array<VkClearValue, 2> clear_values;
+		clear_values[0].color = { {state_ptr->context.main_renderpass.clear_color.r, state_ptr->context.main_renderpass.clear_color.g, state_ptr->context.main_renderpass.clear_color.b, state_ptr->context.main_renderpass.clear_color.a} };
+		clear_values[1].depthStencil = { state_ptr->context.main_renderpass.depth, state_ptr->context.main_renderpass.stencil };
+		renderpass_info.clearValueCount = clear_values.size();
+		renderpass_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
+		
 		return true;
 	}
 
 	bool vulkan_renderer_end_renderpass() {
-		vulkan_renderpass_end(state_ptr->context.command_buffers[state_ptr->context.current_frame]);
+		vkCmdEndRenderPass(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle);
+
 		return true;
 	}
 
@@ -1265,19 +1353,19 @@ namespace caliope {
 
 		vkCmdBeginRenderPass(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, &object_picking_renderpass_begin_info,
 			VK_SUBPASS_CONTENTS_INLINE);
+		
+		vulkan_pipeline_bind(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, state_ptr->context.object_pick_shader.pipeline);
+			
 
-		vkCmdBindPipeline(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			state_ptr->context.object_pick_shader.pipeline.handle);
 
-
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
-		viewport.width = (float)state_ptr->context.swapchain.extent.width;
-		viewport.height = -(float)state_ptr->context.swapchain.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &viewport);
+			VkViewport viewport = {};
+			viewport.x = 0.0f;
+			viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
+			viewport.width = (float)state_ptr->context.swapchain.extent.width;
+			viewport.height = -(float)state_ptr->context.swapchain.extent.height;
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &viewport);
 		
 			//the dynamic pipeline state means we have to set the scissor before each draw
 			VkRect2D rect{};
@@ -1398,6 +1486,8 @@ namespace caliope {
 
 		//unmap gpu memory
 		vkUnmapMemory(state_ptr->context.device.logical_device, state_ptr->context.ssbo_pick_out.memory);
+
+		CE_LOG_INFO("%d", p.id);
 	}
 
 	// TODO: End TODO

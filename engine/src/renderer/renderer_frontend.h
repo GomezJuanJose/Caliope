@@ -29,7 +29,7 @@ namespace caliope {
 
 	void renderer_on_resized(uint16 width, uint16 height);
 
-	bool renderer_draw_frame(renderer_packet& packet);
+	bool renderer_draw_frame(std::vector<renderer_view_packet>& packets, float delta_time);
 
 	void renderer_texture_create(texture& texture, uchar* pixels);
 	void renderer_texture_destroy(texture& texture);
@@ -41,4 +41,12 @@ namespace caliope {
 
 	void renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
 	void renderer_geometry_destroy(geometry& geometry);
+
+	bool renderer_renderpass_begin();
+	bool renderer_renderpass_end();
+
+
+	void renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+	void renderer_draw_geometry(uint instance_count, geometry& geometry);
+	void renderer_draw_object_pick(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
 }

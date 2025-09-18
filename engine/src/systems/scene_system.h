@@ -4,8 +4,9 @@
 
 namespace caliope {
 
-	struct renderer_packet;
+	struct renderer_view_packet;
 	struct transform;
+	struct camera;
 	enum archetype;
 	enum component_id;
 
@@ -15,7 +16,7 @@ namespace caliope {
 
 	bool scene_system_initialize(scene_system_configuration& config);
 	void scene_system_shutdown();
-	void scene_system_populate_render_packet(renderer_packet& packet, float delta_time);
+	void scene_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* world_cam_in_use, float delta_time);
 
 	CE_API bool scene_system_create_empty(std::string& name, bool enable_by_default);
 	CE_API bool scene_system_load(std::string& name, bool enable_by_default);
