@@ -65,7 +65,7 @@ void main(){
 
 	// Calculates light sources
 	for(int i = 0; i < ubo_frag.number_of_lights; ++i){
-		outColor += calculate_point_light(ubo_frag.point_lights[i], in_data_transfer.diffuse_color, normal, in_data_transfer.frag_position, view_direction);
+		outColor.rgb += calculate_point_light(ubo_frag.point_lights[i], in_data_transfer.diffuse_color, normal, in_data_transfer.frag_position, view_direction).rgb;
 	}
 }
 
