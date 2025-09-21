@@ -121,6 +121,7 @@ namespace caliope {
 		uint64 length = strlen(message);
 		LPDWORD number_written = 0;
 		WriteConsoleA(GetStdHandle(STD_OUTPUT_HANDLE), message, (DWORD)length, number_written, 0);
+		SetConsoleTextAttribute(console_handle, levels[3]);
 	}
 
 	std::tuple<double, double> platform_system_get_cursor_position() {// TODO: use vec2?
