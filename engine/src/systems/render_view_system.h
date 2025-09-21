@@ -22,5 +22,5 @@ namespace caliope {
 
 	void render_view_system_on_window_resize(uint width, uint height);
 	bool render_view_system_on_build_packet(view_type view_type, renderer_view_packet& out_packet, std::vector<std::any>& variadic_data);
-	bool render_view_system_on_render(view_type view_type, std::any& packet);
+	bool render_view_system_on_render(view_type view_type, std::any& packet, uint render_target_index);
 }

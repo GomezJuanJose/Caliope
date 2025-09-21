@@ -106,7 +106,11 @@ namespace caliope {
 		mr.material.diffuse_color = mat_config.diffuse_color;
 		mr.material.shininess_intensity = mat_config.shininess_intensity;
 		mr.material.shininess_sharpness = mat_config.shininess_sharpness;
-		mr.material.shader = shader_system_adquire(std::string(mat_config.shader_name.data()));
+
+		shader_config shader_conf;
+		shader_conf.name = std::string(mat_config.shader_name.data());
+		shader_conf.renderpass_type = (renderpass_type)0;
+		mr.material.shader = shader_system_adquire(shader_conf);
 
 		texture* diffuse_tex = texture_system_adquire(std::string(mat_config.diffuse_texture_name.data()));
 		mr.material.diffuse_texture = diffuse_tex ? diffuse_tex : texture_system_get_default_diffuse();
@@ -135,7 +139,11 @@ namespace caliope {
 	void generate_default_material() {
 		state_ptr->default_material.name = std::string("default");
 		state_ptr->default_material.diffuse_color = glm::vec4(1.0f);
-		state_ptr->default_material.shader = shader_system_adquire(std::string("Builtin.SpriteShader"));
+
+		shader_config shader_conf;
+		shader_conf.name = std::string("Builtin.SpriteShader");
+		shader_conf.renderpass_type = (renderpass_type)0;
+		state_ptr->default_material.shader = shader_system_adquire(shader_conf);
 		state_ptr->default_material.diffuse_texture = texture_system_get_default_diffuse();
 		state_ptr->default_material.specular_texture = texture_system_get_default_specular();
 		state_ptr->default_material.normal_texture = texture_system_get_default_normal();

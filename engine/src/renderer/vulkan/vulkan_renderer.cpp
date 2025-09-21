@@ -4,7 +4,6 @@
 #include "renderer/vulkan/vulkan_device.h"
 #include "renderer/vulkan/vulkan_swapchain.h"
 #include "renderer/vulkan/vulkan_image.h"
-#include "renderer/vulkan/vulkan_renderpass.h"
 #include "renderer/vulkan/vulkan_pipeline.h"
 #include "renderer/vulkan/vulkan_command_buffer.h"
 #include "renderer/vulkan/vulkan_buffer.h"
@@ -28,15 +27,12 @@
 
 namespace caliope {
 
-	void create_framebuffers();
-	void destroy_framebuffers();
+
 	void recreate_swapchain();
 	void create_command_buffers();
 	VkShaderModule create_shader_module(std::string& file_path);
 	VkFilter get_vulkan_texture_filter(texture_filter filter);
 
-	bool vulkan_renderpass_create(vulkan_context& context, vulkan_renderpass& out_renderpass, glm::vec4 render_area, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass);
-	void vulkan_renderpass_destroy(vulkan_context& context, vulkan_renderpass& renderpass);
 
 	// TODO: TEMPORAL
 	void create_object_pick();
@@ -159,27 +155,8 @@ namespace caliope {
 			return false;
 		}
 
-
-		// Create world renderpass
-		if (!vulkan_renderpass_create(
-			state_ptr->context,
-			state_ptr->context.main_renderpass,
-			glm::vec4(0.0f, 0.0f, state_ptr->context.swapchain.extent.width, state_ptr->context.swapchain.extent.height),
-			glm::vec4(0.0f, 0.2f, 0.6f, 1.0f),
-			1.0f,
-			0,
-			false,
-			false
-		)) {
-			CE_LOG_FATAL("vulkan_renderer_backend_initialize could not create the renderpass");
-			return false;
-		}
-
 		// Create command buffers
 		create_command_buffers();
-
-		// Create framebuffers
-		create_framebuffers();
 
 		// Create synchronization objects
 		VkSemaphoreCreateInfo semaphore_info = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -190,11 +167,6 @@ namespace caliope {
 			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.render_finished_semaphores[i]));
 			VK_CHECK(vkCreateFence(state_ptr->context.device.logical_device, &fence_info, nullptr, &state_ptr->context.in_flight_fences[i]));
 		}
-
-		// TODO: TEMPORAL
-		create_object_pick();
-		// TODO: END TEMPORAL
-
 
 		CE_LOG_INFO("Vulkan backend initialized.");
 		return true;
@@ -208,26 +180,17 @@ namespace caliope {
 
 		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
 
-		// TODO: TEMPORAL
-		destroy_object_pick();
-		//TODO: REMPORAL
-
-
 		for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.image_available_semaphores[i], nullptr);
 			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.render_finished_semaphores[i], nullptr);
 			vkDestroyFence(state_ptr->context.device.logical_device, state_ptr->context.in_flight_fences[i], nullptr);
 		}
 
-		destroy_framebuffers();
-
 		for (uint i = 0; i < state_ptr->context.swapchain.image_count; ++i) {
 			if (state_ptr->context.command_buffers[i].handle) {
 				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.command_buffers[i]);
 			}
 		}
-
-		vulkan_renderpass_destroy(state_ptr->context, state_ptr->context.main_renderpass);
 
 		vulkan_swapchain_destroy(state_ptr->context, state_ptr->context.swapchain);
 
@@ -299,11 +262,9 @@ namespace caliope {
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
 
-		// TODO: Refactor on a view system
-		submit_info.commandBufferCount = 2;
-		std::array<VkCommandBuffer, 2> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle };
+		submit_info.commandBufferCount = 1;
+		std::array<VkCommandBuffer, 1> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle};
 		submit_info.pCommandBuffers = cbs.data();
-		// TODO: END TODO
 
 		VkSemaphore signal_sempahores[] = { state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame] };
 		submit_info.signalSemaphoreCount = 1;
@@ -334,55 +295,130 @@ namespace caliope {
 		vkCmdDrawIndexed(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
 	}
 
+	uint vulkan_renderer_window_images_count_get() {
+		return state_ptr->context.swapchain.image_count;
+	}
 
-	bool vulkan_renderpass_create(vulkan_context& context, vulkan_renderpass& out_renderpass, glm::vec4 render_area, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass) {
-		out_renderpass.render_area = render_area;
-		out_renderpass.clear_color = clear_color;
-		out_renderpass.depth = depth;
-		out_renderpass.stencil = stencil;
-		out_renderpass.has_prev_pass = has_prev_pass;
-		out_renderpass.has_next_pass = has_next_pass;
+	uint vulkan_renderer_window_image_index_get() {
+		return state_ptr->context.image_index;
+	}
 
+	std::shared_ptr<std::any> vulkan_renderer_window_attachment_get(uint index) {
+		vulkan_image vk_image;
+		vk_image.handle = state_ptr->context.swapchain.images[index];
+		vk_image.view = state_ptr->context.swapchain.views[index];
+		return std::make_shared<std::any>(vk_image);
+	}
+
+	std::shared_ptr<std::any> vulkan_renderer_depth_attachment_get() {
+		return std::make_shared<std::any>(state_ptr->context.swapchain.depth_attachment);;
+	}
+
+	bool vulkan_renderer_render_target_create(renderpass& pass, render_target& target) {
+
+		std::vector<VkImageView> attachments;
+
+		for (uint i = 0; i < target.attachments.size(); ++i) {
+			vulkan_image* image = std::any_cast<vulkan_image>(&(*target.attachments[i]));
+			attachments.push_back(image->view);
+		}
+
+		vulkan_renderpass* vk_pass = std::any_cast<vulkan_renderpass>(&pass.internal_data);
+
+		VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+		framebuffer_info.renderPass = vk_pass->handle;
+		framebuffer_info.attachmentCount = attachments.size();
+		framebuffer_info.pAttachments = attachments.data();
+		framebuffer_info.width = pass.render_area.z;
+		framebuffer_info.height = pass.render_area.w;
+		framebuffer_info.layers = 1;
+
+		VkFramebuffer vk_framebuffer;
+		VK_CHECK(vkCreateFramebuffer(state_ptr->context.device.logical_device, &framebuffer_info, nullptr, &vk_framebuffer));
+		target.internal_framebuffer = vk_framebuffer;
+
+		return true;
+	}
+
+	bool vulkan_renderer_render_target_destroy(render_target& target) {
+		
+		if (!target.internal_framebuffer.has_value()) {
+			return false;
+		}
+
+		for (uint i = 0; i < target.attachments.size(); ++i) {
+			target.attachments[i].reset();
+			target.attachments[i] = nullptr;
+		}
+
+		VkFramebuffer vk_framebuffer = std::any_cast<VkFramebuffer>(target.internal_framebuffer);
+		vkDestroyFramebuffer(state_ptr->context.device.logical_device, vk_framebuffer, nullptr);
+		
+		target.attachments.empty();
+		
+		return true;
+	}
+
+
+	
+
+	bool vulkan_renderer_renderpass_create(renderpass& pass, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass) {
+		pass.render_area = glm::vec4(0.0f, 0.0f, state_ptr->context.swapchain.extent.width, state_ptr->context.swapchain.extent.height);
+		pass.clear_color = clear_color;
+		pass.depth = depth;
+		pass.stencil = stencil;
+		pass.has_prev_pass = has_prev_pass;
+		pass.has_next_pass = has_next_pass;
+		pass.targets.reserve(state_ptr->context.swapchain.image_count);
+		
+		std::vector<VkAttachmentDescription> attachments;
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+
+		bool do_clear_color = (pass.flags & RENDERPASS_CLEAR_FLAG_COLOR_BUFFER) != 0;
 		VkAttachmentDescription color_attachment = {};
-		color_attachment.format = context.swapchain.surface_format.format;
+		color_attachment.format = state_ptr->context.swapchain.surface_format.format;
 		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.loadOp = do_clear_color ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentDescription depth_attachment = {};
-		depth_attachment.format = context.device.depth_format;
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		color_attachment.initialLayout = has_prev_pass ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = has_next_pass ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		VkAttachmentReference color_attachment_reference = {};
 		color_attachment_reference.attachment = 0;
 		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference depth_attachment_reference = {};
-		depth_attachment_reference.attachment = 1;
-		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_attachment_reference;
-		subpass.pDepthStencilAttachment = &depth_attachment_reference;
 
-		std::array<VkAttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
-		VkRenderPassCreateInfo renderpass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-		renderpass_info.attachmentCount = attachments.size();
-		renderpass_info.pAttachments = attachments.data();
-		renderpass_info.subpassCount = 1;
-		renderpass_info.pSubpasses = &subpass;
+		attachments.push_back(color_attachment);
+
+		bool do_clear_depth = (pass.flags & RENDERPASS_CLEAR_FLAG_DEPTH_BUFFER) != 0;
+		if (do_clear_depth) {
+			VkAttachmentDescription depth_attachment = {};
+			depth_attachment.format = state_ptr->context.device.depth_format;
+			depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			depth_attachment.loadOp = has_prev_pass ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentReference depth_attachment_reference = {};
+			depth_attachment_reference.attachment = 1;
+			depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			subpass.pDepthStencilAttachment = &depth_attachment_reference;
+			attachments.push_back(depth_attachment);
+		}
+		else {
+			subpass.pDepthStencilAttachment = 0;
+		}
 
 		VkSubpassDependency dependency = {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -390,42 +426,58 @@ namespace caliope {
 		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 		dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+		VkRenderPassCreateInfo renderpass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+		renderpass_info.attachmentCount = attachments.size();
+		renderpass_info.pAttachments = attachments.data();
+		renderpass_info.subpassCount = 1;
+		renderpass_info.pSubpasses = &subpass;
 		renderpass_info.dependencyCount = 1;
 		renderpass_info.pDependencies = &dependency;
 
-		VK_CHECK(vkCreateRenderPass(context.device.logical_device, &renderpass_info, nullptr, &out_renderpass.handle));
+		vulkan_renderpass vk_pass;
+		VK_CHECK(vkCreateRenderPass(state_ptr->context.device.logical_device, &renderpass_info, nullptr, &vk_pass.handle));
+
+		pass.internal_data = vk_pass;
+
+		attachments.empty();
 
 		return true;
 	}
 
-	void vulkan_renderpass_destroy(vulkan_context& context, vulkan_renderpass& renderpass) {
-		vkDestroyRenderPass(context.device.logical_device, renderpass.handle, nullptr);
+	void vulkan_renderer_renderpass_destroy(renderpass& pass) {
+		vulkan_renderpass* vk_pass = std::any_cast<vulkan_renderpass>(&pass.internal_data);
+
+		vkDestroyRenderPass(state_ptr->context.device.logical_device, vk_pass->handle, nullptr);
 	}
 
-	bool vulkan_renderer_begin_renderpass() {
+	bool vulkan_renderer_renderpass_begin(renderpass& pass, render_target& target) {
+		
+		vulkan_renderpass* vk_pass = std::any_cast<vulkan_renderpass>(&pass.internal_data);
+
+		VkFramebuffer vk_framebuffer = std::any_cast<VkFramebuffer>(target.internal_framebuffer);
+
 		VkRenderPassBeginInfo renderpass_info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-		renderpass_info.renderPass = state_ptr->context.main_renderpass.handle;
-		renderpass_info.framebuffer = state_ptr->context.swapchain.framebuffers[state_ptr->context.image_index];
-		renderpass_info.renderArea.offset.x = state_ptr->context.main_renderpass.render_area.x;
-		renderpass_info.renderArea.offset.y = state_ptr->context.main_renderpass.render_area.y;
-		renderpass_info.renderArea.extent.width = state_ptr->context.main_renderpass.render_area.z;
-		renderpass_info.renderArea.extent.height = state_ptr->context.main_renderpass.render_area.w;
+		renderpass_info.renderPass = vk_pass->handle;
+		renderpass_info.framebuffer = vk_framebuffer;
+		renderpass_info.renderArea.offset.x = pass.render_area.x;
+		renderpass_info.renderArea.offset.y = pass.render_area.y;
+		renderpass_info.renderArea.extent.width = pass.render_area.z;
+		renderpass_info.renderArea.extent.height = pass.render_area.w;
 		std::array<VkClearValue, 2> clear_values;
-		clear_values[0].color = { {state_ptr->context.main_renderpass.clear_color.r, state_ptr->context.main_renderpass.clear_color.g, state_ptr->context.main_renderpass.clear_color.b, state_ptr->context.main_renderpass.clear_color.a} };
-		clear_values[1].depthStencil = { state_ptr->context.main_renderpass.depth, state_ptr->context.main_renderpass.stencil };
+		clear_values[0].color = { {pass.clear_color.r, pass.clear_color.g, pass.clear_color.b, pass.clear_color.a} };
+		clear_values[1].depthStencil = { pass.depth, pass.stencil };
 		renderpass_info.clearValueCount = clear_values.size();
 		renderpass_info.pClearValues = clear_values.data();
 
 		vkCmdBeginRenderPass(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
-		
+
 		return true;
 	}
 
-	bool vulkan_renderer_end_renderpass() {
+	bool vulkan_renderer_renderpass_end() {
 		vkCmdEndRenderPass(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle);
-
 		return true;
 	}
 
@@ -653,7 +705,7 @@ namespace caliope {
 		vkFreeMemory(state_ptr->context.device.logical_device, vk_t->image.memory, nullptr);
 	}
 
-	void vulkan_renderer_shader_create(shader& s) {
+	void vulkan_renderer_shader_create(shader& s, renderpass& pass) {
 
 		VkShaderModule vert_module = create_shader_module(std::string("shaders/" + s.name + ".vert.spv"));
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -740,9 +792,10 @@ namespace caliope {
 
 
 		// Create pipeline
+		vulkan_renderpass* vk_pass = std::any_cast<vulkan_renderpass>(&pass.internal_data);
 		bool result = vulkan_pipeline_create(
 			state_ptr->context, 
-			state_ptr->context.main_renderpass,//TODO: Choose renderpass depending the shader type
+			*vk_pass,
 			sizeof(vertex),
 			NUMBER_OF_VERTEX_ATTRIBUTES,
 			attribute_descriptions.data(),
@@ -879,32 +932,6 @@ namespace caliope {
 	}
 
 
-	void create_framebuffers() {
-		state_ptr->context.swapchain.framebuffers.resize(state_ptr->context.swapchain.views.size());
-		for (int i = 0; i < state_ptr->context.swapchain.views.size(); ++i) {
-			VkImageView attachments[] = {
-				state_ptr->context.swapchain.views[i],
-				state_ptr->context.swapchain.depth_attachment.view
-			};
-
-			VkFramebufferCreateInfo framebuffer_info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-			framebuffer_info.renderPass = state_ptr->context.main_renderpass.handle;
-			framebuffer_info.attachmentCount = 2;
-			framebuffer_info.pAttachments = attachments;
-			framebuffer_info.width = state_ptr->context.swapchain.extent.width;
-			framebuffer_info.height = state_ptr->context.swapchain.extent.height;
-			framebuffer_info.layers = 1;
-
-			VK_CHECK(vkCreateFramebuffer(state_ptr->context.device.logical_device, &framebuffer_info, nullptr, &state_ptr->context.swapchain.framebuffers[i]));
-		}
-	}
-
-	void destroy_framebuffers() {
-		for (int i = 0; i < state_ptr->context.swapchain.framebuffers.size(); ++i) {
-			vkDestroyFramebuffer(state_ptr->context.device.logical_device, state_ptr->context.swapchain.framebuffers[i], nullptr);
-		}
-	}
-
 	void recreate_swapchain() {
 		int width = 0, height = 0;
 		while (width == 0 || height == 0) {
@@ -912,15 +939,9 @@ namespace caliope {
 			glfwWaitEvents();
 		}
 
-		state_ptr->context.main_renderpass.render_area.z = width;
-		state_ptr->context.main_renderpass.render_area.w = height;
-
 		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
-		destroy_framebuffers();
-		//vulkan_imageview_destroy(state_ptr->context);
 
 		vulkan_swapchain_recreate(state_ptr->context, state_ptr->context.swapchain);
-		create_framebuffers();
 		create_command_buffers();
 	}
 
@@ -977,7 +998,7 @@ namespace caliope {
 
 
 	void create_object_pick() {
-		vulkan_image_create(
+	/*/	vulkan_image_create(
 			state_ptr->context,
 			VK_IMAGE_TYPE_2D,
 			state_ptr->context.swapchain.extent.width,
@@ -1296,10 +1317,11 @@ namespace caliope {
 		state_ptr->context.object_pick_shader.ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, state_ptr->context.object_pick_shader.ssbo, 0, sizeof(pick_quad_properties) * state_ptr->max_number_quads, 0);
 
 		vulkan_buffer_create(state_ptr->context, sizeof(ssbo_object_picking), (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.ssbo_pick_out);
+	*/
 	}
 
 	void destroy_object_pick() {
-		vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
+		/*/vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
 
 		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex);
 		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
@@ -1322,11 +1344,11 @@ namespace caliope {
 			}
 		}
 
-		vulkan_buffer_destroy(state_ptr->context, state_ptr->context.ssbo_pick_out);
+		vulkan_buffer_destroy(state_ptr->context, state_ptr->context.ssbo_pick_out);*/
 	}
 
 	void pick_object(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view) {
-		VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		/*/VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 		begin_info.flags = 0;
 		begin_info.pInheritanceInfo = nullptr;
 
@@ -1470,12 +1492,12 @@ namespace caliope {
 		}
 
 
-
+		*/
 	}
 
 	void show_picked_obj() {
 		//Object to map data into
-		ssbo_object_picking p;
+		/*/ssbo_object_picking p;
 
 		//map gpu memory into data
 		void* data;
@@ -1487,7 +1509,7 @@ namespace caliope {
 		//unmap gpu memory
 		vkUnmapMemory(state_ptr->context.device.logical_device, state_ptr->context.ssbo_pick_out.memory);
 
-		CE_LOG_INFO("%d", p.id);
+		CE_LOG_INFO("%d", p.id);*/
 	}
 
 	// TODO: End TODO

@@ -17,8 +17,20 @@ namespace caliope {
 
 	void vulkan_renderer_draw_geometry(uint quad_count, geometry& geometry);
 
-	bool vulkan_renderer_begin_renderpass();
-	bool vulkan_renderer_end_renderpass();
+	uint vulkan_renderer_window_images_count_get();
+	uint vulkan_renderer_window_image_index_get();
+
+	std::shared_ptr<std::any> vulkan_renderer_window_attachment_get(uint index);
+	std::shared_ptr<std::any> vulkan_renderer_depth_attachment_get();
+
+	bool vulkan_renderer_render_target_create(renderpass& pass, render_target& target);
+	bool vulkan_renderer_render_target_destroy(render_target& target);
+
+	bool vulkan_renderer_renderpass_create(renderpass& pass, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass);
+	void vulkan_renderer_renderpass_destroy(renderpass& pass);
+	bool vulkan_renderer_renderpass_begin(renderpass& pass, render_target& target);
+	bool vulkan_renderer_renderpass_end();
+
 
 	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& sprites, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
 
@@ -26,7 +38,7 @@ namespace caliope {
 	void vulkan_renderer_texture_destroy(texture& t);
 	void vulkan_renderer_texture_change_filter(texture& t);
 
-	void vulkan_renderer_shader_create(shader& s);
+	void vulkan_renderer_shader_create(shader& s, renderpass& pass);
 	void vulkan_renderer_shader_destroy(shader& s);
 	void vulkan_renderer_shader_use(shader& s);
 

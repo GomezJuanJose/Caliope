@@ -17,7 +17,7 @@ namespace caliope {
 		return false;
 	}
 
-	bool object_pick_render_view_on_render(render_view& self, std::any& packet) {
+	bool object_pick_render_view_on_render(render_view& self, std::any& packet, uint render_target_index) {
 		return false;
 	}
 }

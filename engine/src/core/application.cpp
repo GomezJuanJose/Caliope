@@ -135,16 +135,17 @@ namespace caliope {
 		}
 
 		// Creates the views
-		render_view_world_internal_data data;
-		data.window_width = renderer_config.window_width;
-		data.window_height = renderer_config.window_height;
-		data.max_number_quads = renderer_config.max_number_quads;
-		data.max_textures_per_batch = renderer_config.max_textures_per_batch;
+		render_view_world_config world_config;
+		world_config.window_width = renderer_config.window_width;
+		world_config.window_height = renderer_config.window_height;
+		world_config.max_number_quads = renderer_config.max_number_quads;
+		world_config.max_textures_per_batch = renderer_config.max_textures_per_batch;
 
 		render_view world_view;
 		world_view.name = "world_view";
 		world_view.type = VIEW_TYPE_WORLD;
-		world_view.internal_data = data;
+		world_view.renderpass = RENDERPASS_TYPE_WORLD;
+		world_view.internal_config = world_config;
 		render_view_system_add_view(world_view);
 
 		render_view object_pick_view;

@@ -42,8 +42,9 @@ namespace caliope {
 	void renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
 	void renderer_geometry_destroy(geometry& geometry);
 
-	bool renderer_renderpass_begin();
+	bool renderer_renderpass_begin(renderpass_type type, uint render_target_index);
 	bool renderer_renderpass_end();
+	void renderer_renderpass_set_render_area(renderpass_type type, glm::vec4 render_area);
 
 
 	void renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);

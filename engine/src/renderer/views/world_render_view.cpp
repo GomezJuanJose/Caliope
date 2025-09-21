@@ -30,17 +30,16 @@ namespace caliope {
 
 	void world_render_view_on_create(render_view& self) {
 
-		render_view_world_internal_data& internal_data = std::any_cast<render_view_world_internal_data>(self.internal_data);
+		render_view_world_config& internal_config = std::any_cast<render_view_world_config>(self.internal_config);
 		state_ptr = std::make_unique<world_view_state>();
 
-		state_ptr->quads.resize(internal_data.max_number_quads);
-		state_ptr->batch_textures.resize(internal_data.max_textures_per_batch);
+		state_ptr->quads.resize(internal_config.max_number_quads);
+		state_ptr->batch_textures.resize(internal_config.max_textures_per_batch);
 
 		state_ptr->binded_textures_count = 0;
-		state_ptr->max_textures_per_batch = internal_data.max_textures_per_batch;
+		state_ptr->max_textures_per_batch = internal_config.max_textures_per_batch;
 
-		state_ptr->aspect_ratio = (float)internal_data.window_width / (float)internal_data.window_height;
-
+		state_ptr->aspect_ratio = (float)internal_config.window_width / (float)internal_config.window_height;
 	}
 
 	void world_render_view_on_destroy(render_view& self) {
@@ -53,6 +52,8 @@ namespace caliope {
 
 	void world_render_view_on_resize_window(render_view& self, uint width, uint height) {
 		state_ptr->aspect_ratio = (float)width / (float)height;
+
+		renderer_renderpass_set_render_area(self.renderpass, {0, 0, width, height});
 	}
 
 	bool world_render_view_on_build_package(render_view& self, renderer_view_packet& out_packet, std::vector<std::any>& variadic_data) {
@@ -87,12 +88,12 @@ namespace caliope {
 		return true;
 	}
 
-	bool world_render_view_on_render(render_view& self, std::any& packet) {
+	bool world_render_view_on_render(render_view& self, std::any& packet, uint render_target_index) {
 		state_ptr->pick_sprites.empty();
 
-		render_view_world_packet world_packet = std::any_cast<render_view_world_packet>(packet);
+		render_view_world_packet& world_packet = std::any_cast<render_view_world_packet>(packet);
 
-		if (!renderer_renderpass_begin()) {
+		if (!renderer_renderpass_begin(self.renderpass, render_target_index)) {
 			CE_LOG_ERROR("world_render_view_on_render failed renderpass begin. Application shutting down");
 			return false;
 		}
@@ -103,8 +104,10 @@ namespace caliope {
 		//for (auto [shader_name, material_name] : packet.quad_materials) {
 		for (auto [shader_name, sprites] : world_packet.sprite_definitions) {
 
-			std::string sn = shader_name;
-			shader* shader = shader_system_adquire(sn);
+			shader_config shader_conf;
+			shader_conf.name = shader_name;
+			shader_conf.renderpass_type = RENDERPASS_TYPE_WORLD;
+			shader* shader = shader_system_adquire(shader_conf);
 			renderer_shader_use(*shader);
 
 			uint number_of_instances = 0;

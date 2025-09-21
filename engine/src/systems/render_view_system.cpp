@@ -46,9 +46,8 @@ namespace caliope {
 			view.on_resize_window = world_render_view_on_resize_window;
 			view.on_build_package = world_render_view_on_build_package;
 			view.on_render = world_render_view_on_render;
-		}
-
-		if (view.type == VIEW_TYPE_OBJECT_PICK) {
+		
+		}else if (view.type == VIEW_TYPE_OBJECT_PICK) {
 			view.on_create = object_pick_render_view_on_create;
 			view.on_destroy = object_pick_render_view_on_destroy;
 			view.on_resize_window = object_pick_render_view_on_resize_window;
@@ -76,12 +75,12 @@ namespace caliope {
 		return state_ptr->registered_views.at(view_type).on_build_package(state_ptr->registered_views.at(view_type), out_packet, variadic_data);
 	}
 
-	bool render_view_system_on_render(view_type view_type, std::any& packet) {
+	bool render_view_system_on_render(view_type view_type, std::any& packet, uint render_target_index) {
 		if (state_ptr->registered_views.find(view_type) == state_ptr->registered_views.end()) {
 			CE_LOG_WARNING("render_view_system_on_render render view not found.");
 			return false;
 		}
 
-		return state_ptr->registered_views.at(view_type).on_render(state_ptr->registered_views.at(view_type), packet);
+		return state_ptr->registered_views.at(view_type).on_render(state_ptr->registered_views.at(view_type), packet, render_target_index);
 	}
 }

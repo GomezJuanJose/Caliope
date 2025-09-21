@@ -8,8 +8,10 @@
 
 namespace caliope {
 	struct audio_file_internal;
+	struct renderpass;
 
 	enum scene_state;
+	enum renderpass_type;
 
 	#define MAX_NAME_LENGTH 256
 
@@ -37,6 +39,7 @@ namespace caliope {
 	typedef struct material_resource_data {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::array<char, MAX_NAME_LENGTH> shader_name;
+		uint renderpass_type;
 		glm::vec3 diffuse_color;
 		float shininess_intensity;
 		float shininess_sharpness;
@@ -102,9 +105,14 @@ namespace caliope {
 		std::any internal_data;
 	} texture;
 
+	typedef struct shader_config {
+		std::string name;
+		renderpass_type renderpass_type;
+	} shader_config;
 
 	typedef struct shader {
 		std::string name;
+		renderpass_type renderpass_type;
 		std::any internal_data;
 	} shader;
 

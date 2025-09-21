@@ -15,9 +15,20 @@ namespace caliope {
 			out_renderer_backend.begin_frame = vulkan_renderer_begin_frame;
 			out_renderer_backend.end_frame = vulkan_renderer_end_frame;
 
-			out_renderer_backend.begin_renderpass = vulkan_renderer_begin_renderpass;
-			out_renderer_backend.end_renderpass = vulkan_renderer_end_renderpass;
+			out_renderer_backend.window_images_count_get = vulkan_renderer_window_images_count_get;
+			out_renderer_backend.window_image_index_get = vulkan_renderer_window_image_index_get;
 
+			out_renderer_backend.window_attachment_get = vulkan_renderer_window_attachment_get;
+			out_renderer_backend.depth_attachment_get = vulkan_renderer_depth_attachment_get;
+
+			out_renderer_backend.render_target_create = vulkan_renderer_render_target_create;
+			out_renderer_backend.render_target_destroy = vulkan_renderer_render_target_destroy;
+
+			out_renderer_backend.renderpass_create = vulkan_renderer_renderpass_create;
+			out_renderer_backend.renderpass_destroy = vulkan_renderer_renderpass_destroy;
+			out_renderer_backend.renderpass_begin = vulkan_renderer_renderpass_begin;
+			out_renderer_backend.renderpass_end = vulkan_renderer_renderpass_end;
+			
 			out_renderer_backend.set_and_apply_uniforms = vulkan_renderer_set_and_apply_uniforms;
 
 			out_renderer_backend.draw_geometry = vulkan_renderer_draw_geometry;

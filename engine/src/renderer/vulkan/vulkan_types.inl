@@ -68,8 +68,6 @@ namespace caliope {
 		std::vector<VkImage> images;
 		std::vector<VkImageView> views;
 
-		std::vector<VkFramebuffer> framebuffers;
-
 		vulkan_image depth_attachment;
 
 		uint image_count;
