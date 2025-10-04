@@ -210,7 +210,7 @@ namespace caliope {
 		state_ptr->loaded_scenes.at(name).entities.insert(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index, last_entity);
 		state_ptr->loaded_scenes.at(name).entities.pop_back();
 		state_ptr->entity_index_scene[last_entity] = entity_scene_index;
-		
+		state_ptr->entity_index_scene.erase(entity);
 	}
 
 	void scene_system_enable(std::string& name, bool enable) {
@@ -230,14 +230,13 @@ namespace caliope {
 		std::vector<quad_definition> quads_data;
 		std::vector<point_light_definition> lights_data;
 
-		uint quad_id = 0;
 		// Gets all sprites entities
 		std::vector<uint>& sprites = ecs_system_get_entities_by_archetype(ARCHETYPE_SPRITE);
 		for (uint entity_index = 0; entity_index < sprites.size(); ++entity_index) {
 
 			uint64 size;
 			quad_definition quad_definition;
-			quad_definition.id = quad_id;
+			quad_definition.id = sprites[entity_index];
 
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites[entity_index], TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
@@ -256,7 +255,6 @@ namespace caliope {
 			);
 
 			quads_data.push_back(quad_definition);
-			quad_id++;
 		}
 			
 		// Gets all animations sprites entities
@@ -265,7 +263,7 @@ namespace caliope {
 
 			uint64 size;
 			quad_definition quad_definition;
-			quad_definition.id = quad_id;
+			quad_definition.id = sprites_animation[entity_index];
 
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites_animation[entity_index], TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
@@ -281,7 +279,6 @@ namespace caliope {
 			quad_definition.texture_region = frame.texture_region;
 
 			quads_data.push_back(quad_definition);
-			quad_id++;
 		}
 			
 

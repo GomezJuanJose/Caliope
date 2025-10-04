@@ -38,7 +38,7 @@ namespace caliope {
 	void vulkan_renderer_texture_destroy(texture& t);
 	void vulkan_renderer_texture_change_filter(texture& t);
 
-	void vulkan_renderer_shader_create(shader& s, renderpass& pass);
+	bool vulkan_renderer_shader_create(shader& s, renderpass& pass);
 	void vulkan_renderer_shader_destroy(shader& s);
 	void vulkan_renderer_shader_use(shader& s);
 

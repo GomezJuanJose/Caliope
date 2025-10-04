@@ -27,7 +27,9 @@ namespace caliope {
 			return false;
 		}
 
-		file_system_open(std::string("logs/caliope_log.log"), FILE_MODE_WRITE, state_ptr->logger_file_handle);
+		if (!file_system_open(std::string("logs/caliope_log.log"), FILE_MODE_WRITE, state_ptr->logger_file_handle)) {
+			CE_LOG_ERROR("Couldn't find 'logs' folder to store logs files!");
+		}
 
 		CE_LOG_INFO("Logger initialized");
 

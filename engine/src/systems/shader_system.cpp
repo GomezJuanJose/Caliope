@@ -91,9 +91,8 @@ namespace caliope {
 
 	bool load_shader(std::string& name, shader& s) {
 		s.name = name;
-		renderer_shader_create(s);
-
-		return true;
+		
+		return renderer_shader_create(s);
 	}
 
 	void destroy_shader(shader& s) {

@@ -141,15 +141,22 @@ namespace caliope {
 		// Images
 		uint image_count;
 		vkGetSwapchainImagesKHR(context->device.logical_device, out_swapchain->handle, &image_count, nullptr);
-		out_swapchain->images.resize(image_count);
-		vkGetSwapchainImagesKHR(context->device.logical_device, out_swapchain->handle, &image_count, out_swapchain->images.data());
+		std::vector<VkImage> vk_images;
+		vk_images.resize(image_count);
+		vkGetSwapchainImagesKHR(context->device.logical_device, out_swapchain->handle, &image_count, vk_images.data());
 
+		out_swapchain->images.resize(image_count);
+		for (uint i = 0; i < out_swapchain->images.size(); ++i) {
+			out_swapchain->images[i].handle = vk_images[i];
+			out_swapchain->images[i].width = out_swapchain->extent.width;
+			out_swapchain->images[i].height = out_swapchain->extent.height;
+		}
 
 		// Views
-		out_swapchain->views.resize(out_swapchain->images.size());
+		//out_swapchain->views.resize(out_swapchain->images.size());
 		for (uint i = 0; i < out_swapchain->images.size(); ++i) {
 			VkImageViewCreateInfo view_info = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-			view_info.image = out_swapchain->images[i];
+			view_info.image = out_swapchain->images[i].handle;
 			view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			view_info.format = out_swapchain->surface_format.format;
 			view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -158,7 +165,7 @@ namespace caliope {
 			view_info.subresourceRange.baseArrayLayer = 0;
 			view_info.subresourceRange.layerCount = 1;
 
-			VK_CHECK(vkCreateImageView(context->device.logical_device, &view_info, nullptr, &out_swapchain->views[i]));
+			VK_CHECK(vkCreateImageView(context->device.logical_device, &view_info, nullptr, &out_swapchain->images[i].view));
 		}
 
 		// Depth
@@ -201,7 +208,7 @@ namespace caliope {
 		vulkan_image_destroy(*context, swapchain->depth_attachment);
 
 		for (uint i = 0; i < swapchain->image_count; ++i) {
-			vkDestroyImageView(context->device.logical_device, swapchain->views[i], nullptr);
+			vkDestroyImageView(context->device.logical_device, swapchain->images[i].view, nullptr);
 		}
 
 		vkDestroySwapchainKHR(context->device.logical_device, swapchain->handle, nullptr);

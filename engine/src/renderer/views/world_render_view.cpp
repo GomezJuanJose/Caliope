@@ -244,15 +244,16 @@ namespace caliope {
 			);
 			instances = number_of_instances;// TODO: REMOVE
 			renderer_draw_geometry(number_of_instances, *geometry_system_get_quad());
-
-			// TODO: Refactor and do an view system
-			renderer_draw_object_pick(instances, state_ptr->pick_sprites, *geometry_system_get_quad(), camera_projection_get(*world_packet.world_camera), camera_view_get(*world_packet.world_camera));
-			// TODO: Refactor and do an view system
 		}
 
 		if (!renderer_renderpass_end()) {
 			CE_LOG_ERROR("world_render_view_on_render failed renderpass end. Application shutting down");
 			return false;
 		}
+
+		// TODO: Refactor and do an view system
+		renderer_draw_object_pick(instances, state_ptr->pick_sprites, *geometry_system_get_quad(), camera_projection_get(*world_packet.world_camera), camera_view_get(*world_packet.world_camera));
+		state_ptr->pick_sprites.empty();
+		// TODO: Refactor and do an view system
 	}
 }

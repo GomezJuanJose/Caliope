@@ -37,7 +37,9 @@ namespace caliope {
 		// The block's layout in head* first, the array of available nodes.
 		zero_memory(out_list.memory, memory_requirement);
 		internal_state* state = static_cast<internal_state*>(out_list.memory);
-		state->nodes = static_cast<freelist_node*>((void*)(((char*)out_list.memory) + sizeof(internal_state))); // TODO: Do it more cleaning
+		char* direction_number = ((char*)out_list.memory) + sizeof(internal_state);
+		void* raw_direction = (void*)direction_number;
+		state->nodes = static_cast<freelist_node*>(raw_direction);
 		state->max_entries = max_entries;
 		state->total_size = total_size;
 

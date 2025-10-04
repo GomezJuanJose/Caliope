@@ -155,6 +155,7 @@ namespace caliope {
 			return false;
 		}
 
+
 		// Create command buffers
 		create_command_buffers();
 
@@ -167,6 +168,12 @@ namespace caliope {
 			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.render_finished_semaphores[i]));
 			VK_CHECK(vkCreateFence(state_ptr->context.device.logical_device, &fence_info, nullptr, &state_ptr->context.in_flight_fences[i]));
 		}
+
+
+
+		// TODO: TEMP CODE
+		create_object_pick();
+		// TODO: END CODE
 
 		CE_LOG_INFO("Vulkan backend initialized.");
 		return true;
@@ -191,6 +198,10 @@ namespace caliope {
 				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.command_buffers[i]);
 			}
 		}
+
+		// TODO: TEMP CODE
+		destroy_object_pick();
+		// TODO: TEMP CODE
 
 		vulkan_swapchain_destroy(state_ptr->context, state_ptr->context.swapchain);
 
@@ -262,9 +273,13 @@ namespace caliope {
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
 
+		// TODO: Refactor on a view system
+		//submit_info.commandBufferCount = 2;
 		submit_info.commandBufferCount = 1;
+		//std::array<VkCommandBuffer, 2> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle };
 		std::array<VkCommandBuffer, 1> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle};
 		submit_info.pCommandBuffers = cbs.data();
+		// TODO: END TODO
 
 		VkSemaphore signal_sempahores[] = { state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame] };
 		submit_info.signalSemaphoreCount = 1;
@@ -304,10 +319,7 @@ namespace caliope {
 	}
 
 	std::shared_ptr<std::any> vulkan_renderer_window_attachment_get(uint index) {
-		vulkan_image vk_image;
-		vk_image.handle = state_ptr->context.swapchain.images[index];
-		vk_image.view = state_ptr->context.swapchain.views[index];
-		return std::make_shared<std::any>(vk_image);
+		return std::make_shared<std::any>(state_ptr->context.swapchain.images[index]);
 	}
 
 	std::shared_ptr<std::any> vulkan_renderer_depth_attachment_get() {
@@ -472,6 +484,11 @@ namespace caliope {
 		renderpass_info.pClearValues = clear_values.data();
 
 		vkCmdBeginRenderPass(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+
+		// TODO: BEGIN TEMP
+		state_ptr->context.object_pick_render_area = pass.render_area;
+		// TODO: END TEMP
 
 		return true;
 	}
@@ -705,15 +722,23 @@ namespace caliope {
 		vkFreeMemory(state_ptr->context.device.logical_device, vk_t->image.memory, nullptr);
 	}
 
-	void vulkan_renderer_shader_create(shader& s, renderpass& pass) {
+	bool vulkan_renderer_shader_create(shader& s, renderpass& pass) {
 
 		VkShaderModule vert_module = create_shader_module(std::string("shaders/" + s.name + ".vert.spv"));
+		if (vert_module == nullptr) {
+			return false;
+		}
+
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		vert_shader_stage_info.module = vert_module;
 		vert_shader_stage_info.pName = "main";
 
 		VkShaderModule frag_module = create_shader_module(std::string("shaders/" + s.name + ".frag.spv"));
+		if (frag_module == nullptr) {
+			return false;
+		}
+
 		VkPipelineShaderStageCreateInfo frag_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		frag_shader_stage_info.module = frag_module;
@@ -811,7 +836,7 @@ namespace caliope {
 
 		if (!result) {
 			CE_LOG_ERROR("Couldn't create the pipeline for the shader: %s", s.name.c_str());
-			return;
+			return false;
 		}
 
 		vkDestroyShaderModule(state_ptr->context.device.logical_device, vert_module, nullptr);
@@ -835,13 +860,13 @@ namespace caliope {
 		// Descriptor pool
 		std::array<VkDescriptorPoolSize, 4> pool_sizes;
 		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[0].descriptorCount = 1; // HACK: max number of ubo descriptor sets.
+		pool_sizes[0].descriptorCount = 4; // HACK: max number of ubo descriptor sets.
 		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		pool_sizes[1].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
 		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		pool_sizes[2].descriptorCount = 2;
+		pool_sizes[2].descriptorCount = 4;
 		pool_sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[3].descriptorCount = 1; // HACK: max number of ubo descriptor sets.
+		pool_sizes[3].descriptorCount = 4; // HACK: max number of ubo descriptor sets.
 
 		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		pool_info.poolSizeCount = pool_sizes.size();
@@ -861,6 +886,7 @@ namespace caliope {
 		vk_shader->descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);
 		VK_CHECK(vkAllocateDescriptorSets(state_ptr->context.device.logical_device, &alloc_info, vk_shader->descriptor_sets.data()));
 
+		return true;
 	}
 
 	void vulkan_renderer_shader_destroy(shader& s) {
@@ -961,7 +987,11 @@ namespace caliope {
 
 	VkShaderModule create_shader_module(std::string& file_path) {
 		resource r;
-		resource_system_load(file_path, RESOURCE_TYPE_BINARY, r);
+		if (!resource_system_load(file_path, RESOURCE_TYPE_BINARY, r)) {
+			CE_LOG_ERROR("Could not find the shader: %s", file_path.c_str());
+			return VkShaderModule();
+		}
+
 		std::vector<uchar> code = std::any_cast<std::vector<uchar>>(r.data);
 		
 		VkShaderModuleCreateInfo create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
@@ -998,7 +1028,7 @@ namespace caliope {
 
 
 	void create_object_pick() {
-	/*/	vulkan_image_create(
+	/*	vulkan_image_create(
 			state_ptr->context,
 			VK_IMAGE_TYPE_2D,
 			state_ptr->context.swapchain.extent.width,
@@ -1056,7 +1086,7 @@ namespace caliope {
 		object_picking_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		object_picking_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-		std::array<VkAttachmentDescription, 1 > object_picking_attachments = { object_picking_colorAttachment};
+		std::array<VkAttachmentDescription, 1 > object_picking_attachments = { object_picking_colorAttachment };
 		VkRenderPassCreateInfo object_picking_renderPassInfo{};
 		object_picking_renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		object_picking_renderPassInfo.attachmentCount = static_cast<uint32_t>(object_picking_attachments.size());
@@ -1070,7 +1100,7 @@ namespace caliope {
 			throw std::runtime_error("failed to create render pass!");
 		}
 
-		std::array<VkImageView, 1> attachments = { state_ptr->context.color_object_pick_image.view};
+		std::array<VkImageView, 1> attachments = { state_ptr->context.color_object_pick_image.view };
 		VkFramebufferCreateInfo framebuffer_info{};
 		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebuffer_info.renderPass = state_ptr->context.object_pick_pass;
@@ -1104,7 +1134,7 @@ namespace caliope {
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-		
+
 		// Vertex inputs
 		VkVertexInputBindingDescription binding_description = {};
 		binding_description.binding = 0;
@@ -1112,7 +1142,7 @@ namespace caliope {
 		binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 		// Attributes
-		#define NUMBER_OF_VERTEX_ATTRIBUTES 3
+#define NUMBER_OF_VERTEX_ATTRIBUTES 3
 		std::array < std::pair<VkFormat, uint>, NUMBER_OF_VERTEX_ATTRIBUTES > attributes_definitions{
 			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3)),
 			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)),
@@ -1318,10 +1348,10 @@ namespace caliope {
 
 		vulkan_buffer_create(state_ptr->context, sizeof(ssbo_object_picking), (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, state_ptr->context.ssbo_pick_out);
 	*/
-	}
+}
 
 	void destroy_object_pick() {
-		/*/vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
+		/*vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
 
 		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex);
 		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
@@ -1348,7 +1378,7 @@ namespace caliope {
 	}
 
 	void pick_object(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view) {
-		/*/VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+		/*VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 		begin_info.flags = 0;
 		begin_info.pInheritanceInfo = nullptr;
 
@@ -1363,10 +1393,10 @@ namespace caliope {
 		object_picking_renderpass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		object_picking_renderpass_begin_info.renderPass = state_ptr->context.object_pick_pass;
 		object_picking_renderpass_begin_info.framebuffer = state_ptr->context.object_pick_framebuffer;
-		object_picking_renderpass_begin_info.renderArea.offset.x = state_ptr->context.main_renderpass.render_area.x;
-		object_picking_renderpass_begin_info.renderArea.offset.y = state_ptr->context.main_renderpass.render_area.y;
-		object_picking_renderpass_begin_info.renderArea.extent.width = state_ptr->context.main_renderpass.render_area.z;
-		object_picking_renderpass_begin_info.renderArea.extent.height = state_ptr->context.main_renderpass.render_area.w;
+		object_picking_renderpass_begin_info.renderArea.offset.x = state_ptr->context.object_pick_render_area.x;
+		object_picking_renderpass_begin_info.renderArea.offset.y = state_ptr->context.object_pick_render_area.y;
+		object_picking_renderpass_begin_info.renderArea.extent.width = state_ptr->context.object_pick_render_area.z;
+		object_picking_renderpass_begin_info.renderArea.extent.height = state_ptr->context.object_pick_render_area.w;
 		std::array<VkClearValue, 2> clear_values;
 		clear_values[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 		clear_values[1].depthStencil = { 0, 0 };
@@ -1375,129 +1405,126 @@ namespace caliope {
 
 		vkCmdBeginRenderPass(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, &object_picking_renderpass_begin_info,
 			VK_SUBPASS_CONTENTS_INLINE);
-		
-		vulkan_pipeline_bind(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, state_ptr->context.object_pick_shader.pipeline);
-			
+
+		vkCmdBindPipeline(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			state_ptr->context.object_pick_shader.pipeline.handle);
 
 
-			VkViewport viewport = {};
-			viewport.x = 0.0f;
-			viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
-			viewport.width = (float)state_ptr->context.swapchain.extent.width;
-			viewport.height = -(float)state_ptr->context.swapchain.extent.height;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &viewport);
-		
-			//the dynamic pipeline state means we have to set the scissor before each draw
-			VkRect2D rect{};
-			double cursor_x, cursor_y;
-			std::tie(cursor_x, cursor_y) = platform_system_get_cursor_position();
-			rect.offset.x = cursor_x > 0 ? cursor_x : 0;
-			rect.offset.y =cursor_y > 0 ? cursor_y : 0;
-			rect.extent = { 1,1 };
+		VkViewport viewport = {};
+		viewport.x = 0.0f;
+		viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
+		viewport.width = (float)state_ptr->context.swapchain.extent.width;
+		viewport.height = -(float)state_ptr->context.swapchain.extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &viewport);
 
-			//can only be used with a dynamic scissor state
-			vkCmdSetScissor(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &rect);
+		//the dynamic pipeline state means we have to set the scissor before each draw
+		VkRect2D rect{};
+		double cursor_x, cursor_y;
+		std::tie(cursor_x, cursor_y) = platform_system_get_cursor_position();
+		rect.offset.x = cursor_x > 0 ? cursor_x : 0;
+		rect.offset.y = cursor_y > 0 ? cursor_y : 0;
+		rect.extent = { 1,1 };
 
-			//bind descriptor sets for current object
-			uniform_vertex_buffer_object ubo;
-			ubo.view = view;
-			ubo.proj = projection;
-			ubo.view_position = glm::vec3(0.0f);
+		//can only be used with a dynamic scissor state
+		vkCmdSetScissor(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, &rect);
 
-			vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
-			copy_memory(vk_shader->uniform_buffers_vertex_mapped, &ubo, sizeof(ubo));
-			copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(pick_quad_properties) * instance_count);
+		//bind descriptor sets for current object
+		uniform_vertex_buffer_object ubo;
+		ubo.view = view;
+		ubo.proj = projection;
+		ubo.view_position = glm::vec3(0.0f);
 
-			VkDescriptorBufferInfo buffer_info = {};
-			buffer_info.buffer = vk_shader->uniform_buffers_vertex.handle;
-			buffer_info.offset = 0;
-			buffer_info.range = sizeof(uniform_vertex_buffer_object);
+		vulkan_shader* vk_shader = &state_ptr->context.object_pick_shader;
+		copy_memory(vk_shader->uniform_buffers_vertex_mapped, &ubo, sizeof(ubo));
+		copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(pick_quad_properties) * instance_count);
 
-			VkDescriptorBufferInfo ssbo_info = {};
-			ssbo_info.buffer = vk_shader->ssbo.handle;
-			ssbo_info.offset = 0;
-			ssbo_info.range = sizeof(pick_quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
+		VkDescriptorBufferInfo buffer_info = {};
+		buffer_info.buffer = vk_shader->uniform_buffers_vertex.handle;
+		buffer_info.offset = 0;
+		buffer_info.range = sizeof(uniform_vertex_buffer_object);
 
-			VkDescriptorBufferInfo ssbo_out_info = {};
-			ssbo_out_info.buffer = state_ptr->context.ssbo_pick_out.handle;
-			ssbo_out_info.offset = 0;
-			ssbo_out_info.range = sizeof(ssbo_object_picking); //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
+		VkDescriptorBufferInfo ssbo_info = {};
+		ssbo_info.buffer = vk_shader->ssbo.handle;
+		ssbo_info.offset = 0;
+		ssbo_info.range = sizeof(pick_quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
 
-
-			std::array<VkWriteDescriptorSet, 4> descriptor_writes = {};
-			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[0].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-			descriptor_writes[0].dstBinding = 0;
-			descriptor_writes[0].dstArrayElement = 0;
-			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_writes[0].descriptorCount = 1;
-			descriptor_writes[0].pBufferInfo = &buffer_info;
-			descriptor_writes[0].pImageInfo = nullptr;
-			descriptor_writes[0].pTexelBufferView = nullptr;
+		VkDescriptorBufferInfo ssbo_out_info = {};
+		ssbo_out_info.buffer = state_ptr->context.ssbo_pick_out.handle;
+		ssbo_out_info.offset = 0;
+		ssbo_out_info.range = sizeof(ssbo_object_picking); //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
 
 
-			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[1].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-			descriptor_writes[1].dstBinding = 1;
-			descriptor_writes[1].dstArrayElement = 0;
-			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptor_writes[1].descriptorCount = 1;
-			descriptor_writes[1].pBufferInfo = &ssbo_info;
-			descriptor_writes[1].pImageInfo = nullptr;
-			descriptor_writes[1].pTexelBufferView = nullptr;
-
-			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[2].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-			descriptor_writes[2].dstBinding = 2;
-			descriptor_writes[2].dstArrayElement = 0;
-			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptor_writes[2].descriptorCount = 1;
-			descriptor_writes[2].pBufferInfo = &ssbo_out_info;
-			descriptor_writes[2].pImageInfo = nullptr;
-			descriptor_writes[2].pTexelBufferView = nullptr;
+		std::array<VkWriteDescriptorSet, 4> descriptor_writes = {};
+		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_writes[0].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		descriptor_writes[0].dstBinding = 0;
+		descriptor_writes[0].dstArrayElement = 0;
+		descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_writes[0].descriptorCount = 1;
+		descriptor_writes[0].pBufferInfo = &buffer_info;
+		descriptor_writes[0].pImageInfo = nullptr;
+		descriptor_writes[0].pTexelBufferView = nullptr;
 
 
-			uint number_of_texture = 0;
-			while (state_ptr->context.batch_image_infos[number_of_texture].imageView != 0 ) {
-				number_of_texture++;
-			}
+		descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_writes[1].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		descriptor_writes[1].dstBinding = 1;
+		descriptor_writes[1].dstArrayElement = 0;
+		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptor_writes[1].descriptorCount = 1;
+		descriptor_writes[1].pBufferInfo = &ssbo_info;
+		descriptor_writes[1].pImageInfo = nullptr;
+		descriptor_writes[1].pTexelBufferView = nullptr;
 
-			descriptor_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[3].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-			descriptor_writes[3].dstBinding = 3;
-			descriptor_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptor_writes[3].descriptorCount = number_of_texture;
-			descriptor_writes[3].pImageInfo = state_ptr->context.batch_image_infos.data();
+		descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_writes[2].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		descriptor_writes[2].dstBinding = 2;
+		descriptor_writes[2].dstArrayElement = 0;
+		descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptor_writes[2].descriptorCount = 1;
+		descriptor_writes[2].pBufferInfo = &ssbo_out_info;
+		descriptor_writes[2].pImageInfo = nullptr;
+		descriptor_writes[2].pTexelBufferView = nullptr;
 
-			vkUpdateDescriptorSets(state_ptr->context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 
-			vkCmdBindDescriptorSets(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, state_ptr->context.object_pick_shader.pipeline.layout, 0, 1, &state_ptr->context.object_pick_shader.descriptor_sets[state_ptr->context.current_frame], 0, nullptr);
+		uint number_of_texture = 0;
+		while (state_ptr->context.batch_image_infos[number_of_texture].imageView != 0) {
+			number_of_texture++;
+		}
 
-			vulkan_geometry* vk_geometry = std::any_cast<vulkan_geometry>(&geometry.internal_data);
-			//bind vertex and index buffers for current object
-			VkBuffer vertex_buffers[] = { vk_geometry->vertex_buffer.handle };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, vertex_buffers, offsets);
-			vkCmdBindIndexBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, vk_geometry->index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
+		descriptor_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_writes[3].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		descriptor_writes[3].dstBinding = 3;
+		descriptor_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptor_writes[3].descriptorCount = number_of_texture;
+		descriptor_writes[3].pImageInfo = state_ptr->context.batch_image_infos.data();
 
-			vkCmdDrawIndexed(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
+		vkUpdateDescriptorSets(state_ptr->context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
 
-		
+		vkCmdBindDescriptorSets(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, state_ptr->context.object_pick_shader.pipeline.layout, 0, 1, &state_ptr->context.object_pick_shader.descriptor_sets[state_ptr->context.current_frame], 0, nullptr);
+
+		vulkan_geometry* vk_geometry = std::any_cast<vulkan_geometry>(&geometry.internal_data);
+		//bind vertex and index buffers for current object
+		VkBuffer vertex_buffers[] = { vk_geometry->vertex_buffer.handle };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, 0, 1, vertex_buffers, offsets);
+		vkCmdBindIndexBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, vk_geometry->index_buffer.handle, 0, VK_INDEX_TYPE_UINT16);
+
+		vkCmdDrawIndexed(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle, geometry.index_count, instance_count, 0, 0, 0);
+
+
 		vkCmdEndRenderPass(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle);
 
 		if (vkEndCommandBuffer(state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
-		}
-
-
-		*/
+		}*/
 	}
 
 	void show_picked_obj() {
-		//Object to map data into
-		/*/ssbo_object_picking p;
+		/*//Object to map data into
+		ssbo_object_picking p;
 
 		//map gpu memory into data
 		void* data;

@@ -15,6 +15,8 @@ call :modifysln "ZERO_CHECK.vcxproj" "build/ZERO_CHECK.vcxproj" "Caliope.sln"
 call :modifysln "testbed.vcxproj" "build/testbed.vcxproj" "Caliope.sln"
 call :modifysln "engine.vcxproj" "build/engine.vcxproj" "Caliope.sln"
 
+RMDIR /Q /S "./x64"
+
 pause
 
 :modifysln

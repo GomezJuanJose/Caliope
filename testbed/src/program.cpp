@@ -115,7 +115,7 @@ void intialize_sprite_entities() {
 	spritesheet_animation.frames = frames;
 	spritesheet_animation.is_looping = true;
 	spritesheet_animation.is_playing = true;
-	spritesheet_animation.frames_per_second = 2.0f;
+	spritesheet_animation.frames_per_second = 4.0f;
 
 	caliope::sprite_animation_system_register(spritesheet_animation);
 

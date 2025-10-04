@@ -60,7 +60,7 @@ namespace caliope {
 		void (*texture_destroy)(texture& t);
 		void (*texture_change_filter)(texture& t);
 
-		void (*shader_create)(shader& s, renderpass& pass);
+		bool (*shader_create)(shader& s, renderpass& pass);
 		void (*shader_destroy)(shader& s);
 		void (*shader_use)(shader& s);
 

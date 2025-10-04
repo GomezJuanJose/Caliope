@@ -27,6 +27,10 @@ namespace caliope {
 	}
 
 	void file_system_close(file_handle& handle) {
+		if (!handle.is_valid) {
+			return;
+		}
+
 		platform_system_close_file(handle.handle);
 		handle.is_valid = false;
 	}
