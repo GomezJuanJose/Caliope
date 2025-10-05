@@ -4,8 +4,8 @@ typedef unsigned short uint16;
 typedef unsigned int uint;
 typedef unsigned long long uint64;
 
-typedef signed short iint16;
-typedef signed long long iint64;
+typedef signed short int16;
+typedef signed long long int64;
 
 #define INVALID_ID 4294967295U
 

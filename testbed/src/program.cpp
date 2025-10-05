@@ -17,12 +17,16 @@
 #include <systems/scene_system.h>
 #include <platform/file_system.h>
 #include <loaders/resources_types.inl>
+#include <core/cestring.h>
 
 #include <any>
 #include <array>
 #include <vector>
 
 void intialize_sprite_entities() {
+
+	
+
 
 	// TODO: TEMPORAL CODE
 	caliope::material_resource_data m;
@@ -290,7 +294,6 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	initialize_lights();
 
 	initialize_sounds();
-
 
 	return true;
 }
