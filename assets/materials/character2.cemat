@@ -1,0 +1,8 @@
+# Material config
+
+name=character2
+shader_name=Builtin.SpriteShader
+diffuse_texture=warrior_human_woman_06
+diffuse_color=1.0 1.0 1.0
+shininess_sharpness=64.0
+shininess_intensity=5.0

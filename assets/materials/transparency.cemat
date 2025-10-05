@@ -1,0 +1,8 @@
+# Material config
+
+name=transparency
+shader_name=Builtin.SpriteShader
+diffuse_texture=map_01
+diffuse_color=1.0 1.0 1.0
+shininess_sharpness=64.0
+shininess_intensity=5.0

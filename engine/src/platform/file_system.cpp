@@ -86,9 +86,18 @@ namespace caliope {
 	bool file_system_read_all_text(file_handle& handle, std::string& out_text, uint64& out_bytes_read) {
 		if (handle.is_valid) {
 			uint64 file_size = platform_system_file_size(handle.handle);
-			return platform_system_file_read_text(handle.handle, file_size, out_text.data());
+			out_bytes_read = file_size;
+			out_text.clear();
+			out_text.reserve(file_size);
+			bool result = platform_system_file_read_text(handle.handle, file_size, out_text.data());
+			return result;
 		}
 
 		return false;
+	}
+
+	bool file_system_read_text_line(file_handle& handle, std::string& out_text, uint64& out_bytes_read)
+	{
+		return true;//TODO: with windows api
 	}
 }

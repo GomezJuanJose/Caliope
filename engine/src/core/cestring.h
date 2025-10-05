@@ -11,7 +11,7 @@ namespace caliope {
 	CE_API bool strings_equali(std::string* str1, std::string* str2);
 
 	CE_API void string_format(std::string* str_format, char(&out_buffer)[2048], ...);
-	CE_API void string_trim(std::string* str);
+	CE_API void string_trim_character(std::string* str, char character);
 	// If end is -1 means to the end of the string
 	CE_API std::string string_substring(std::string* str, uint start, int end);
 	CE_API void string_split(std::string* str, std::string* left, std::string* right, char separator);

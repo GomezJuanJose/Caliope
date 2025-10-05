@@ -34,5 +34,6 @@ namespace caliope {
 	CE_API bool file_system_read_all_bytes(file_handle& handle, std::vector<uchar>& out_bytes, uint64& out_bytes_read);
 
 	CE_API bool file_system_read_all_text(file_handle& handle, std::string& out_text, uint64& out_bytes_read);
+	CE_API bool file_system_read_text_line(file_handle& handle, std::string& out_text, uint64& out_bytes_read);
 
 }

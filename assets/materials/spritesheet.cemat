@@ -1,0 +1,8 @@
+# Material config
+
+name=spritesheet
+shader_name=Builtin.SpriteShader
+diffuse_texture=B_witch_idle
+diffuse_color=1.0 1.0 1.0
+shininess_sharpness=64.0
+shininess_intensity=5.0

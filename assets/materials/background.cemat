@@ -1,0 +1,10 @@
+# Material config
+
+name=background
+shader_name=Builtin.SpriteShader
+diffuse_texture=cottageEXTday
+specular_texture=cottageSpecular
+normal_texture=cottageNormal
+diffuse_color=0.5 1.0 1.0
+shininess_sharpness=15.0
+shininess_intensity=5.0

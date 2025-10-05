@@ -1,0 +1,10 @@
+# Material config
+
+name=character1
+shader_name=Builtin.SpriteShader
+diffuse_texture=cobblestone
+specular_texture=cobblestone_SPEC
+normal_texture=cobblestone_NRM
+diffuse_color=1.0 1.0 1.0
+shininess_sharpness=16.0
+shininess_intensity=3.0

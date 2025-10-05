@@ -38,13 +38,17 @@ namespace caliope {
 		va_end(args);
 	}
 	
-	void string_trim(std::string* str)
+	void string_trim_character(std::string* str, char character)
 	{
 		if (!str) {
 			return;
 		}
 
-		str->erase(std::remove_if(str->begin(), str->end(), std::isspace), str->end());
+		str->erase(std::remove_if(str->begin(), str->end(), 
+			[character](char c) {
+				return c == character;
+			}), 
+			str->end());
 	}
 	
 	std::string string_substring(std::string* str, uint start, int end)

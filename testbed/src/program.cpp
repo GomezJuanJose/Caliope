@@ -25,87 +25,9 @@
 
 void intialize_sprite_entities() {
 
-	
-
-
-	// TODO: TEMPORAL CODE
-	caliope::material_resource_data m;
-	m.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-	m.shininess_sharpness = 16.0f;
-	m.shininess_intensity = 3.0f;
-	m.diffuse_texture_name = { "cobblestone" };
-	m.specular_texture_name = { "cobblestone_SPEC" };
-	m.normal_texture_name = { "cobblestone_NRM" };
-	//m.diffuse_texture_name = { "knight_human_man_04_alt" };
-	//m.specular_texture_name = { "knightSpecularMap" };
-	//m.normal_texture_name = { "knightNormalMap" };
-	m.shader_name = { "Builtin.SpriteShader" };
-	m.name = { "character1" };
-
-	caliope::material_resource_data m2;
-	m2.diffuse_color = glm::vec3(0.5f, 1.0f, 1.0f);
-	m2.shininess_sharpness = 15.0f;
-	m2.shininess_intensity = 5.0f;
-	m2.diffuse_texture_name = { "cottageEXTday" };
-	m2.specular_texture_name = { "cottageSpecular" };
-	m2.normal_texture_name = { "cottageNormal" };
-	m2.shader_name = { "Builtin.SpriteShader" };
-	m2.name = { "background" };
-
-	caliope::material_resource_data m3;
-	m3.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-	m3.shininess_sharpness = 64.0f;
-	m3.shininess_intensity = 5.0f;
-	m3.diffuse_texture_name = { "warrior_human_woman_06" };
-	m3.specular_texture_name = { "" };
-	m3.normal_texture_name = { "" };
-	m3.shader_name = { "Builtin.SpriteShader" };
-	m3.name = { "character2" };
-
-	caliope::material_resource_data m4;
-	m4.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-	m4.shininess_sharpness = 64.0f;
-	m4.shininess_intensity = 5.0f;
-	m4.diffuse_texture_name = { "map_01" };
-	m4.specular_texture_name = { "" };
-	m4.normal_texture_name = { "" };
-	m4.shader_name = { "Builtin.SpriteShader" };
-	m4.name = { "transparency" };
-
-	caliope::material_resource_data m5;
-	m5.diffuse_color = glm::vec3(1.0f, 1.0f, 1.0f);
-	m5.shininess_sharpness = 64.0f;
-	m5.shininess_intensity = 5.0f;
-	m5.diffuse_texture_name = { "B_witch_idle" };
-	m5.specular_texture_name = { "" };
-	m5.normal_texture_name = { "" };
-	m5.shader_name = { "Builtin.SpriteShader" };
-	m5.name = { "spritesheet" };
 
 	caliope::texture_system_adquire(std::string("B_witch_idle"));
 	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
-
-
-	caliope::file_handle w;
-	caliope::file_system_open(std::string("assets/materials/character1.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m);
-	caliope::file_system_close(w);
-
-	caliope::file_system_open(std::string("assets/materials/background.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m2);
-	caliope::file_system_close(w);
-
-	caliope::file_system_open(std::string("assets/materials/character2.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m3);
-	caliope::file_system_close(w);
-
-	caliope::file_system_open(std::string("assets/materials/transparency.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m4);
-	caliope::file_system_close(w);
-
-	caliope::file_system_open(std::string("assets/materials/spritesheet.cemat"), caliope::FILE_MODE_WRITE, w);
-	caliope::file_system_write_bytes(w, sizeof(caliope::material_resource_data), &m5);
-	caliope::file_system_close(w);
 
 	caliope::sprite_animation_config spritesheet_animation;
 	spritesheet_animation.name = "spritesheet_animation";
