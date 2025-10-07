@@ -141,8 +141,8 @@ namespace caliope{
 		state_ptr->backend.texture_change_filter(texture);
 	}
 
-	bool renderer_shader_create(shader& shader) {
-		return state_ptr->backend.shader_create(shader, state_ptr->renderpasses.at(shader.renderpass_type));
+	bool renderer_shader_create(shader_resource_data& shader_config, shader& out_shader) {
+		return state_ptr->backend.shader_create(shader_config, out_shader, state_ptr->renderpasses.at(shader_config.renderpass_type));
 	}
 
 	void renderer_shader_destroy(shader& shader) {

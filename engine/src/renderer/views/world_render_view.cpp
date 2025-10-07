@@ -104,10 +104,7 @@ namespace caliope {
 		//for (auto [shader_name, material_name] : packet.quad_materials) {
 		for (auto [shader_name, sprites] : world_packet.sprite_definitions) {
 
-			shader_config shader_conf;
-			shader_conf.name = shader_name;
-			shader_conf.renderpass_type = RENDERPASS_TYPE_WORLD;
-			shader* shader = shader_system_adquire(shader_conf);
+			shader* shader = shader_system_adquire(std::string(shader_name));
 			renderer_shader_use(*shader);
 
 			uint number_of_instances = 0;

@@ -30,7 +30,6 @@ namespace caliope {
 
 	void recreate_swapchain();
 	void create_command_buffers();
-	VkShaderModule create_shader_module(std::string& file_path);
 	VkFilter get_vulkan_texture_filter(texture_filter filter);
 
 
@@ -512,22 +511,22 @@ namespace caliope {
 		}
 
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader_internal_data);
-		copy_memory(vk_shader->uniform_buffers_vertex_mapped, &ubo_vertex, sizeof(ubo_vertex));
-		copy_memory(vk_shader->uniform_buffers_fragment_mapped, &ubo_frag, sizeof(ubo_frag));
-		copy_memory(vk_shader->ssbo_mapped, quads.data(), sizeof(quad_properties) * quad_count);
+		copy_memory(vk_shader->uniform_buffer_maps[0], &ubo_vertex, sizeof(ubo_vertex));
+		copy_memory(vk_shader->uniform_buffer_maps[1], &ubo_frag, sizeof(ubo_frag));
+		copy_memory(vk_shader->uniform_buffer_maps[02], quads.data(), sizeof(quad_properties) * quad_count);
 
 		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = vk_shader->uniform_buffers_vertex.handle;
+		buffer_info.buffer = vk_shader->uniform_buffers[0].handle;
 		buffer_info.offset = 0;
 		buffer_info.range = sizeof(uniform_vertex_buffer_object);
 
 		VkDescriptorBufferInfo buffer_fragment_info = {};
-		buffer_fragment_info.buffer = vk_shader->uniform_buffers_fragment.handle;
+		buffer_fragment_info.buffer = vk_shader->uniform_buffers[1].handle;
 		buffer_fragment_info.offset = 0;
 		buffer_fragment_info.range = sizeof(uniform_fragment_buffer_object);
 
 		VkDescriptorBufferInfo ssbo_info = {};
-		ssbo_info.buffer = vk_shader->ssbo.handle;
+		ssbo_info.buffer = vk_shader->uniform_buffers[2].handle;
 		ssbo_info.offset = 0;
 		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
 
@@ -722,23 +721,33 @@ namespace caliope {
 		vkFreeMemory(state_ptr->context.device.logical_device, vk_t->image.memory, nullptr);
 	}
 
-	bool vulkan_renderer_shader_create(shader& s, renderpass& pass) {
+	bool vulkan_renderer_shader_create(shader_resource_data& shader_config, shader& out_shader, renderpass& pass) {
 
-		VkShaderModule vert_module = create_shader_module(std::string("shaders/" + s.name + ".vert.spv"));
-		if (vert_module == nullptr) {
-			return false;
+		// Shader modules creation
+		VkShaderModuleCreateInfo create_vertex_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+		create_vertex_info.codeSize = shader_config.vertex_code_size;
+		create_vertex_info.pCode = (uint*)shader_config.vertex_code.data();
+
+		VkShaderModule vert_module;
+		if (vkCreateShaderModule(state_ptr->context.device.logical_device, &create_vertex_info, nullptr, &vert_module) != VK_SUCCESS) {
+			CE_LOG_ERROR("Could not create the shader");
+			return false();
 		}
-
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		vert_shader_stage_info.module = vert_module;
 		vert_shader_stage_info.pName = "main";
 
-		VkShaderModule frag_module = create_shader_module(std::string("shaders/" + s.name + ".frag.spv"));
-		if (frag_module == nullptr) {
-			return false;
-		}
+		
+		VkShaderModuleCreateInfo create_fragment_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+		create_fragment_info.codeSize = shader_config.fragment_code_size;
+		create_fragment_info.pCode = (uint*)shader_config.fragment_code.data();
 
+		VkShaderModule frag_module;
+		if (vkCreateShaderModule(state_ptr->context.device.logical_device, &create_fragment_info, nullptr, &frag_module) != VK_SUCCESS) {
+			CE_LOG_ERROR("Could not create the shader");
+			return false();
+		}
 		VkPipelineShaderStageCreateInfo frag_shader_stage_info = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		frag_shader_stage_info.module = frag_module;
@@ -746,6 +755,7 @@ namespace caliope {
 
 		VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info, frag_shader_stage_info };
 
+		// Properties
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = (float)state_ptr->context.swapchain.extent.height;// Invert Y to match with Vulkan;
@@ -759,62 +769,59 @@ namespace caliope {
 		scissor.extent = state_ptr->context.swapchain.extent;
 
 		// Attributes
-		#define NUMBER_OF_VERTEX_ATTRIBUTES 3
-		std::array < std::pair<VkFormat, uint>, NUMBER_OF_VERTEX_ATTRIBUTES > attributes_definitions{ 
-			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3)),
-			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)),
-			std::make_pair<VkFormat, uint>(VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2))
-		};
-		std::array<VkVertexInputAttributeDescription, NUMBER_OF_VERTEX_ATTRIBUTES> attribute_descriptions;
+		std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
+		attribute_descriptions.resize(shader_config.vertex_attribute_definitions.size());
 		
-		uint offset = 0;
-		for (uint i = 0; i < NUMBER_OF_VERTEX_ATTRIBUTES; ++i) {
+		uint64 offset = 0;
+		for (uint i = 0; i < attribute_descriptions.size(); ++i) {
 			attribute_descriptions[i].binding = 0;
 			attribute_descriptions[i].location = i;
-			attribute_descriptions[i].format = attributes_definitions[i].first;
+			attribute_descriptions[i].format = (VkFormat)shader_config.vertex_attribute_definitions[i].type;
 			attribute_descriptions[i].offset = offset;
-			offset += attributes_definitions[i].second;
+			offset += shader_config.vertex_attribute_definitions[i].size;
 
 		}
 
-		s.internal_data = vulkan_shader();
-		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
+		out_shader.internal_data = vulkan_shader();
+		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&out_shader.internal_data);
 
 		// Descriptor set layout
-		VkDescriptorSetLayoutBinding ubo_vertex_layout_binding = {};
-		ubo_vertex_layout_binding.binding = 0;
-		ubo_vertex_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubo_vertex_layout_binding.descriptorCount = 1;
-		ubo_vertex_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		ubo_vertex_layout_binding.pImmutableSamplers = nullptr;
+		std::vector<std::pair<VkDescriptorType, uint>> pool_types_definition;
+		std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
-		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = state_ptr->max_textures_per_batch;
-		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		sampler_layout_binding.pImmutableSamplers = nullptr;
-		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		for (uint i = 0; i < shader_config.descriptor_definitions.size(); ++i) {
+			VkDescriptorSetLayoutBinding binding;
+			binding.binding = i;
+			binding.descriptorType = (VkDescriptorType)shader_config.descriptor_definitions[i].type;
+			binding.descriptorCount = shader_config.descriptor_definitions[i].count;
+			binding.stageFlags = (VkShaderStageFlags)shader_config.descriptor_definitions[i].stage;
+			binding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding ssbo_layout_binding = {};
-		ssbo_layout_binding.binding = 2;
-		ssbo_layout_binding.descriptorCount = 1;// TODO: MORE CONFIGURABLE WITH THE vulkan_renderer_set_and_apply_uniforms
-		ssbo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		ssbo_layout_binding.pImmutableSamplers = nullptr;
-		ssbo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			bindings.push_back(binding);
 
-		VkDescriptorSetLayoutBinding ubo_fragment_layout_binding = {};
-		ubo_fragment_layout_binding.binding = 3;
-		ubo_fragment_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubo_fragment_layout_binding.descriptorCount = 1;
-		ubo_fragment_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		ubo_fragment_layout_binding.pImmutableSamplers = nullptr;
+			// Iterate thought to pool_types_definition to add or increment the number of descriptors that needs to be reserved in the creation of the descriptors pools (creation below)
+			// TODO: Consider if change the shader config enumerator to be aligned to vector or to vulkan (maybe in the future to the vector index due to other implementations like opengl and DX?)
+			// NOTE: A map its not used to not include another heavy header library to iterare a 3 element vector at most, a map is overkill
+			bool found = false;
+			uint pool_index = 0;
+			for (pool_index = 0; pool_index < pool_types_definition.size(); ++pool_index) {
+				if (pool_types_definition[pool_index].first == binding.descriptorType) {
+					found = true;
+					break;
+				}
+			}
+			if (found) {
+				pool_types_definition[pool_index].second += shader_config.descriptor_definitions[pool_index].count;
+			}
+			else {
+				pool_types_definition.push_back({ binding.descriptorType, binding.descriptorCount });
+			}
+		}
 
-		std::array<VkDescriptorSetLayoutBinding, 4> bindings = { ubo_vertex_layout_binding, sampler_layout_binding, ssbo_layout_binding, ubo_fragment_layout_binding };
 		VkDescriptorSetLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 		layout_info.bindingCount = bindings.size();
 		layout_info.pBindings = bindings.data();
 		VK_CHECK(vkCreateDescriptorSetLayout(state_ptr->context.device.logical_device, &layout_info, nullptr, &vk_shader->descriptor_set_layout));
-
 
 		// Create pipeline
 		vulkan_renderpass* vk_pass = std::any_cast<vulkan_renderpass>(&pass.internal_data);
@@ -822,7 +829,7 @@ namespace caliope {
 			state_ptr->context, 
 			*vk_pass,
 			sizeof(vertex),
-			NUMBER_OF_VERTEX_ATTRIBUTES,
+			attribute_descriptions.size(),
 			attribute_descriptions.data(),
 			1,
 			vk_shader->descriptor_set_layout,
@@ -835,7 +842,7 @@ namespace caliope {
 			);
 
 		if (!result) {
-			CE_LOG_ERROR("Couldn't create the pipeline for the shader: %s", s.name.c_str());
+			CE_LOG_ERROR("Couldn't create the pipeline for the shader: %s", out_shader.name.c_str());
 			return false;
 		}
 
@@ -843,7 +850,13 @@ namespace caliope {
 		vkDestroyShaderModule(state_ptr->context.device.logical_device, frag_module, nullptr);
 
 		// Uniform buffers
-		VkDeviceSize buffer_vertex_size = sizeof(uniform_vertex_buffer_object);
+		vk_shader->uniform_buffers.resize(shader_config.descriptor_buffer_definitions.size());
+		for (uint i = 0; i < shader_config.descriptor_buffer_definitions.size(); ++i) {
+			vulkan_buffer_create(state_ptr->context, shader_config.descriptor_buffer_definitions[i].size, (VkBufferUsageFlagBits)shader_config.descriptor_buffer_definitions[i].usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers[i]);
+			vk_shader->uniform_buffer_maps.push_back(vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers[i], 0, shader_config.descriptor_buffer_definitions[i].size, 0));
+		}
+
+		/**VkDeviceSize buffer_vertex_size = sizeof(uniform_vertex_buffer_object);
 		vulkan_buffer_create(state_ptr->context, buffer_vertex_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers_vertex);
 		vk_shader->uniform_buffers_vertex_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex, 0, buffer_vertex_size, 0);
 
@@ -853,20 +866,28 @@ namespace caliope {
 
 
 		// Vertex SSBO
-		vulkan_buffer_create(state_ptr->context, sizeof(quad_properties) * state_ptr->max_number_quads, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
-		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->ssbo, 0, sizeof(quad_properties) * state_ptr->max_number_quads, 0);
+		VkDeviceSize ssbo_size = sizeof(quad_properties) * state_ptr->max_number_quads;
+		vulkan_buffer_create(state_ptr->context, ssbo_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
+		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->ssbo, 0, ssbo_size, 0);*/
 
 
 		// Descriptor pool
-		std::array<VkDescriptorPoolSize, 4> pool_sizes;
-		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[0].descriptorCount = 4; // HACK: max number of ubo descriptor sets.
-		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		pool_sizes[1].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
-		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		pool_sizes[2].descriptorCount = 4;
-		pool_sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[3].descriptorCount = 4; // HACK: max number of ubo descriptor sets.
+		std::vector<VkDescriptorPoolSize> pool_sizes;
+		for (uint i = 0; i < pool_types_definition.size(); ++i) {
+			VkDescriptorPoolSize pool_size;
+			pool_size.type = pool_types_definition[i].first;
+			pool_size.descriptorCount = pool_types_definition[i].second;
+			pool_sizes.push_back(pool_size);
+		}
+		//std::array<VkDescriptorPoolSize, 3> pool_sizes;
+		//pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		//pool_sizes[0].descriptorCount = 8; // HACK: max number of ubo descriptor sets.
+		//pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		//pool_sizes[1].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
+		//pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		//pool_sizes[2].descriptorCount = 4;
+		//pool_sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		//pool_sizes[3].descriptorCount = 4; // HACK: max number of ubo descriptor sets.
 
 		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		pool_info.poolSizeCount = pool_sizes.size();
@@ -894,15 +915,15 @@ namespace caliope {
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
 
 		//for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex);
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers_fragment);
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->ssbo);
-		vk_shader->uniform_buffers_vertex_mapped = 0;
-		vk_shader->uniform_buffers_fragment_mapped = 0;
-		vk_shader->ssbo_mapped = 0;
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers_vertex);
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers_fragment);
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->ssbo);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers[0]);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers[1]);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers[2]);
+		vk_shader->uniform_buffer_maps[0] = 0;
+		vk_shader->uniform_buffer_maps[1] = 0;
+		vk_shader->uniform_buffer_maps[2] = 0;
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers[0]);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers[1]);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers[2]);
 		//}
 		vkDestroyDescriptorPool(state_ptr->context.device.logical_device, vk_shader->descriptor_pool, nullptr);
 		vkDestroyDescriptorSetLayout(state_ptr->context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);
@@ -984,31 +1005,6 @@ namespace caliope {
 
 		CE_LOG_INFO("Vulkan command buffers created");
 	}
-
-	VkShaderModule create_shader_module(std::string& file_path) {
-		resource r;
-		if (!resource_system_load(file_path, RESOURCE_TYPE_BINARY, r)) {
-			CE_LOG_ERROR("Could not find the shader: %s", file_path.c_str());
-			return VkShaderModule();
-		}
-
-		std::vector<uchar> code = std::any_cast<std::vector<uchar>>(r.data);
-		
-		VkShaderModuleCreateInfo create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-		create_info.codeSize = r.data_size;
-		create_info.pCode = (uint*)code.data();
-
-		VkShaderModule shader_module;
-		if (vkCreateShaderModule(state_ptr->context.device.logical_device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {
-			CE_LOG_ERROR("Could not create the shader");
-			return VkShaderModule();
-		}
-		resource_system_unload(r);
-		return shader_module;
-	}
-
-
-
 
 
 

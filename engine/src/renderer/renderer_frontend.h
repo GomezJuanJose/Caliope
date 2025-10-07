@@ -35,7 +35,7 @@ namespace caliope {
 	void renderer_texture_destroy(texture& texture);
 	void renderer_texture_change_filter(texture& texture);
 
-	bool renderer_shader_create(shader& shader);
+	bool renderer_shader_create(shader_resource_data& shader_config, shader& shader);
 	void renderer_shader_destroy(shader& shader);
 	void renderer_shader_use(shader& shader);
 

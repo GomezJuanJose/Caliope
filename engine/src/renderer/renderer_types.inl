@@ -60,7 +60,7 @@ namespace caliope {
 		void (*texture_destroy)(texture& t);
 		void (*texture_change_filter)(texture& t);
 
-		bool (*shader_create)(shader& s, renderpass& pass);
+		bool (*shader_create)(shader_resource_data& shader_config, shader& out_shader, renderpass& pass);
 		void (*shader_destroy)(shader& s);
 		void (*shader_use)(shader& s);
 
@@ -84,6 +84,48 @@ namespace caliope {
 		RENDERPASS_TYPE_OBJECT_PICK,
 		RENDERPASS_TYPE_UI
 	} renderpass_type;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum vertex_attribute_type {
+		VERTEX_ATTRIBUTE_R32G32B32A32 = 109,
+		VERTEX_ATTRIBUTE_R32G32B32 = 106,
+		VERTEX_ATTRIBUTE_R32G32 = 103
+	} vertex_attribute_type;
+
+	typedef struct vertex_attribute_definition {
+		vertex_attribute_type type;
+		uint64 size;
+	} vertex_attribute_definition;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum descriptor_type {
+		DESCRIPTOR_TYPE_IMAGE_SAMPLER = 1,
+		DESCRIPTOR_TYPE_UNIFORM_BUFFER = 6,
+		DESCRIPTOR_TYPE_STORAGE_BUFFER = 7
+	} descriptor_type;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum descriptor_stage {
+		DESCRIPTOR_STAGE_VERTEX = 1,
+		DESCRIPTOR_STAGE_FRAGMENT = 16,
+	} descriptor_stage;
+
+	typedef struct descriptor_definition {
+		descriptor_type type;
+		uint count;
+		descriptor_stage stage;
+	} descriptor_definition;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum descriptor_buffer_usage {
+		DESCRIPTOR_BUFFER_USAGE_UNIFORM = 16,
+		DESCRIPTOR_BUFFER_USAGE_STORAGE = 32
+	} descriptor_buffer_usage;
+
+	typedef struct descriptor_buffer_definition {
+		descriptor_buffer_usage usage;
+		uint64 size;
+	} descriptor_buffer_definition;
 
 	typedef enum renderpass_clear_flag {
 		RENDERPASS_CLEAR_FLAG_NONE = 0x0,

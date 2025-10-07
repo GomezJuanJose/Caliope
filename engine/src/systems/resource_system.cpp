@@ -6,6 +6,7 @@
 #include "loaders/resources_types.inl"
 #include "loaders/image_loader.h"
 #include "loaders/binary_loader.h"
+#include "loaders/shader_loader.h"
 #include "loaders/material_loader.h"
 #include "loaders/audio_loader.h"
 #include "loaders/scene_loader.h"
@@ -31,6 +32,7 @@ namespace caliope {
 
 		resource_system_register_loader(binary_resource_loader_create());
 		resource_system_register_loader(image_resource_loader_create());
+		resource_system_register_loader(shader_resource_loader_create());
 		resource_system_register_loader(material_resource_loader_create());
 		resource_system_register_loader(audio_resource_loader_create());
 		resource_system_register_loader(scene_resource_loader_create());

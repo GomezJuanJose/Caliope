@@ -19,10 +19,6 @@ namespace caliope {
 			CE_LOG_ERROR("Couldnt open %s", file->c_str());
 			return false;
 		}
-		/*/std::vector<uchar> bytes;
-		file_system_read_all_bytes(binary_file, bytes, out_resource->data_size);
-		material_resource_data* mat_config = reinterpret_cast<material_resource_data*>(bytes.data());
-		out_resource->data = *mat_config;*/
 		material_resource_data mat_config = {};
 		std::string text;
 		uint64 read_bytes;
@@ -31,7 +27,7 @@ namespace caliope {
 		std::istringstream stream(text.c_str());
 		std::string line;
 		while (std::getline(stream, line)) {//TODO: Use the function read file by line instead of store the whole text
-			if (line.empty() || line.begin()[0] == '#') {
+			if (line == "" || line.begin()[0] == '#') {
 				continue;
 			}
 			string_trim_character(&line, '\r');
@@ -68,9 +64,6 @@ namespace caliope {
 			}
 			else if (strings_equali(&field, &std::string("shininess_intensity"))) {
 				string_to_float(&value, &mat_config.shininess_intensity);
-			}
-			else if (strings_equali(&field, &std::string("renderpass_type"))) {
-				string_to_uint(&value, &mat_config.renderpass_type);
 			}
 
 		}

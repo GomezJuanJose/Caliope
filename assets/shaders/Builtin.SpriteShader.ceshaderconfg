@@ -1,0 +1,22 @@
+# Shader configuration
+
+name=Builtin.SpriteShader
+vertex_shader_name=Builtin.SpriteShader
+fragment_shader_name=Builtin.SpriteShader
+renderpass=world_renderpass
+
+# Vertex attributes (the order influence the final result!)
+vertex_attribute=vector3
+vertex_attribute=vector4
+vertex_attribute=vector2
+
+# Descriptor set layout (descriptorType,descriptorCount,stageFlags)
+descriptor=uniform,1,vertex
+descriptor=image,1024,fragment
+descriptor=storage,1,vertex
+descriptor=uniform,1,fragment
+
+# Descriptor buffer properties (usage,size)
+descriptor_buffer=uniform,140
+descriptor_buffer=uniform,500
+descriptor_buffer=storage,1440000

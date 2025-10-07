@@ -9,6 +9,9 @@
 namespace caliope {
 	struct audio_file_internal;
 	struct renderpass;
+	struct vertex_attribute_definition;
+	struct descriptor_definition;
+	struct descriptor_buffer_definition;
 
 	enum scene_state;
 	enum renderpass_type;
@@ -18,6 +21,7 @@ namespace caliope {
 	typedef enum resource_type{
 		RESOURCE_TYPE_BINARY = 0,
 		RESOURCE_TYPE_IMAGE,
+		RESOURCE_TYPE_SHADER,
 		RESOURCE_TYPE_MATERIAL,
 		RESOURCE_TYPE_AUDIO,
 		RESOURCE_TYPE_SCENE
@@ -35,6 +39,19 @@ namespace caliope {
 		uint height;
 		uchar* pixels;
 	}image_resource_data;
+
+	typedef struct shader_resource_data {
+		std::string name;
+		std::vector<uchar> vertex_code;
+		uint64 vertex_code_size;
+		std::vector<uchar> fragment_code;
+		uint64 fragment_code_size;
+		renderpass_type renderpass_type;
+
+		std::vector<vertex_attribute_definition> vertex_attribute_definitions;
+		std::vector<descriptor_definition> descriptor_definitions;
+		std::vector<descriptor_buffer_definition> descriptor_buffer_definitions;
+	} shader_resource_data;
 
 	typedef struct material_resource_data {
 		std::array<char, MAX_NAME_LENGTH> name;
@@ -105,14 +122,8 @@ namespace caliope {
 		std::any internal_data;
 	} texture;
 
-	typedef struct shader_config {
-		std::string name;
-		renderpass_type renderpass_type;
-	} shader_config;
-
 	typedef struct shader {
 		std::string name;
-		renderpass_type renderpass_type;
 		std::any internal_data;
 	} shader;
 
