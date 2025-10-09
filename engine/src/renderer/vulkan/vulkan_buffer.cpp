@@ -11,12 +11,13 @@ namespace caliope {
 	bool vulkan_buffer_create(vulkan_context& context, uint64 size, VkBufferUsageFlagBits usage, VkMemoryPropertyFlags properties, bool bind_on_create, vulkan_buffer& out_buffer) {
 
 		out_buffer.memory_property_flag = properties;
+		out_buffer.usage = usage;
 
 		VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		buffer_info.size = size;
 		buffer_info.usage = usage;
 		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
+		
 		VK_CHECK(vkCreateBuffer(context.device.logical_device, &buffer_info, nullptr, &out_buffer.handle));
 
 		VkMemoryRequirements memory_requirements;

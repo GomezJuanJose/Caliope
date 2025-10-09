@@ -14,8 +14,6 @@ namespace caliope {
 		uint window_width;
 		uint window_height;
 
-		uint max_number_quads;
-		uint max_textures_per_batch;
 	} renderer_frontend_config;
 
 	bool renderer_system_initialize(renderer_frontend_config& config);
@@ -46,8 +44,11 @@ namespace caliope {
 	bool renderer_renderpass_end();
 	void renderer_renderpass_set_render_area(renderpass_type type, glm::vec4 render_area);
 
-
-	void renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+	void renderer_set_descriptor_ubo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
+	void renderer_set_descriptor_sampler(std::vector<texture*>& textures_batch_ptr, uint destination_binding, shader& shader);
+	void renderer_set_descriptor_ssbo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
+	void renderer_apply_descriptors(shader& shader);
+	
 	void renderer_draw_geometry(uint instance_count, geometry& geometry);
 	void renderer_draw_object_pick(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
 }

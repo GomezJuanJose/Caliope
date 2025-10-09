@@ -29,7 +29,10 @@ namespace caliope {
 			out_renderer_backend.renderpass_begin = vulkan_renderer_renderpass_begin;
 			out_renderer_backend.renderpass_end = vulkan_renderer_renderpass_end;
 			
-			out_renderer_backend.set_and_apply_uniforms = vulkan_renderer_set_and_apply_uniforms;
+			out_renderer_backend.set_descriptor_ubo = vulkan_renderer_set_descriptor_ubo;
+			out_renderer_backend.set_descriptor_sampler = vulkan_renderer_set_descriptor_sampler;
+			out_renderer_backend.set_descriptor_ssbo = vulkan_renderer_set_descriptor_ssbo;
+			out_renderer_backend.apply_descriptors = vulkan_renderer_apply_descriptors;
 
 			out_renderer_backend.draw_geometry = vulkan_renderer_draw_geometry;
 			out_renderer_backend.draw_object_pick = pick_object;

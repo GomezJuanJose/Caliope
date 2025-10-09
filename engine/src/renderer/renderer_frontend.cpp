@@ -45,8 +45,6 @@ namespace caliope{
 
 		renderer_backend_config backend_config;
 		backend_config.application_name = config.application_name;
-		backend_config.max_quads = config.max_number_quads;// TODO: Remove
-		backend_config.max_textures_per_batch = config.max_textures_per_batch;// TODO: Remove
 		if (!state_ptr->backend.initialize(backend_config)) {
 			CE_LOG_ERROR("Renderer backend failed to initialized. Shutting down");
 			return false;
@@ -175,18 +173,24 @@ namespace caliope{
 		state_ptr->renderpasses.at(type).render_area = render_area;
 	}
 
-	void renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
-		state_ptr->backend.set_and_apply_uniforms(
-			quads,
-			point_lights,
-			ambient_color,
-			shader_internal_data,
-			textures_batch_ptr,
-			quad_count,
-			view,
-			projection,
-			view_position
-		);
+	void renderer_set_descriptor_ubo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index)
+	{
+		state_ptr->backend.set_descriptor_ubo(data, data_size, destination_binding, shader, descriptor_buffer_index);
+	}
+
+	void renderer_set_descriptor_sampler(std::vector<texture*>& textures_batch_ptr, uint destination_binding, shader& shader)
+	{
+		state_ptr->backend.set_descriptor_sampler(textures_batch_ptr, destination_binding, shader);
+	}
+
+	void renderer_set_descriptor_ssbo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index)
+	{
+		state_ptr->backend.set_descriptor_ssbo(data, data_size, destination_binding, shader, descriptor_buffer_index);
+	}
+
+	void renderer_apply_descriptors(shader& shader)
+	{
+		state_ptr->backend.apply_descriptors(shader);
 	}
 
 	void renderer_draw_geometry(uint instance_count, geometry& geometry) {

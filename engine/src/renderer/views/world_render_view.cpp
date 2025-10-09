@@ -9,6 +9,19 @@
 
 namespace caliope {
 
+	typedef struct uniform_vertex_buffer_object {
+		glm::mat4 view;
+		glm::mat4 proj;
+		glm::vec3 view_position;
+	}uniform_vertex_buffer_object;
+
+	#define MAX_POINT_LIGHTS 10
+	typedef struct uniform_fragment_buffer_object {
+		glm::vec4 ambient_color;
+		point_light_definition point_lights[MAX_POINT_LIGHTS];
+		int number_of_lights;
+	}uniform_fragment_buffer_object;
+
 	typedef struct world_view_state {
 		std::vector<quad_properties> quads;
 		std::vector<texture*> batch_textures;
@@ -228,19 +241,29 @@ namespace caliope {
 				sprites.pop();
 			}
 
-			renderer_set_and_apply_uniforms(
-				state_ptr->quads,
-				world_packet.point_light_definitions,
-				world_packet.ambient_color,
-				shader->internal_data,
-				state_ptr->batch_textures,
-				number_of_instances,
-				camera_view_get(*world_packet.world_camera),
-				camera_projection_get(*world_packet.world_camera),
-				world_packet.world_camera->position
-			);
-			instances = number_of_instances;// TODO: REMOVE
+			// Updates the descriptors, NOTE: Order matters!!!
+			uniform_vertex_buffer_object ubo_vertex;
+			ubo_vertex.view = camera_view_get(*world_packet.world_camera);
+			ubo_vertex.proj = camera_projection_get(*world_packet.world_camera);
+			ubo_vertex.view_position = world_packet.world_camera->position;
+			renderer_set_descriptor_ubo(&ubo_vertex, sizeof(uniform_vertex_buffer_object), 0, *shader, 0);
+
+			renderer_set_descriptor_sampler(state_ptr->batch_textures, 1, *shader);
+
+			renderer_set_descriptor_ssbo(state_ptr->quads.data(), sizeof(quad_properties) * number_of_instances, 2, *shader, 2);
+
+			uniform_fragment_buffer_object ubo_frag;
+			ubo_frag.ambient_color = world_packet.ambient_color;
+			ubo_frag.number_of_lights = world_packet.point_light_definitions.size();
+			for (uint i = 0; i < ubo_frag.number_of_lights; ++i) {
+				ubo_frag.point_lights[i] = world_packet.point_light_definitions[i];
+			}
+			renderer_set_descriptor_ubo(&ubo_frag, sizeof(uniform_fragment_buffer_object), 3, *shader, 1);
+
+			renderer_apply_descriptors(*shader);
 			renderer_draw_geometry(number_of_instances, *geometry_system_get_quad());
+
+			instances = number_of_instances;// TODO: REMOVE
 		}
 
 		if (!renderer_renderpass_end()) {

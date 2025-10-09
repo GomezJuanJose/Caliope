@@ -20,3 +20,4 @@ descriptor=uniform,1,fragment
 descriptor_buffer=uniform,140
 descriptor_buffer=uniform,500
 descriptor_buffer=storage,1440000
+# The 1440000 implicity defines the maximum number of quads that can draw

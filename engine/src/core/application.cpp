@@ -91,8 +91,6 @@ namespace caliope {
 		renderer_config.application_name = config.name;
 		renderer_config.window_width = config.width;
 		renderer_config.window_height = config.height;
-		renderer_config.max_number_quads = 10000;// TODO: Configure based on the resources needed for the developed game
-		renderer_config.max_textures_per_batch = 400;
 		if (!renderer_system_initialize(renderer_config)) {
 			CE_LOG_FATAL("Failed to initialize renderer; shutting down");
 			return false;
@@ -138,8 +136,8 @@ namespace caliope {
 		render_view_world_config world_config;
 		world_config.window_width = renderer_config.window_width;
 		world_config.window_height = renderer_config.window_height;
-		world_config.max_number_quads = renderer_config.max_number_quads;
-		world_config.max_textures_per_batch = renderer_config.max_textures_per_batch;
+		world_config.max_number_quads = 10000;
+		world_config.max_textures_per_batch = 400;
 
 		render_view world_view;
 		world_view.name = "world_view";

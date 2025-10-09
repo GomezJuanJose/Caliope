@@ -31,8 +31,10 @@ namespace caliope {
 	bool vulkan_renderer_renderpass_begin(renderpass& pass, render_target& target);
 	bool vulkan_renderer_renderpass_end();
 
-
-	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& sprites, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position);
+	void vulkan_renderer_set_descriptor_ubo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
+	void vulkan_renderer_set_descriptor_sampler(std::vector<texture*>& textures_batch_ptr, uint destination_binding, shader& shader);
+	void vulkan_renderer_set_descriptor_ssbo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
+	void vulkan_renderer_apply_descriptors(shader& shader);
 
 	void vulkan_renderer_texture_create(texture& t, uchar* pixels);
 	void vulkan_renderer_texture_destroy(texture& t);

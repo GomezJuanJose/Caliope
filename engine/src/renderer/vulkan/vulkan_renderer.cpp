@@ -38,23 +38,11 @@ namespace caliope {
 	void destroy_object_pick();
 	// TODO: END TEMPORAL
 
-	typedef struct uniform_vertex_buffer_object {
-		glm::mat4 view;
-		glm::mat4 proj;
-		glm::vec3 view_position;
-	}uniform_vertex_buffer_object;
-
-	#define MAX_POINT_LIGHTS 10
-	typedef struct uniform_fragment_buffer_object {
-		glm::vec4 ambient_color;
-		point_light_definition point_lights[MAX_POINT_LIGHTS];
-		int number_of_lights;
-	}uniform_fragment_buffer_object;
-
 	typedef struct vulkan_backend_state {
 		vulkan_context context;
-		uint max_number_quads;//TODO: REFACTOR in a internal state
-		uint max_textures_per_batch;
+
+		std::vector<VkWriteDescriptorSet> descriptor_writes;
+		std::vector<VkDescriptorBufferInfo> descriptor_buffer_infos;
 	}vulkan_backend_state;
 
 	static std::unique_ptr<vulkan_backend_state> state_ptr;
@@ -66,16 +54,10 @@ namespace caliope {
 		if (!state_ptr) {
 			return false;
 		}
-
-		// TODO: PRE-LOAD THE KNOWN SHADERS WHEN INITIALIZE
-		state_ptr->max_number_quads = config.max_quads;
-		state_ptr->max_textures_per_batch = config.max_textures_per_batch;
-
 		state_ptr->context.image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		state_ptr->context.render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		state_ptr->context.in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
 
-		state_ptr->context.batch_image_infos.resize(state_ptr->max_textures_per_batch);
 
 		// Create vulkan instancce
 		VkApplicationInfo app_info = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -497,55 +479,41 @@ namespace caliope {
 		return true;
 	}
 
-	void vulkan_renderer_set_and_apply_uniforms(std::vector<quad_properties>& quads, std::vector<point_light_definition>& point_lights, glm::vec4 ambient_color, std::any& shader_internal_data, std::vector<texture*>& textures_batch_ptr, uint quad_count, glm::mat4& view, glm::mat4& projection, glm::vec3& view_position) {
-		uniform_vertex_buffer_object ubo_vertex;
-		ubo_vertex.view = view;
-		ubo_vertex.proj = projection;
-		ubo_vertex.view_position = view_position;
+	void vulkan_renderer_set_descriptor_ubo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index)
+	{
+		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader.internal_data);
+		copy_memory(vk_shader->descriptor_buffer_maps[descriptor_buffer_index], data, data_size);
 
-		uniform_fragment_buffer_object ubo_frag;
-		ubo_frag.ambient_color = ambient_color;
-		ubo_frag.number_of_lights = point_lights.size();
-		for (uint i = 0; i < ubo_frag.number_of_lights; ++i) {
-			ubo_frag.point_lights[i] = point_lights[i];
-		}
+		state_ptr->descriptor_writes.push_back(VkWriteDescriptorSet());
+		state_ptr->descriptor_buffer_infos.push_back(VkDescriptorBufferInfo());
 
-		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader_internal_data);
-		copy_memory(vk_shader->uniform_buffer_maps[0], &ubo_vertex, sizeof(ubo_vertex));
-		copy_memory(vk_shader->uniform_buffer_maps[1], &ubo_frag, sizeof(ubo_frag));
-		copy_memory(vk_shader->uniform_buffer_maps[02], quads.data(), sizeof(quad_properties) * quad_count);
+		state_ptr->descriptor_buffer_infos.back().buffer = vk_shader->descriptor_buffers[descriptor_buffer_index].handle;
+		state_ptr->descriptor_buffer_infos.back().offset = 0;
+		state_ptr->descriptor_buffer_infos.back().range = data_size;
 
-		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = vk_shader->uniform_buffers[0].handle;
-		buffer_info.offset = 0;
-		buffer_info.range = sizeof(uniform_vertex_buffer_object);
+		state_ptr->descriptor_writes.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		state_ptr->descriptor_writes.back().dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		state_ptr->descriptor_writes.back().dstBinding = destination_binding;
+		state_ptr->descriptor_writes.back().dstArrayElement = 0;
+		state_ptr->descriptor_writes.back().descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		state_ptr->descriptor_writes.back().descriptorCount = 1;
+		state_ptr->descriptor_writes.back().pBufferInfo = &state_ptr->descriptor_buffer_infos.back();
+		state_ptr->descriptor_writes.back().pImageInfo = nullptr;
+		state_ptr->descriptor_writes.back().pTexelBufferView = nullptr;
 
-		VkDescriptorBufferInfo buffer_fragment_info = {};
-		buffer_fragment_info.buffer = vk_shader->uniform_buffers[1].handle;
-		buffer_fragment_info.offset = 0;
-		buffer_fragment_info.range = sizeof(uniform_fragment_buffer_object);
+	}
 
-		VkDescriptorBufferInfo ssbo_info = {};
-		ssbo_info.buffer = vk_shader->uniform_buffers[2].handle;
-		ssbo_info.offset = 0;
-		ssbo_info.range = sizeof(quad_properties) * state_ptr->max_number_quads; //((sizeof(quad_properties) + (alignof(quad_properties) - 1)) & ~(alignof(quad_properties) - 1))
-
-		std::array<VkWriteDescriptorSet, 4> descriptor_writes = {};
-		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[0].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-		descriptor_writes[0].dstBinding = 0;
-		descriptor_writes[0].dstArrayElement = 0;
-		descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_writes[0].descriptorCount = 1;
-		descriptor_writes[0].pBufferInfo = &buffer_info;
-		descriptor_writes[0].pImageInfo = nullptr;
-		descriptor_writes[0].pTexelBufferView = nullptr;
+	void vulkan_renderer_set_descriptor_sampler(std::vector<texture*>& textures_batch_ptr, uint destination_binding, shader& shader)
+	{
+		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader.internal_data);
+		state_ptr->descriptor_writes.push_back(VkWriteDescriptorSet());
 
 		uint number_of_texture = 0;
 		for (texture* texture : textures_batch_ptr) {
 			if (texture == nullptr) {
 				break;
 			}
+			state_ptr->context.batch_image_infos.push_back(VkDescriptorImageInfo());
 
 			vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&texture->internal_data);
 			state_ptr->context.batch_image_infos[number_of_texture].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -554,37 +522,45 @@ namespace caliope {
 			number_of_texture++;
 		}
 
-		descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[1].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-		descriptor_writes[1].dstBinding = 1;
-		descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptor_writes[1].descriptorCount = number_of_texture;
-		descriptor_writes[1].pImageInfo = state_ptr->context.batch_image_infos.data();
+		state_ptr->descriptor_writes.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		state_ptr->descriptor_writes.back().dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		state_ptr->descriptor_writes.back().dstBinding = destination_binding;
+		state_ptr->descriptor_writes.back().descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		state_ptr->descriptor_writes.back().descriptorCount = number_of_texture;
+		state_ptr->descriptor_writes.back().pImageInfo = state_ptr->context.batch_image_infos.data();
+	}
 
-		descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[2].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-		descriptor_writes[2].dstBinding = 2;
-		descriptor_writes[2].dstArrayElement = 0;
-		descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		descriptor_writes[2].descriptorCount = 1;
-		descriptor_writes[2].pBufferInfo = &ssbo_info;
-		descriptor_writes[2].pImageInfo = nullptr;
-		descriptor_writes[2].pTexelBufferView = nullptr;
+	void vulkan_renderer_set_descriptor_ssbo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index)
+	{
+		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader.internal_data);
+		copy_memory(vk_shader->descriptor_buffer_maps[descriptor_buffer_index], data, data_size);
 
-		descriptor_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_writes[3].dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
-		descriptor_writes[3].dstBinding = 3;
-		descriptor_writes[3].dstArrayElement = 0;
-		descriptor_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_writes[3].descriptorCount = 1;
-		descriptor_writes[3].pBufferInfo = &buffer_fragment_info;
-		descriptor_writes[3].pImageInfo = nullptr;
-		descriptor_writes[3].pTexelBufferView = nullptr;
+		state_ptr->descriptor_writes.push_back(VkWriteDescriptorSet());
+		state_ptr->descriptor_buffer_infos.push_back(VkDescriptorBufferInfo());
 
-		vkUpdateDescriptorSets(state_ptr->context.device.logical_device, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
+		state_ptr->descriptor_buffer_infos.back().buffer = vk_shader->descriptor_buffers[descriptor_buffer_index].handle;
+		state_ptr->descriptor_buffer_infos.back().offset = 0;
+		state_ptr->descriptor_buffer_infos.back().range = data_size;
 
+		state_ptr->descriptor_writes.back().sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		state_ptr->descriptor_writes.back().dstSet = vk_shader->descriptor_sets[state_ptr->context.current_frame];
+		state_ptr->descriptor_writes.back().dstBinding = destination_binding;
+		state_ptr->descriptor_writes.back().dstArrayElement = 0;
+		state_ptr->descriptor_writes.back().descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		state_ptr->descriptor_writes.back().descriptorCount = 1;
+		state_ptr->descriptor_writes.back().pBufferInfo = &state_ptr->descriptor_buffer_infos.back();
+		state_ptr->descriptor_writes.back().pImageInfo = nullptr;
+		state_ptr->descriptor_writes.back().pTexelBufferView = nullptr;
+
+	}
+
+	void vulkan_renderer_apply_descriptors(shader& shader)
+	{
+		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader.internal_data);
+		vkUpdateDescriptorSets(state_ptr->context.device.logical_device, state_ptr->descriptor_writes.size(), state_ptr->descriptor_writes.data(), 0, nullptr);
 		vkCmdBindDescriptorSets(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline.layout, 0, 1, &vk_shader->descriptor_sets[state_ptr->context.current_frame], 0, nullptr);
 
+		state_ptr->descriptor_writes.clear();
 	}
 
 	VkFilter get_vulkan_texture_filter(texture_filter filter) {
@@ -850,26 +826,11 @@ namespace caliope {
 		vkDestroyShaderModule(state_ptr->context.device.logical_device, frag_module, nullptr);
 
 		// Uniform buffers
-		vk_shader->uniform_buffers.resize(shader_config.descriptor_buffer_definitions.size());
+		vk_shader->descriptor_buffers.resize(shader_config.descriptor_buffer_definitions.size());
 		for (uint i = 0; i < shader_config.descriptor_buffer_definitions.size(); ++i) {
-			vulkan_buffer_create(state_ptr->context, shader_config.descriptor_buffer_definitions[i].size, (VkBufferUsageFlagBits)shader_config.descriptor_buffer_definitions[i].usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers[i]);
-			vk_shader->uniform_buffer_maps.push_back(vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers[i], 0, shader_config.descriptor_buffer_definitions[i].size, 0));
+			vulkan_buffer_create(state_ptr->context, shader_config.descriptor_buffer_definitions[i].size, (VkBufferUsageFlagBits)shader_config.descriptor_buffer_definitions[i].usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->descriptor_buffers[i]);
+			vk_shader->descriptor_buffer_maps.push_back(vulkan_buffer_lock_memory(state_ptr->context, vk_shader->descriptor_buffers[i], 0, shader_config.descriptor_buffer_definitions[i].size, 0));
 		}
-
-		/**VkDeviceSize buffer_vertex_size = sizeof(uniform_vertex_buffer_object);
-		vulkan_buffer_create(state_ptr->context, buffer_vertex_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers_vertex);
-		vk_shader->uniform_buffers_vertex_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers_vertex, 0, buffer_vertex_size, 0);
-
-		VkDeviceSize buffer_fragment_size = sizeof(uniform_fragment_buffer_object);
-		vulkan_buffer_create(state_ptr->context, buffer_fragment_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->uniform_buffers_fragment);
-		vk_shader->uniform_buffers_fragment_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->uniform_buffers_fragment, 0, buffer_fragment_size, 0);
-
-
-		// Vertex SSBO
-		VkDeviceSize ssbo_size = sizeof(quad_properties) * state_ptr->max_number_quads;
-		vulkan_buffer_create(state_ptr->context, ssbo_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true, vk_shader->ssbo);
-		vk_shader->ssbo_mapped = vulkan_buffer_lock_memory(state_ptr->context, vk_shader->ssbo, 0, ssbo_size, 0);*/
-
 
 		// Descriptor pool
 		std::vector<VkDescriptorPoolSize> pool_sizes;
@@ -879,15 +840,6 @@ namespace caliope {
 			pool_size.descriptorCount = pool_types_definition[i].second;
 			pool_sizes.push_back(pool_size);
 		}
-		//std::array<VkDescriptorPoolSize, 3> pool_sizes;
-		//pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		//pool_sizes[0].descriptorCount = 8; // HACK: max number of ubo descriptor sets.
-		//pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		//pool_sizes[1].descriptorCount = 4096; // HACK: max number of image sampler descriptor sets.
-		//pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		//pool_sizes[2].descriptorCount = 4;
-		//pool_sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		//pool_sizes[3].descriptorCount = 4; // HACK: max number of ubo descriptor sets.
 
 		VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		pool_info.poolSizeCount = pool_sizes.size();
@@ -915,15 +867,15 @@ namespace caliope {
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&s.internal_data);
 
 		//for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers[0]);
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers[1]);
-		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->uniform_buffers[2]);
-		vk_shader->uniform_buffer_maps[0] = 0;
-		vk_shader->uniform_buffer_maps[1] = 0;
-		vk_shader->uniform_buffer_maps[2] = 0;
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers[0]);
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers[1]);
-		vulkan_buffer_destroy(state_ptr->context, vk_shader->uniform_buffers[2]);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->descriptor_buffers[0]);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->descriptor_buffers[1]);
+		vulkan_buffer_unlock_memory(state_ptr->context, vk_shader->descriptor_buffers[2]);
+		vk_shader->descriptor_buffer_maps[0] = 0;
+		vk_shader->descriptor_buffer_maps[1] = 0;
+		vk_shader->descriptor_buffer_maps[2] = 0;
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->descriptor_buffers[0]);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->descriptor_buffers[1]);
+		vulkan_buffer_destroy(state_ptr->context, vk_shader->descriptor_buffers[2]);
 		//}
 		vkDestroyDescriptorPool(state_ptr->context.device.logical_device, vk_shader->descriptor_pool, nullptr);
 		vkDestroyDescriptorSetLayout(state_ptr->context.device.logical_device, vk_shader->descriptor_set_layout, nullptr);
