@@ -561,6 +561,7 @@ namespace caliope {
 		vkCmdBindDescriptorSets(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_shader->pipeline.layout, 0, 1, &vk_shader->descriptor_sets[state_ptr->context.current_frame], 0, nullptr);
 
 		state_ptr->descriptor_writes.clear();
+		state_ptr->descriptor_buffer_infos.clear();
 	}
 
 	VkFilter get_vulkan_texture_filter(texture_filter filter) {
