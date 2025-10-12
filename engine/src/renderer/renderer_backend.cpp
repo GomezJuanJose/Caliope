@@ -20,6 +20,7 @@ namespace caliope {
 
 			out_renderer_backend.window_attachment_get = vulkan_renderer_window_attachment_get;
 			out_renderer_backend.depth_attachment_get = vulkan_renderer_depth_attachment_get;
+			out_renderer_backend.object_pick_attachment_get = vulkan_renderer_object_pick_attachment_get;
 
 			out_renderer_backend.render_target_create = vulkan_renderer_render_target_create;
 			out_renderer_backend.render_target_destroy = vulkan_renderer_render_target_destroy;
@@ -34,9 +35,9 @@ namespace caliope {
 			out_renderer_backend.set_descriptor_ssbo = vulkan_renderer_set_descriptor_ssbo;
 			out_renderer_backend.apply_descriptors = vulkan_renderer_apply_descriptors;
 
+			out_renderer_backend.get_descriptor_ssbo = vulkan_renderer_get_descriptor_ssbo;
+
 			out_renderer_backend.draw_geometry = vulkan_renderer_draw_geometry;
-			out_renderer_backend.draw_object_pick = pick_object;
-			out_renderer_backend.show_picked_obj = show_picked_obj;
 
 			out_renderer_backend.texture_create = vulkan_renderer_texture_create;
 			out_renderer_backend.texture_destroy = vulkan_renderer_texture_destroy;

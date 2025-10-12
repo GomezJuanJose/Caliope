@@ -15,6 +15,9 @@ namespace caliope {
 
 	enum scene_state;
 	enum renderpass_type;
+	enum attachment_format_type;
+	enum renderpass_stage_type;
+	enum renderpass_access_type;
 
 	#define MAX_NAME_LENGTH 256
 
@@ -40,8 +43,25 @@ namespace caliope {
 		uchar* pixels;
 	}image_resource_data;
 
+	typedef struct renderpass_resource_data {
+		glm::vec4 clear_color;
+		float depth;
+		uint stencil;
+		bool has_prev_pass;
+		bool has_next_pass;
+
+		std::vector<attachment_format_type> attachment_formats;
+
+		int subpass_src_stage_mask;
+		int subpass_dst_stage_mask;
+
+		int subpass_src_access_mask;
+		int subpass_dst_access_mask;
+	} renderpass_resource_data;
+
 	typedef struct shader_resource_data {
 		std::string name;
+		bool color_blend_enabled;
 		std::vector<uchar> vertex_code;
 		uint64 vertex_code_size;
 		std::vector<uchar> fragment_code;

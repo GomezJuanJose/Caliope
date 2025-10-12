@@ -17,6 +17,7 @@ namespace caliope {
 		VkPipelineShaderStageCreateInfo* stages,
 		VkViewport viewport,
 		VkRect2D scissor,
+		bool color_blend_enabled,
 		bool depth_test_enabled,
 		vulkan_pipeline& out_pipeline
 		);

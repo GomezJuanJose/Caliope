@@ -37,13 +37,14 @@ namespace caliope {
 
 		std::shared_ptr<std::any>(*window_attachment_get)(uint index);
 		std::shared_ptr<std::any>(*depth_attachment_get)();
+		std::shared_ptr<std::any>(*object_pick_attachment_get)();
 
 		bool (*render_target_create)(renderpass& pass, render_target& target);
 		bool (*render_target_destroy)(render_target& target);
 
-		bool (*renderpass_create)(renderpass& pass, glm::vec4 clear_color, float depth, uint stencil, bool has_prev_pass, bool has_next_pass);
+		bool (*renderpass_create)(renderpass& pass, renderpass_resource_data& renderpass_data);
 		void (*renderpass_destroy)(renderpass& pass);
-		bool (*renderpass_begin)(renderpass& pass, render_target& target);
+		bool (*renderpass_begin)(renderpass& pass, render_target& target, glm::vec2 scissor_extent, glm::vec2 scissor_offset);
 		bool (*renderpass_end)();
 
 		void (*set_descriptor_ubo)(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
@@ -51,10 +52,9 @@ namespace caliope {
 		void (*set_descriptor_ssbo)(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
 		void (*apply_descriptors)(shader& shader);
 
-		void (*draw_geometry)(uint quad_count, geometry& geometry);
+		void (*get_descriptor_ssbo)(void* out_data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
 
-		void (*draw_object_pick)(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
-		void (*show_picked_obj)();
+		void (*draw_geometry)(uint quad_count, geometry& geometry);
 
 		void (*texture_create)(texture& t, uchar* pixels);
 		void (*texture_destroy)(texture& t);
@@ -84,6 +84,29 @@ namespace caliope {
 		RENDERPASS_TYPE_OBJECT_PICK,
 		RENDERPASS_TYPE_UI
 	} renderpass_type;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum attachment_format_type {
+		ATTACHMENT_FORMAT_TYPE_R32_SFLOAT = 100,
+
+		ATTACHMENT_FORMAT_TYPE_SWAPCHAIN = 40000,
+		ATTACHMENT_FORMAT_TYPE_DEVICE_DEPTH = 50000
+	} attachment_format_type;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum renderpass_stage_type {
+		RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS = 256,
+		RENDERPASS_STAGE_TYPE_LATE_FRAGMENT_TESTS = 512,
+		RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT = 1024
+		
+	} renderpass_stage_type;
+
+	// NOTE: Aligned with vulkan types 
+	typedef enum renderpass_access_type {
+		RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_READ = 128,
+		RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE = 256,
+		RENDERPASS_ACCESS_TYPE_DEPTH_STENCIL_ATTACHMENT_WRITE = 1024
+	} renderpass_access_type;
 
 	// NOTE: Aligned with vulkan types 
 	typedef enum vertex_attribute_type {
@@ -118,12 +141,13 @@ namespace caliope {
 
 	// NOTE: Aligned with vulkan types 
 	typedef enum descriptor_buffer_usage {
+		DESCRIPTOR_BUFFER_USAGE_TRANSFER_DST = 2,
 		DESCRIPTOR_BUFFER_USAGE_UNIFORM = 16,
 		DESCRIPTOR_BUFFER_USAGE_STORAGE = 32
 	} descriptor_buffer_usage;
 
 	typedef struct descriptor_buffer_definition {
-		descriptor_buffer_usage usage;
+		uint usage;
 		uint64 size;
 	} descriptor_buffer_definition;
 
@@ -162,7 +186,9 @@ namespace caliope {
 	};
 
 	typedef struct render_view_object_pick_packet {
-
+		float delta_time;
+		camera* world_camera;
+		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 	}render_view_object_pick_packet;
 
 	typedef struct render_view {
@@ -185,4 +211,12 @@ namespace caliope {
 		uint max_textures_per_batch;
 		float aspect_ratio;
 	} render_view_world_config;
+
+	typedef struct render_view_pick_config {
+		uint window_width;
+		uint window_height;
+		uint max_number_quads;
+		uint max_textures_per_batch;
+		float aspect_ratio;
+	} render_view_pick_config;
 }

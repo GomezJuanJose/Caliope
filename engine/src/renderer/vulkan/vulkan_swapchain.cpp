@@ -190,6 +190,20 @@ namespace caliope {
 			out_swapchain->depth_attachment
 		);
 		
+
+		vulkan_image_create(
+			*context,
+			VK_IMAGE_TYPE_2D,
+			out_swapchain->extent.width,
+			out_swapchain->extent.height,
+			VK_FORMAT_R32_SFLOAT,
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			true,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			out_swapchain->object_pick_attachment
+		);
 		/*vulkan_image_transition_layout(
 			*context,
 			
@@ -206,6 +220,7 @@ namespace caliope {
 		vkDeviceWaitIdle(context->device.logical_device);
 
 		vulkan_image_destroy(*context, swapchain->depth_attachment);
+		vulkan_image_destroy(*context, swapchain->object_pick_attachment);
 
 		for (uint i = 0; i < swapchain->image_count; ++i) {
 			vkDestroyImageView(context->device.logical_device, swapchain->images[i].view, nullptr);

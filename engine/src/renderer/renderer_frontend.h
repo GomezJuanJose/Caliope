@@ -40,7 +40,7 @@ namespace caliope {
 	void renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
 	void renderer_geometry_destroy(geometry& geometry);
 
-	bool renderer_renderpass_begin(renderpass_type type, uint render_target_index);
+	bool renderer_renderpass_begin(renderpass_type type, uint render_target_index, glm::vec2 scissor_extent, glm::vec2 scissor_offset);
 	bool renderer_renderpass_end();
 	void renderer_renderpass_set_render_area(renderpass_type type, glm::vec4 render_area);
 
@@ -48,7 +48,9 @@ namespace caliope {
 	void renderer_set_descriptor_sampler(std::vector<texture*>& textures_batch_ptr, uint destination_binding, shader& shader);
 	void renderer_set_descriptor_ssbo(void* data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
 	void renderer_apply_descriptors(shader& shader);
+
+	void renderer_get_descriptor_ssbo(void* out_data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
 	
 	void renderer_draw_geometry(uint instance_count, geometry& geometry);
-	void renderer_draw_object_pick(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
+
 }

@@ -7,6 +7,9 @@
 #include "systems/geometry_system.h"
 #include "renderer/renderer_frontend.h"
 
+#include "platform/platform.h"
+
+
 namespace caliope {
 
 	typedef struct uniform_vertex_buffer_object {
@@ -20,7 +23,7 @@ namespace caliope {
 		glm::vec4 ambient_color;
 		point_light_definition point_lights[MAX_POINT_LIGHTS];
 		int number_of_lights;
-	}uniform_fragment_buffer_object;
+	} uniform_fragment_buffer_object;
 
 	typedef struct world_view_state {
 		std::vector<quad_properties> quads;
@@ -30,16 +33,11 @@ namespace caliope {
 		uint max_textures_per_batch;
 
 		float aspect_ratio;
-		
-		// TODO: TEMPORAL
-		std::vector<pick_quad_properties> pick_sprites;
-		// TODO: TEMPORAL
-	}world_view_state;
+
+	} world_view_state;
 
 	static std::unique_ptr<world_view_state> state_ptr;
-	// TODO: TEMPORAL
-	uint instances;
-	//TODO: TEMPORAL
+
 
 	void world_render_view_on_create(render_view& self) {
 
@@ -56,9 +54,8 @@ namespace caliope {
 	}
 
 	void world_render_view_on_destroy(render_view& self) {
-		state_ptr->quads.empty();
-		state_ptr->batch_textures.empty();
-		state_ptr->pick_sprites.empty();
+		state_ptr->quads.clear();
+		state_ptr->batch_textures.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}
@@ -102,11 +99,10 @@ namespace caliope {
 	}
 
 	bool world_render_view_on_render(render_view& self, std::any& packet, uint render_target_index) {
-		state_ptr->pick_sprites.empty();
 
 		render_view_world_packet& world_packet = std::any_cast<render_view_world_packet>(packet);
 
-		if (!renderer_renderpass_begin(self.renderpass, render_target_index)) {
+		if (!renderer_renderpass_begin(self.renderpass, render_target_index, glm::vec2(), glm::vec2())) {
 			CE_LOG_ERROR("world_render_view_on_render failed renderpass begin. Application shutting down");
 			return false;
 		}
@@ -214,7 +210,6 @@ namespace caliope {
 					texture_id++;
 				}
 
-				//for (uint i = 0; i < transforms.size(); ++i) {
 				quad_properties sp;
 				sp.model = transform_get_world(sprite.transform);
 				sp.diffuse_color = mat->diffuse_color;
@@ -228,16 +223,6 @@ namespace caliope {
 				state_ptr->quads.at(number_of_instances) = sp;
 				number_of_instances++;
 
-				// TODO: TEMPORAL
-				pick_quad_properties psp;
-				psp.model = transform_get_world(sprite.transform);
-				psp.id = sprite.id;
-				psp.diffuse_index = diffuse_id;
-				psp.texture_region = sprite.texture_region;
-				state_ptr->pick_sprites.insert(state_ptr->pick_sprites.begin(), psp);
-				// TODO: TEMPORAL
-
-				//}
 				sprites.pop();
 			}
 
@@ -263,17 +248,11 @@ namespace caliope {
 			renderer_apply_descriptors(*shader);
 			renderer_draw_geometry(number_of_instances, *geometry_system_get_quad());
 
-			instances = number_of_instances;// TODO: REMOVE
 		}
 
 		if (!renderer_renderpass_end()) {
 			CE_LOG_ERROR("world_render_view_on_render failed renderpass end. Application shutting down");
 			return false;
 		}
-
-		// TODO: Refactor and do an view system
-		renderer_draw_object_pick(instances, state_ptr->pick_sprites, *geometry_system_get_quad(), camera_projection_get(*world_packet.world_camera), camera_view_get(*world_packet.world_camera));
-		state_ptr->pick_sprites.empty();
-		// TODO: Refactor and do an view system
 	}
 }

@@ -53,12 +53,43 @@ namespace caliope{
 		// Creates renderpasses
 		renderpass pass;
 
-		//World
+		//World renderpass
+		pass = {};
 		pass.type = RENDERPASS_TYPE_WORLD;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER | RENDERPASS_CLEAR_FLAG_DEPTH_BUFFER);
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
-		state_ptr->backend.renderpass_create(pass, glm::vec4(0.0f, 0.2f, 0.6f, 1.0f), 1.0f, 0, false, false);
+		renderpass_resource_data world_renderpass_data;
+		world_renderpass_data.clear_color = glm::vec4(0.0f, 0.2f, 0.6f, 1.0f);
+		world_renderpass_data.depth = 1.0f;
+		world_renderpass_data.stencil = 0;
+		world_renderpass_data.has_next_pass = false;
+		world_renderpass_data.has_prev_pass = false;
+		world_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_SWAPCHAIN };
+		world_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_LATE_FRAGMENT_TESTS;
+		world_renderpass_data.subpass_src_access_mask = RENDERPASS_ACCESS_TYPE_DEPTH_STENCIL_ATTACHMENT_WRITE;
+		world_renderpass_data.subpass_dst_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		world_renderpass_data.subpass_dst_access_mask = RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_READ | RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE | RENDERPASS_ACCESS_TYPE_DEPTH_STENCIL_ATTACHMENT_WRITE;
+		state_ptr->backend.renderpass_create(pass, world_renderpass_data);
 		state_ptr->renderpasses.insert({pass.type, pass});
+
+		//Pick object renderpass
+		pass = {};
+		pass.type = RENDERPASS_TYPE_OBJECT_PICK;
+		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
+		pass.targets.resize(state_ptr->backend.window_images_count_get());
+		renderpass_resource_data pick_object_renderpass_data;
+		pick_object_renderpass_data.clear_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		pick_object_renderpass_data.depth = 1.0f;
+		pick_object_renderpass_data.stencil = 0;
+		pick_object_renderpass_data.has_prev_pass = false;
+		pick_object_renderpass_data.has_next_pass = true;
+		pick_object_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_R32_SFLOAT };
+		pick_object_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		pick_object_renderpass_data.subpass_src_access_mask = 0;
+		pick_object_renderpass_data.subpass_dst_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		pick_object_renderpass_data.subpass_dst_access_mask =  RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE;
+		state_ptr->backend.renderpass_create(pass, pick_object_renderpass_data);
+		state_ptr->renderpasses.insert({ pass.type, pass });
 
 		generate_render_targets();
 		
@@ -120,8 +151,6 @@ namespace caliope{
 				generate_render_targets();
 				state_ptr->is_resizing = false;
 			}
-
-			state_ptr->backend.show_picked_obj();
 		}
 
 		return true;
@@ -159,13 +188,11 @@ namespace caliope{
 		state_ptr->backend.geometry_destroy(geometry);
 	}
 
-	bool renderer_renderpass_begin(renderpass_type type, uint render_target_index) {
-		//return state_ptr->backend.begin_renderpass();
-		return state_ptr->backend.renderpass_begin(state_ptr->renderpasses.at(type), state_ptr->renderpasses.at(type).targets[render_target_index]);
+	bool renderer_renderpass_begin(renderpass_type type, uint render_target_index, glm::vec2 scissor_extent, glm::vec2 scissor_offset) {
+		return state_ptr->backend.renderpass_begin(state_ptr->renderpasses.at(type), state_ptr->renderpasses.at(type).targets[render_target_index], scissor_extent, scissor_offset);
 	}
 
 	bool renderer_renderpass_end() {
-		//return state_ptr->backend.end_renderpass();
 		return state_ptr->backend.renderpass_end();
 	}
 
@@ -193,12 +220,13 @@ namespace caliope{
 		state_ptr->backend.apply_descriptors(shader);
 	}
 
-	void renderer_draw_geometry(uint instance_count, geometry& geometry) {
-		state_ptr->backend.draw_geometry(instance_count, geometry);
+	void renderer_get_descriptor_ssbo(void* out_data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index)
+	{
+		state_ptr->backend.get_descriptor_ssbo(out_data, data_size, destination_binding, shader, descriptor_buffer_index);
 	}
 
-	void renderer_draw_object_pick(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view) {
-		state_ptr->backend.draw_object_pick(instance_count, quads, geometry, projection, view);
+	void renderer_draw_geometry(uint instance_count, geometry& geometry) {
+		state_ptr->backend.draw_geometry(instance_count, geometry);
 	}
 
 	void generate_render_targets() {
@@ -209,6 +237,14 @@ namespace caliope{
 			state_ptr->backend.render_target_destroy(world_pass.targets[i]);
 			world_pass.targets[i].attachments = { state_ptr->backend.window_attachment_get(i), state_ptr->backend.depth_attachment_get() };
 			state_ptr->backend.render_target_create(world_pass, world_pass.targets[i]);
+
+			renderpass& object_pick_pass = state_ptr->renderpasses.at(RENDERPASS_TYPE_OBJECT_PICK);
+
+			state_ptr->backend.render_target_destroy(object_pick_pass.targets[i]);
+			object_pick_pass.targets[i].attachments = { state_ptr->backend.object_pick_attachment_get() };
+			state_ptr->backend.render_target_create(object_pick_pass, object_pick_pass.targets[i]);
 		}
+
+
 	}
 }

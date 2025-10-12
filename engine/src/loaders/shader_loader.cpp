@@ -43,7 +43,15 @@ namespace caliope {
 
 				if (strings_equali(&value, &std::string("world_renderpass"))) {
 					shader_config.renderpass_type = RENDERPASS_TYPE_WORLD;
+
+				} else if (strings_equali(&value, &std::string("object_pick_renderpass"))) {
+					shader_config.renderpass_type = RENDERPASS_TYPE_OBJECT_PICK;
+
 				}
+			}
+			else if (strings_equali(&field, &std::string("color_blend"))) {
+				string_to_bool(&value, &shader_config.color_blend_enabled);
+
 			}
 			else if (strings_equali(&field, &std::string("vertex_shader_name"))) {
 				resource r;
@@ -133,6 +141,9 @@ namespace caliope {
 				}
 				else if (strings_equali(&usage, &std::string("storage"))) {
 					buffer_definition.usage = DESCRIPTOR_BUFFER_USAGE_STORAGE;
+				}
+				else if (strings_equali(&usage, &std::string("storage_and_transfer_destination"))) {
+					buffer_definition.usage = (DESCRIPTOR_BUFFER_USAGE_STORAGE | DESCRIPTOR_BUFFER_USAGE_TRANSFER_DST);
 				}
 
 				shader_config.descriptor_buffer_definitions.push_back(buffer_definition);

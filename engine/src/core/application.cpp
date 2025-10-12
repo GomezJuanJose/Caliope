@@ -146,9 +146,18 @@ namespace caliope {
 		world_view.internal_config = world_config;
 		render_view_system_add_view(world_view);
 
+
+		render_view_pick_config object_pick_config;
+		object_pick_config.window_width = renderer_config.window_width;
+		object_pick_config.window_height = renderer_config.window_height;
+		object_pick_config.max_number_quads = 10000;
+		object_pick_config.max_textures_per_batch = 400;
+
 		render_view object_pick_view;
 		object_pick_view.name = "object_pick_view";
 		object_pick_view.type = VIEW_TYPE_OBJECT_PICK;
+		object_pick_view.renderpass = RENDERPASS_TYPE_OBJECT_PICK;
+		object_pick_view.internal_config = object_pick_config;
 		render_view_system_add_view(object_pick_view);
 
 

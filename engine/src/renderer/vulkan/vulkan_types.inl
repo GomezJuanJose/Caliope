@@ -70,6 +70,7 @@ namespace caliope {
 		//std::vector<VkImageView> views;
 
 		vulkan_image depth_attachment;
+		vulkan_image object_pick_attachment;
 
 		uint image_count;
 	} vulkan_swapchain;
@@ -149,17 +150,5 @@ namespace caliope {
 		std::vector<vulkan_command_buffer> command_buffers;
 		
 		std::vector<VkDescriptorImageInfo> batch_image_infos;
-
-		// TODO: TEMPORAL
-		vulkan_image color_object_pick_image;
-		VkRenderPass object_pick_pass;
-		VkFramebuffer object_pick_framebuffer;
-		glm::vec4 object_pick_render_area;
-		vulkan_shader object_pick_shader;
-		std::vector<vulkan_command_buffer> object_pick_command_buffers;
-		vulkan_buffer ssbo_pick_out;
-		void* ssbo_pick_out_mapped;
-		// TODO: END TEMPORAL
-
 	} vulkan_context;
 }
