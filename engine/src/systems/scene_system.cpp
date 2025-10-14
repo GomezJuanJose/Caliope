@@ -43,7 +43,7 @@ namespace caliope {
 	void scene_system_shutdown() {
 		// TODO: Unload all scenes and free resources
 
-		state_ptr->loaded_scenes.empty();
+		state_ptr->loaded_scenes.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}

@@ -48,7 +48,7 @@ namespace caliope {
 			destroy_shader(value.shader);
 		}
 
-		state_ptr->registered_shaders.empty();
+		state_ptr->registered_shaders.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}

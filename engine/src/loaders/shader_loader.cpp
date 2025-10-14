@@ -165,7 +165,7 @@ namespace caliope {
 		srd->vertex_attribute_definitions.clear();*/
 		resource->data.reset();
 		resource->data_size = 0;
-		resource->loader_name.empty();
+		resource->loader_name.clear();
 	}
 
 	resource_loader shader_resource_loader_create() {

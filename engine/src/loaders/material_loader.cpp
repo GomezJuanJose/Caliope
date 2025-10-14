@@ -76,7 +76,7 @@ namespace caliope {
 	void material_loader_unload(resource* resource) {
 		resource->data.reset();
 		resource->data_size = 0;
-		resource->loader_name.empty();
+		resource->loader_name.clear();
 	}
 
 	resource_loader material_resource_loader_create() {

@@ -1,5 +1,6 @@
 #include "audio_frontend.h"
 #include "core/logger.h"
+#include "core/cememory.h"
 #include "core/asserts.h"
 
 #include <miniaudio.h>
@@ -55,7 +56,6 @@ namespace caliope {
 			}
 		}
 
-		state_ptr->sounds.empty();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}

@@ -26,7 +26,7 @@ namespace caliope {
 	void binary_loader_unload(resource* resource) {
 		resource->data.reset();
 		resource->data_size = 0;
-		resource->loader_name.empty();
+		resource->loader_name.clear();
 	}
 
 	resource_loader binary_resource_loader_create() {

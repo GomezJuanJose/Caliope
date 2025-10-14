@@ -77,11 +77,11 @@ namespace caliope {
 			}
 		}
 
-		state_ptr->archetypes.empty();
-		state_ptr->entites_grouped_by_archetypes.empty();
-		state_ptr->enabled_entites_grouped_by_archetypes.empty();
-		state_ptr->disabled_entites_grouped_by_archetypes.empty();
-		state_ptr->reusable_entities_pool.empty();
+		state_ptr->archetypes.clear();
+		state_ptr->entites_grouped_by_archetypes.clear();
+		state_ptr->enabled_entites_grouped_by_archetypes.clear();
+		state_ptr->disabled_entites_grouped_by_archetypes.clear();
+		state_ptr->reusable_entities_pool = std::stack<uint>();
 		state_ptr.reset();
 	}
 	

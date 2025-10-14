@@ -48,7 +48,7 @@ namespace caliope {
 	void audio_loader_unload(resource* resource) {
 		resource->data.reset();
 		resource->data_size = 0;
-		resource->loader_name.empty();
+		resource->loader_name.clear();
 	}
 
 	resource_loader audio_resource_loader_create() {

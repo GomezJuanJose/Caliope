@@ -32,7 +32,7 @@ namespace caliope {
 			view.second.on_destroy(view.second);
 		}
 
-		state_ptr->registered_views.empty();
+		state_ptr->registered_views.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}

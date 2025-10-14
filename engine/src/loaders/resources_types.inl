@@ -171,14 +171,14 @@ namespace caliope {
 		alignas(4)	float shininess_sharpness;
 	} quad_properties;
 
-	// TODO: TEMPORAL
+
 	typedef struct pick_quad_properties {
 		alignas(16)	glm::mat4 model;
 		alignas(8)	std::array<glm::vec2, 4> texture_region;
 		alignas(4)	uint id;
 		alignas(4)	uint diffuse_index;
 	} pick_quad_properties;
-	// TODO: TEMPORAL
+
 
 	typedef struct quad_definition {
 		uint id;

@@ -51,7 +51,7 @@ namespace caliope {
 		stbi_image_free(pixels);
 		resource->data.reset();
 		resource->data_size = 0;
-		resource->loader_name.empty();
+		resource->loader_name.clear();
 	}
 
 	resource_loader image_resource_loader_create() {

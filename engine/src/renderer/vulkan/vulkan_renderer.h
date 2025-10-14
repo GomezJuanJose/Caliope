@@ -49,10 +49,4 @@ namespace caliope {
 
 	void vulkan_renderer_geometry_create(geometry& geometry, std::vector<vertex>& vertices, std::vector<uint16>& indices);
 	void vulkan_renderer_geometry_destroy(geometry& geometry);
-
-
-	//TODO: TEMPORAL
-	void pick_object(uint instance_count, std::vector<pick_quad_properties>& quads, geometry& geometry, glm::mat4& projection, glm::mat4& view);
-	void show_picked_obj();
-	//TODO: END TEMPORAL
 }

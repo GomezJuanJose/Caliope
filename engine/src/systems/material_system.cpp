@@ -41,7 +41,7 @@ namespace caliope {
 	void material_system_shutdown() {
 		destroy_material(state_ptr->default_material);
 
-		state_ptr->registered_materials.empty(); // Destroys all the materials and their pointers.
+		state_ptr->registered_materials.clear(); // Destroys all the materials and their pointers.
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}

@@ -26,7 +26,7 @@ namespace caliope {
 
 	void event_system_shutdown() {
 		for (int i = 0; i < event_system_code::MAX_EVENT_CODE; ++i) {
-			state_ptr->registered_events[i].empty();
+			state_ptr->registered_events[i].clear();
 		}
 		state_ptr.reset();
 	}

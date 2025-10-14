@@ -53,7 +53,7 @@ namespace caliope {
 		destroy_texture(state_ptr->default_specular_texture);
 		destroy_texture(state_ptr->default_normal_texture);
 
-		state_ptr->registered_textures.empty();
+		state_ptr->registered_textures.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}

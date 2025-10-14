@@ -26,7 +26,8 @@
 
 
 namespace caliope {
-
+	// This indicates the number of sets definined, for example if it has a descriptor set formed by an ubo(1), ssbo(1) and a sampler(1024). This variable will reserve two instances of this set, which means its number is multiplied by this value.
+	#define NUMBER_OF_DESCRIPTORS_SET 2
 
 	void recreate_swapchain();
 	void create_command_buffers();
@@ -336,7 +337,7 @@ namespace caliope {
 		VkFramebuffer vk_framebuffer = std::any_cast<VkFramebuffer>(target.internal_framebuffer);
 		vkDestroyFramebuffer(state_ptr->context.device.logical_device, vk_framebuffer, nullptr);
 		
-		target.attachments.empty();
+		target.attachments.clear();
 		
 		return true;
 	}
@@ -420,7 +421,7 @@ namespace caliope {
 
 		out_pass.internal_data = vk_pass;
 
-		attachments.empty();
+		attachments.clear();
 
 		return true;
 	}
@@ -790,10 +791,10 @@ namespace caliope {
 				}
 			}
 			if (found) {
-				pool_types_definition[pool_index].second += shader_config.descriptor_definitions[pool_index].count;
+				pool_types_definition[pool_index].second += (shader_config.descriptor_definitions[pool_index].count * NUMBER_OF_DESCRIPTORS_SET); // Multiplied by the number of sets that will need the pool
 			}
 			else {
-				pool_types_definition.push_back({ binding.descriptorType, binding.descriptorCount });
+				pool_types_definition.push_back({ binding.descriptorType, binding.descriptorCount * NUMBER_OF_DESCRIPTORS_SET });
 			}
 		}
 
@@ -857,7 +858,7 @@ namespace caliope {
 		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, vk_shader->descriptor_set_layout);
 		VkDescriptorSetAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		alloc_info.descriptorPool = vk_shader->descriptor_pool;
-		alloc_info.descriptorSetCount = 2;
+		alloc_info.descriptorSetCount = NUMBER_OF_DESCRIPTORS_SET;
 		alloc_info.pSetLayouts = layouts.data();
 
 		vk_shader->descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);

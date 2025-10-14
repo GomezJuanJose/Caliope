@@ -33,7 +33,7 @@ namespace caliope {
 	}
 
 	void sprite_animation_system_shutdown() {
-		state_ptr->registered_animations.empty();
+		state_ptr->registered_animations.clear();
 		state_ptr.reset();
 	}
 

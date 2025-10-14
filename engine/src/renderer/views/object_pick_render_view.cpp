@@ -50,8 +50,8 @@ namespace caliope {
 	}
 
 	void object_pick_render_view_on_destroy(render_view& self) {
-		state_ptr->batch_textures.empty();
-		state_ptr->pick_objects.empty();
+		state_ptr->batch_textures.clear();
+		state_ptr->pick_objects.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
 	}
@@ -83,7 +83,7 @@ namespace caliope {
 	}
 
 	bool object_pick_render_view_on_render(render_view& self, std::any& packet, uint render_target_index) {
-		state_ptr->pick_objects.empty();
+		state_ptr->pick_objects.clear();
 
 		//TODO: ADAPT IT TO THE PICK UP SHADER
 		render_view_object_pick_packet& object_pick_packet = std::any_cast<render_view_object_pick_packet>(packet);
