@@ -43,7 +43,7 @@ layout(binding = 3) uniform UniformBufferFragmentObject {
 }ubo_frag;
 
 
-vec4 calculate_point_light(point_light_definition light, vec3 material_diffuse_color, vec3 normal, vec3 frag_position, vec3 view_direction);
+vec3 calculate_point_light(point_light_definition light, vec3 material_diffuse_color, vec3 normal, vec3 frag_position, vec3 view_direction);
 
 void main(){
 	vec3 normal = in_data_transfer.normal;
@@ -65,11 +65,11 @@ void main(){
 
 	// Calculates light sources
 	for(int i = 0; i < ubo_frag.number_of_lights; ++i){
-		outColor.rgb += calculate_point_light(ubo_frag.point_lights[i], in_data_transfer.diffuse_color, normal, in_data_transfer.frag_position, view_direction).rgb;
+		outColor.rgb += calculate_point_light(ubo_frag.point_lights[i], in_data_transfer.diffuse_color, normal, in_data_transfer.frag_position, view_direction);
 	}
 }
 
-vec4 calculate_point_light(point_light_definition light, vec3 material_diffuse_color, vec3 normal, vec3 frag_position, vec3 view_direction){
+vec3 calculate_point_light(point_light_definition light, vec3 material_diffuse_color, vec3 normal, vec3 frag_position, vec3 view_direction){
 	vec3 light_direction = normalize(light.position.xyz - frag_position);
 	float diff = max(dot(normal, light_direction), 0.0);
 
@@ -96,5 +96,5 @@ vec4 calculate_point_light(point_light_definition light, vec3 material_diffuse_c
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-	return vec4(ambient + diffuse + specular, diff_samp.a);
+	return ambient + diffuse + specular;
 }
