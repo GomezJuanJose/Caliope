@@ -26,7 +26,7 @@ namespace caliope {
 	} uniform_fragment_buffer_object;
 
 	typedef struct world_view_state {
-		std::vector<quad_properties> quads;
+		std::vector<shader_quad_properties> quads;
 		std::vector<texture*> batch_textures;
 
 		uint binded_textures_count;
@@ -210,7 +210,7 @@ namespace caliope {
 					texture_id++;
 				}
 
-				quad_properties sp;
+				shader_quad_properties sp;
 				sp.model = transform_get_world(sprite.transform);
 				sp.diffuse_color = mat->diffuse_color;
 				sp.id = sprite.id;
@@ -235,7 +235,7 @@ namespace caliope {
 
 			renderer_set_descriptor_sampler(state_ptr->batch_textures, 1, *shader);
 
-			renderer_set_descriptor_ssbo(state_ptr->quads.data(), sizeof(quad_properties) * number_of_instances, 2, *shader, 2);
+			renderer_set_descriptor_ssbo(state_ptr->quads.data(), sizeof(shader_quad_properties) * number_of_instances, 2, *shader, 2);
 
 			uniform_fragment_buffer_object ubo_frag;
 			ubo_frag.ambient_color = world_packet.ambient_color;

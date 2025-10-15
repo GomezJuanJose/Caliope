@@ -138,6 +138,11 @@ namespace caliope{
 
 			uint render_target_index = state_ptr->backend.window_image_index_get();
 
+			if (state_ptr->is_resizing == true) {
+				generate_render_targets();
+				state_ptr->is_resizing = false;
+			}
+
 			for(uint index = 0; index < packets.size(); ++index){
 				render_view_system_on_render(packets[index].view_type, packets[index].view_packet, render_target_index);
 			}
@@ -145,11 +150,6 @@ namespace caliope{
 			if (!state_ptr->backend.end_frame(delta_time)) {
 				CE_LOG_ERROR("renderer_end_frame failed. Application shutting down");
 				return false;
-			}
-
-			if (state_ptr->is_resizing == true) {
-				generate_render_targets();
-				state_ptr->is_resizing = false;
 			}
 		}
 

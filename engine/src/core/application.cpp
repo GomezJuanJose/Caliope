@@ -136,8 +136,8 @@ namespace caliope {
 		render_view_world_config world_config;
 		world_config.window_width = renderer_config.window_width;
 		world_config.window_height = renderer_config.window_height;
-		world_config.max_number_quads = 10000;
-		world_config.max_textures_per_batch = 400;
+		world_config.max_number_quads = config.maximum_number_entities_per_frame;
+		world_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
 
 		render_view world_view;
 		world_view.name = "world_view";
@@ -150,8 +150,8 @@ namespace caliope {
 		render_view_pick_config object_pick_config;
 		object_pick_config.window_width = renderer_config.window_width;
 		object_pick_config.window_height = renderer_config.window_height;
-		object_pick_config.max_number_quads = 10000;
-		object_pick_config.max_textures_per_batch = 400;
+		object_pick_config.max_number_quads = config.maximum_number_entities_per_frame;
+		object_pick_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
 
 		render_view object_pick_view;
 		object_pick_view.name = "object_pick_view";

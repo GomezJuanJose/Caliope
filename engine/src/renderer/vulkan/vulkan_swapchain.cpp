@@ -217,7 +217,7 @@ namespace caliope {
 
 
 	void destroy(vulkan_context* context, vulkan_swapchain* swapchain) {
-		vkDeviceWaitIdle(context->device.logical_device);
+		VK_CHECK(vkDeviceWaitIdle(context->device.logical_device));
 
 		vulkan_image_destroy(*context, swapchain->depth_attachment);
 		vulkan_image_destroy(*context, swapchain->object_pick_attachment);

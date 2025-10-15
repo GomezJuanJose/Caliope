@@ -150,12 +150,12 @@ namespace caliope {
 	}
 
 	void vulkan_renderer_backend_stop() {
-		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
+		VK_CHECK(vkDeviceWaitIdle(state_ptr->context.device.logical_device));
 	}
 
 	void vulkan_renderer_backend_shutdown() {
 
-		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
+		VK_CHECK(vkDeviceWaitIdle(state_ptr->context.device.logical_device));
 
 		state_ptr->descriptor_buffer_infos.clear();
 		state_ptr->descriptor_writes.clear();
@@ -239,13 +239,9 @@ namespace caliope {
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
 
-		// TODO: Refactor on a view system
-		//submit_info.commandBufferCount = 2;
 		submit_info.commandBufferCount = 1;
-		//std::array<VkCommandBuffer, 2> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, state_ptr->context.object_pick_command_buffers[state_ptr->context.current_frame].handle };
 		std::array<VkCommandBuffer, 1> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle};
 		submit_info.pCommandBuffers = cbs.data();
-		// TODO: END TODO
 
 		VkSemaphore signal_sempahores[] = { state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame] };
 		submit_info.signalSemaphoreCount = 1;
@@ -940,7 +936,7 @@ namespace caliope {
 			glfwWaitEvents();
 		}
 
-		vkDeviceWaitIdle(state_ptr->context.device.logical_device);
+		VK_CHECK(vkDeviceWaitIdle(state_ptr->context.device.logical_device));
 
 		vulkan_swapchain_recreate(state_ptr->context, state_ptr->context.swapchain);
 		create_command_buffers();

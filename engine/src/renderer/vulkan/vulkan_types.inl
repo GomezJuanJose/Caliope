@@ -10,7 +10,7 @@
 #define VK_CHECK(expr)								\
 	{												\
 		if (expr != VK_SUCCESS) {					\
-			CE_LOG_FATAL("Vulkan check failed");	\
+			CE_LOG_FATAL("Vulkan check failed : %s (%s : %d)", __func__, __FILE__, __LINE__);	\
 			CE_ASSERT(expr);						\
 		}											\
 	}

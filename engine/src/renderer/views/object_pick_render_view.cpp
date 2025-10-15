@@ -24,7 +24,7 @@ namespace caliope {
 
 
 	typedef struct object_pick_view_state {
-		std::vector<pick_quad_properties> pick_objects;
+		std::vector<shader_pick_quad_properties> pick_objects;
 		std::vector<texture*> batch_textures;
 
 		uint binded_textures_count;
@@ -41,6 +41,7 @@ namespace caliope {
 		render_view_pick_config& internal_config = std::any_cast<render_view_pick_config>(self.internal_config);
 		state_ptr = std::make_unique<object_pick_view_state>();
 
+		state_ptr->pick_objects.resize(internal_config.max_number_quads);
 		state_ptr->batch_textures.resize(internal_config.max_textures_per_batch);
 
 		state_ptr->binded_textures_count = 0;
@@ -83,7 +84,6 @@ namespace caliope {
 	}
 
 	bool object_pick_render_view_on_render(render_view& self, std::any& packet, uint render_target_index) {
-		state_ptr->pick_objects.clear();
 
 		//TODO: ADAPT IT TO THE PICK UP SHADER
 		render_view_object_pick_packet& object_pick_packet = std::any_cast<render_view_object_pick_packet>(packet);
@@ -109,7 +109,7 @@ namespace caliope {
 		for (auto [shader_name, sprites] : object_pick_packet.sprite_definitions) {
 
 			renderer_shader_use(*shader);
-
+			uint instance_index = sprites.size() - 1;
 			uint number_of_instances = 0;
 			uint texture_id = 0;
 
@@ -202,14 +202,15 @@ namespace caliope {
 					texture_id++;
 				}
 
-				pick_quad_properties psp;
+				shader_pick_quad_properties psp;
 				psp.model = transform_get_world(sprite.transform);
 				psp.id = sprite.id;
 				psp.diffuse_index = diffuse_id;
 				psp.texture_region = sprite.texture_region;
-				state_ptr->pick_objects.insert(state_ptr->pick_objects.begin(), psp);
+				state_ptr->pick_objects.at(instance_index) = psp;
 
 				number_of_instances++;
+				instance_index--;
 				//}
 				sprites.pop();
 			}
@@ -221,7 +222,7 @@ namespace caliope {
 			ubo_vertex.view_position = object_pick_packet.world_camera->position;
 			renderer_set_descriptor_ubo(&ubo_vertex, sizeof(uniform_vertex_buffer_object), 0, *shader, 0);
 			
-			renderer_set_descriptor_ssbo(state_ptr->pick_objects.data(), sizeof(pick_quad_properties)* number_of_instances, 1, *shader, 1);
+			renderer_set_descriptor_ssbo(state_ptr->pick_objects.data(), sizeof(shader_pick_quad_properties)* number_of_instances, 1, *shader, 1);
 			renderer_set_descriptor_ssbo(0, sizeof(ssbo_object_picking), 2, *shader, 2);
 			
 			renderer_set_descriptor_sampler(state_ptr->batch_textures, 3, *shader);// TODO: Reuse the already existing textures from the world view, to avoid to do the internal for loop of this function
@@ -241,7 +242,6 @@ namespace caliope {
 		renderer_get_descriptor_ssbo(&data, sizeof(ssbo_object_picking), 2, *shader, 2);
 		CE_LOG_INFO("%d", data.id);
 
-		state_ptr->pick_objects.clear();
 
 		return true;
 	}
