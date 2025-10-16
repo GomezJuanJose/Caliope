@@ -66,6 +66,8 @@ namespace caliope {
 		VkSwapchainKHR handle;
 
 		std::vector<vulkan_image> images;
+		std::vector<VkSemaphore> semaphores;
+
 		//std::vector<VkImage> images;
 		//std::vector<VkImageView> views;
 
@@ -144,7 +146,6 @@ namespace caliope {
 		vulkan_swapchain swapchain;
 
 		std::vector<VkSemaphore> image_available_semaphores;
-		std::vector<VkSemaphore> render_finished_semaphores;
 		std::vector<VkFence> in_flight_fences;
 
 		std::vector<vulkan_command_buffer> command_buffers;

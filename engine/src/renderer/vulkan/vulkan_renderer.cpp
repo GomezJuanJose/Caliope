@@ -50,8 +50,8 @@ namespace caliope {
 			return false;
 		}
 		state_ptr->context.image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		state_ptr->context.render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		state_ptr->context.in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+
 
 
 		// Create vulkan instancce
@@ -141,8 +141,13 @@ namespace caliope {
 		fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 		for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.image_available_semaphores[i]));
-			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.render_finished_semaphores[i]));
 			VK_CHECK(vkCreateFence(state_ptr->context.device.logical_device, &fence_info, nullptr, &state_ptr->context.in_flight_fences[i]));
+		}
+
+		state_ptr->context.swapchain.semaphores.resize(state_ptr->context.swapchain.image_count);
+		for (uint i = 0; i < state_ptr->context.swapchain.image_count; ++i) {
+			VK_CHECK(vkCreateSemaphore(state_ptr->context.device.logical_device, &semaphore_info, nullptr, &state_ptr->context.swapchain.semaphores[i]));
+
 		}
 
 		CE_LOG_INFO("Vulkan backend initialized.");
@@ -162,7 +167,6 @@ namespace caliope {
 
 		for (uint i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.image_available_semaphores[i], nullptr);
-			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.render_finished_semaphores[i], nullptr);
 			vkDestroyFence(state_ptr->context.device.logical_device, state_ptr->context.in_flight_fences[i], nullptr);
 		}
 
@@ -170,6 +174,8 @@ namespace caliope {
 			if (state_ptr->context.command_buffers[i].handle) {
 				vulkan_command_buffer_free(state_ptr->context, state_ptr->context.device.command_pool, state_ptr->context.command_buffers[i]);
 			}
+			vkDestroySemaphore(state_ptr->context.device.logical_device, state_ptr->context.swapchain.semaphores[i], nullptr);
+
 		}
 
 		vulkan_swapchain_destroy(state_ptr->context, state_ptr->context.swapchain);
@@ -192,7 +198,7 @@ namespace caliope {
 
 	bool vulkan_renderer_begin_frame(float delta_time) {
 		
-		vkWaitForFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame], VK_TRUE, UINT64_MAX);
+		VK_CHECK(vkWaitForFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame], VK_TRUE, UINT64_MAX));
 
 		VkResult result = vulkan_swapchain_acquire_next_image_index(state_ptr->context, state_ptr->context.swapchain, UINT64_MAX, state_ptr->context.image_available_semaphores[state_ptr->context.current_frame], VK_NULL_HANDLE, state_ptr->context.image_index);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -203,6 +209,7 @@ namespace caliope {
 			CE_LOG_FATAL("vulkan_renderer_begin_frame failed to acquire swapchain image");
 			return false;
 		}
+
 
 		
 		vkResetCommandBuffer(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle, 0);
@@ -230,7 +237,7 @@ namespace caliope {
 
 		VK_CHECK(vkEndCommandBuffer(state_ptr->context.command_buffers[state_ptr->context.current_frame].handle));
 
-		vkResetFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame]);
+		VK_CHECK(vkResetFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame]));
 
 		VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 		VkSemaphore wait_semaphores[] = { state_ptr->context.image_available_semaphores[state_ptr->context.current_frame] };
@@ -243,12 +250,12 @@ namespace caliope {
 		std::array<VkCommandBuffer, 1> cbs = { state_ptr->context.command_buffers[state_ptr->context.current_frame].handle};
 		submit_info.pCommandBuffers = cbs.data();
 
-		VkSemaphore signal_sempahores[] = { state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame] };
+		VkSemaphore signal_sempahores[] = { state_ptr->context.swapchain.semaphores[state_ptr->context.image_index] };
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_sempahores;
 		VK_CHECK(vkQueueSubmit(state_ptr->context.device.graphics_queue, 1, &submit_info, state_ptr->context.in_flight_fences[state_ptr->context.current_frame]));
 
-		VkResult result = vulkan_swapchain_present(state_ptr->context, state_ptr->context.swapchain, state_ptr->context.device.presentation_queue, state_ptr->context.render_finished_semaphores[state_ptr->context.current_frame], state_ptr->context.image_index);
+		VkResult result = vulkan_swapchain_present(state_ptr->context, state_ptr->context.swapchain, state_ptr->context.device.presentation_queue, state_ptr->context.swapchain.semaphores[state_ptr->context.image_index], state_ptr->context.image_index);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || state_ptr->context.framebuffer_resized) {
 			recreate_swapchain();
 			state_ptr->context.framebuffer_resized = false;

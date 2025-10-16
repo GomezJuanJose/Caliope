@@ -202,7 +202,7 @@ namespace caliope {
 				state_ptr->is_running = false;
 			}
 
-			if (!state_ptr->is_suspended) {
+			if (!state_ptr->is_suspended && state_ptr->is_running) {
 				float current_time = platform_system_get_time();
 				float delta_time = current_time - state_ptr->last_frame_time;
 				state_ptr->last_frame_time = current_time;
