@@ -200,12 +200,14 @@ namespace caliope {
 		
 		VK_CHECK(vkWaitForFences(state_ptr->context.device.logical_device, 1, &state_ptr->context.in_flight_fences[state_ptr->context.current_frame], VK_TRUE, UINT64_MAX));
 
-		VkResult result = vulkan_swapchain_acquire_next_image_index(state_ptr->context, state_ptr->context.swapchain, UINT64_MAX, state_ptr->context.image_available_semaphores[state_ptr->context.current_frame], VK_NULL_HANDLE, state_ptr->context.image_index);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		if (state_ptr->context.framebuffer_resized) {
 			recreate_swapchain();
-			return true;
+			state_ptr->context.framebuffer_resized = false;
+			return false;
 		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+
+		VkResult result = vulkan_swapchain_acquire_next_image_index(state_ptr->context, state_ptr->context.swapchain, UINT64_MAX, state_ptr->context.image_available_semaphores[state_ptr->context.current_frame], VK_NULL_HANDLE, state_ptr->context.image_index);
+		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 			CE_LOG_FATAL("vulkan_renderer_begin_frame failed to acquire swapchain image");
 			return false;
 		}
@@ -529,7 +531,7 @@ namespace caliope {
 	{
 		vulkan_shader* vk_shader = std::any_cast<vulkan_shader>(&shader.internal_data);
 
-		if (data != 0 || data != nullptr) {
+		if ( data != nullptr) {
 			copy_memory(vk_shader->descriptor_buffer_maps[descriptor_buffer_index], data, data_size);
 		}
 
