@@ -92,9 +92,9 @@ namespace caliope {
 		glm::vec2 scissor_extent;
 		glm::vec2 scissor_offset;
 
-		std::tie(cursor_x, cursor_y) = platform_system_get_cursor_position();
-		scissor_offset.x = cursor_x > 0 ? cursor_x : 0;
-		scissor_offset.y = cursor_y > 0 ? cursor_y : 0;
+		glm::vec2 cursor_position = platform_system_get_cursor_position();
+		scissor_offset.x = cursor_position.x > 0 ? cursor_position.x : 0;
+		scissor_offset.y = cursor_position.y > 0 ? cursor_position.y : 0;
 		scissor_extent = { 1,1 };
 
 		if (!renderer_renderpass_begin(self.renderpass, render_target_index, scissor_extent, scissor_offset)) {

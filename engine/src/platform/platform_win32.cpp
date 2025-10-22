@@ -124,7 +124,7 @@ namespace caliope {
 		SetConsoleTextAttribute(console_handle, levels[3]);
 	}
 
-	std::tuple<double, double> platform_system_get_cursor_position() {// TODO: use vec2?
+	glm::vec2 platform_system_get_cursor_position() {
 		return { state_ptr->cursor_pos_x, state_ptr->cursor_pos_y };
 	}
 
