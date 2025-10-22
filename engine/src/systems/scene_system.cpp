@@ -122,8 +122,8 @@ namespace caliope {
 			return;
 		}
 		
-		for (uint entity : state_ptr->loaded_scenes.at(name).entities) {
-			scene_system_destroy_entity(name, entity);
+		while (!state_ptr->loaded_scenes.at(name).entities.empty()) {
+			scene_system_destroy_entity(name, state_ptr->loaded_scenes.at(name).entities.front());
 		}
 
 		state_ptr->loaded_scenes.erase(name);
@@ -201,15 +201,18 @@ namespace caliope {
 			return;
 		}
 
-
 		uint entity_scene_index = state_ptr->entity_index_scene.at(entity);
 		state_ptr->loaded_scenes.at(name).entities.erase(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index);
 		ecs_system_delete_entity(entity);
 		
-		uint last_entity = state_ptr->loaded_scenes.at(name).entities.back();
-		state_ptr->loaded_scenes.at(name).entities.insert(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index, last_entity);
-		state_ptr->loaded_scenes.at(name).entities.pop_back();
-		state_ptr->entity_index_scene[last_entity] = entity_scene_index;
+
+		if (state_ptr->loaded_scenes.at(name).entities.size() >= 1) {
+			uint last_entity = state_ptr->loaded_scenes.at(name).entities.back();
+			state_ptr->loaded_scenes.at(name).entities.pop_back();
+			state_ptr->loaded_scenes.at(name).entities.insert(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index, last_entity);
+			state_ptr->entity_index_scene[last_entity] = entity_scene_index;
+		}
+		
 		state_ptr->entity_index_scene.erase(entity);
 	}
 
