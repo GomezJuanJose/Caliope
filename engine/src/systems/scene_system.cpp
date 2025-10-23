@@ -268,6 +268,16 @@ namespace caliope {
 			quad_definition quad_definition;
 			quad_definition.id = sprites_animation[entity_index];
 
+			material_animation_component* anim_comp = (material_animation_component*)ecs_system_get_component_data(sprites_animation[entity_index], MATERIAL_ANIMATION_COMPONENT, size);
+			sprite_frame* frame = sprite_animation_system_acquire_frame(std::string(anim_comp->animation_name.data()), delta_time);
+			if (frame == nullptr) {
+				continue;
+			}
+
+			quad_definition.material_name = frame->material_name;
+			quad_definition.z_order = anim_comp->z_order;
+			quad_definition.texture_region = frame->texture_region;
+
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites_animation[entity_index], TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
@@ -275,11 +285,6 @@ namespace caliope {
 			transform_set_position(transform, tran_comp->position);
 			quad_definition.transform = transform;	
 
-			material_animation_component* anim_comp = (material_animation_component*)ecs_system_get_component_data(sprites_animation[entity_index], MATERIAL_ANIMATION_COMPONENT, size);
-			sprite_frame& frame = sprite_animation_system_acquire_frame(std::string(anim_comp->animation_name.data()), delta_time);
-			quad_definition.material_name = frame.material_name;
-			quad_definition.z_order = anim_comp->z_order;
-			quad_definition.texture_region = frame.texture_region;
 
 			quads_data.push_back(quad_definition);
 		}

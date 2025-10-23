@@ -1,0 +1,30 @@
+# Animation config
+
+name=witch_idle
+loop=true
+play_on_start=true
+frames_per_second=4.0
+
+# NOTE: Indicates the number of rows and columns from will iterate the spritesheet
+number_of_rows=5
+number_of_columns=1
+
+# NOTE: 0 is considered as the first frame
+starting_row=0 
+starting_column=0
+
+# NOTE: To specify each frame define the material and region used in each one 
+material=spritesheet
+grid_region=32.0 48.0
+
+material=spritesheet
+grid_region=32.0 48.0
+
+material=spritesheet
+grid_region=32.0 48.0
+
+material=spritesheet
+grid_region=32.0 48.0
+
+material=spritesheet
+grid_region=32.0 48.0

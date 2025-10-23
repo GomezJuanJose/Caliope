@@ -29,21 +29,7 @@ void intialize_sprite_entities() {
 	caliope::texture_system_adquire(std::string("B_witch_idle"));
 	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
 
-	caliope::sprite_animation_config spritesheet_animation;
-	spritesheet_animation.name = "spritesheet_animation";
-	std::vector<caliope::sprite_frame> frames;
-	for (uint i = 0; i < 5; ++i) {
-		caliope::sprite_frame frame;
-		frame.material_name = "spritesheet";
-		frame.texture_region = caliope::texture_system_calculate_grid_region_coordinates(*caliope::material_system_adquire(std::string("spritesheet"))->diffuse_texture, { 32.0f, 48.0f }, i, 0);
-		frames.push_back(frame);
-	}
-	spritesheet_animation.frames = frames;
-	spritesheet_animation.is_looping = true;
-	spritesheet_animation.is_playing = true;
-	spritesheet_animation.frames_per_second = 4.0f;
-
-	caliope::sprite_animation_system_register(spritesheet_animation);
+	caliope::sprite_animation_system_register(std::string("witch_idle"));
 
 
 	caliope::transform_component t1;
@@ -154,7 +140,7 @@ void intialize_sprite_entities() {
 
 
 	caliope::material_animation_component sac1;
-	sac1.animation_name = { "spritesheet_animation" };
+	sac1.animation_name = { "witch_idle" };
 	sac1.z_order = 2;
 	std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::MATERIAL_ANIMATION_COMPONENT };
 	std::vector<void*> data = { &t8, &sac1 };

@@ -12,6 +12,7 @@ namespace caliope {
 	struct vertex_attribute_definition;
 	struct descriptor_definition;
 	struct descriptor_buffer_definition;
+	struct sprite_frame;
 
 	enum scene_state;
 	enum renderpass_type;
@@ -26,6 +27,7 @@ namespace caliope {
 		RESOURCE_TYPE_IMAGE,
 		RESOURCE_TYPE_SHADER,
 		RESOURCE_TYPE_MATERIAL,
+		RESOURCE_TYPE_SPRITE_ANIMATION,
 		RESOURCE_TYPE_AUDIO,
 		RESOURCE_TYPE_SCENE
 	} resource_type;
@@ -84,6 +86,23 @@ namespace caliope {
 		std::array<char, MAX_NAME_LENGTH> specular_texture_name;
 		std::array<char, MAX_NAME_LENGTH> normal_texture_name;
 	}material_resource_data;
+
+	typedef struct sprite_frame_resource_data {
+		std::string material_name;
+		glm::vec2 grid_size;
+	}sprite_frame_resource_data;
+
+	typedef struct sprite_animation_resource_data {
+		std::array<char, MAX_NAME_LENGTH> name;
+		bool is_looping;
+		bool is_playing;
+		float frames_per_second;
+		uint number_of_rows;
+		uint number_of_columns;
+		uint starting_row;
+		uint starting_column;
+		std::vector<sprite_frame_resource_data> frames_data;
+	}sprite_animation_resource_data;
 
 	typedef enum audio_file_type {
 		AUDIO_FILE_TYPE_SOUND_EFFECT,
@@ -157,6 +176,22 @@ namespace caliope {
 		texture* specular_texture;
 		texture* normal_texture;
 	}material;
+
+
+	typedef struct sprite_frame {
+		std::string material_name;
+		std::array<glm::vec2, 4> texture_region;
+	};
+
+	typedef struct sprite_animation {
+		std::string name;
+		std::vector<sprite_frame> frames;
+		bool is_looping;
+		bool is_playing;
+		float frames_per_second;
+		float accumulated_delta;
+		uint current_frame;
+	} sprite_animation;
 
 	// NOTE: Remember to always align the memory by 128 bits and always go from the higher size to the lowest
 	typedef struct shader_quad_properties {
