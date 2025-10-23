@@ -201,19 +201,29 @@ namespace caliope {
 			return;
 		}
 
-		uint entity_scene_index = state_ptr->entity_index_scene.at(entity);
-		state_ptr->loaded_scenes.at(name).entities.erase(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index);
-		ecs_system_delete_entity(entity);
-		
+		bool remove_last_entity = state_ptr->loaded_scenes.at(name).entities.back() == entity;
 
-		if (state_ptr->loaded_scenes.at(name).entities.size() >= 1) {
+		uint entity_scene_index = state_ptr->entity_index_scene.at(entity);
+		ecs_system_delete_entity(entity);
+
+
+		if (state_ptr->loaded_scenes.at(name).entities.size() > 1 && !remove_last_entity) {
+			state_ptr->loaded_scenes.at(name).entities.erase(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index);
+
 			uint last_entity = state_ptr->loaded_scenes.at(name).entities.back();
 			state_ptr->loaded_scenes.at(name).entities.pop_back();
 			state_ptr->loaded_scenes.at(name).entities.insert(state_ptr->loaded_scenes.at(name).entities.begin() + entity_scene_index, last_entity);
 			state_ptr->entity_index_scene[last_entity] = entity_scene_index;
 		}
+		else if (remove_last_entity) {
+			uint last_index = state_ptr->loaded_scenes.at(name).entities.size() - 1;
+			state_ptr->loaded_scenes.at(name).entities.erase(state_ptr->loaded_scenes.at(name).entities.begin() + last_index);
+		}
 		
 		state_ptr->entity_index_scene.erase(entity);
+
+		std::vector<uint> x = state_ptr->loaded_scenes.at(name).entities;
+
 	}
 
 	void scene_system_enable(std::string& name, bool enable) {
