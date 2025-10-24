@@ -62,6 +62,8 @@ namespace caliope {
 	}
 
 	sprite_frame* sprite_animation_system_acquire_frame(std::string& name, float delta_time) {
+		//TODO: If doesnt exists load it
+		
 		if (state_ptr->registered_animations.find(name) == state_ptr->registered_animations.end()) {
 			CE_LOG_ERROR("Animation with this name not exists : %s", name.c_str());
 			return nullptr;

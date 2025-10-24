@@ -13,14 +13,14 @@ namespace caliope {
 #define MAX_NAME_LENGTH 255
 
 	typedef struct material_component {
-		std::array<glm::vec2, 2> texture_region;
-		uint z_order;
 		std::array<char, MAX_NAME_LENGTH> material_name;
+		uint z_order;
+		std::array<glm::vec2, 2> texture_region;
 	} material_component;
 
 	typedef struct material_animation_component {
-		uint z_order;
 		std::array<char, MAX_NAME_LENGTH> animation_name;
+		uint z_order;
 	} material_animation_component;
 
 	typedef struct sound_emmiter_component {

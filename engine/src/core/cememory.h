@@ -8,7 +8,8 @@ namespace caliope {
 		MEMORY_TAG_UNKNOWN = 0,
 		MEMORY_TAG_NEW_OPERATOR,
 		MEMORY_TAG_ECS,
-		
+		MEMORY_TAG_LOADER,
+
 
 		MAX_MEMORY_TAGS
 	} memory_tag;

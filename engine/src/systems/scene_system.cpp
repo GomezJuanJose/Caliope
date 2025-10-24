@@ -64,55 +64,38 @@ namespace caliope {
 			CE_LOG_WARNING("scene_system_load scene already loaded or created a new one with that name, try to unload it first and load again");
 			return true;
 		}
-		
-	/*	resource r;
+
+		resource r;
 		if (!resource_system_load(name, RESOURCE_TYPE_SCENE, r)) {
-			CE_LOG_ERROR("scene_system_load couldnt load scene");
+			CE_LOG_ERROR("scene_system_load couldnt load file scene %s", name.c_str());
 			return false;
 		}
-		scene_resource_data* scene_config = &std::any_cast<scene_resource_data>(r.data);
-		scene scene;
-		scene.name = scene_config->name;
-		scene.is_enabled = enable_by_default;
-		
-		scene_system_create_empty(std::string(scene_config->name.data()), true);
+		scene_resource_data scene_config = std::any_cast<scene_resource_data>(r.data);
 
 
+		caliope::scene_system_create_empty(std::string(scene_config.name.data()), enable_by_default);
 
-		// Builds each entity stored in the scene, each entity data is stored in 3 differents vectors
-		// one for it's archetype, another for a vector wich contains each component data, and one vector
-		// with an array of component ids to know to wich component the data belongs to.
-		for (uint entity_index = 0; entity_index < scene_config->entities_count; ++entity_index) {
-			
-			std::vector<void*> component_data;
-			std::vector<component_id> components;
-				uint64 size;
-				// TODO: Refactor to a better parser!!!!
-				if (scene_config->entities_archetype[entity_index] == ARCHETYPE_SPRITE || scene_config->entities_archetype[entity_index] == ARCHETYPE_SPRITE_ANIMATION || scene_config->entities_archetype[entity_index] == ARCHETYPE_POINT_LIGHT) {
-					component_data.push_back(&scene_config->entities_transform[entity_index]);
-					components.push_back(TRANSFORM_COMPONENT);
-				}
 
-				if (scene_config->entities_archetype[entity_index] == ARCHETYPE_SPRITE ) {
-					component_data.push_back(&scene_config->entities_material[entity_index]);
-					components.push_back(MATERIAL_COMPONENT);
-				}
+		//TODO: BUILD ARCHETYPES FROM THE FILE IF NOT EXISTS
 
-				if (scene_config->entities_archetype[entity_index] == ARCHETYPE_SPRITE_ANIMATION) {
-					component_data.push_back(&scene_config->entities_animation[entity_index]);
-					components.push_back(MATERIAL_ANIMATION_COMPONENT);
-				}
+		for (uint entity_index = 0; entity_index < scene_config.archetypes.size(); ++entity_index) {
+			std::vector<caliope::component_id> components;
+			std::vector<void*> data;
 
-				if ( scene_config->entities_archetype[entity_index] == ARCHETYPE_POINT_LIGHT) {
-					component_data.push_back(&scene_config->entities_light[entity_index]);
-					components.push_back(POINT_LIGHT_COMPONENT);
-				}
+			for (uint component_index = 0; component_index < scene_config.components[entity_index].size(); ++component_index) {
+				components.push_back(scene_config.components[entity_index][component_index]);
+				transform_component* tran_comp = (transform_component*)scene_config.components_data[entity_index][component_index];
+				data.push_back(scene_config.components_data[entity_index][component_index]);
+			}
 
-			scene_system_instance_entity(std::string(scene_config->name.data()), scene_config->entities_archetype[entity_index], components, component_data);
+			caliope::scene_system_instance_entity(std::string(scene_config.name.data()), scene_config.archetypes[entity_index],
+				components,
+				data
+			);
 		}
 
-		resource_system_unload(r);*/
-		
+		resource_system_unload(r);
+
 		return true;
 	}
 
@@ -134,51 +117,6 @@ namespace caliope {
 			CE_LOG_WARNING("scene_system_save scene not found");
 			return false;
 		}
-		
-	/*
-		uint file_size = sizeof(scene_resource_data);
-		scene_resource_data* scn_data = (scene_resource_data*)allocate_memory(MEMORY_TAG_UNKNOWN, file_size);
-		zero_memory(scn_data, file_size);
-		strcpy(scn_data->name.data(), name.data()); // TODO: String library
-
-
-		// Iterates throught each entity of each archetype and gets its archetype, component_id and component data
-		for (uint entity : state_ptr->loaded_scenes.at(name).entities) {
-			archetype archtype = ecs_system_get_entity_archetype(entity);
-			scn_data->entities_archetype[scn_data->entities_count] = archtype;
-
-			
-			std::vector<component_id>& components = ecs_system_get_entity_components(entity);
-			for (uint i = 0; i < components.size(); ++i) {
-				uint64 component_size;
-				// TODO: Refactor to a better parser!!!!
-				switch (components[i]) {
-				case TRANSFORM_COMPONENT:
-					scn_data->entities_transform[entity] = *(transform_component*)ecs_system_get_component_data(entity, components[i], component_size);
-					break;
-				case MATERIAL_COMPONENT:
-					scn_data->entities_material[entity] = *(material_component*)ecs_system_get_component_data(entity, components[i], component_size);
-					break;
-				case MATERIAL_ANIMATION_COMPONENT:
-					scn_data->entities_animation[entity] = *(material_animation_component*)ecs_system_get_component_data(entity, components[i], component_size);
-					break;
-				case POINT_LIGHT_COMPONENT:
-					scn_data->entities_light[entity] = *(point_light_component*)ecs_system_get_component_data(entity, components[i], component_size);
-					break;
-				default:
-					break;
-				}
-			}
-			scn_data->entities_count += 1;
-		}
-
-
-		file_handle writer;
-		file_system_open(std::string("assets\\scenes\\" + name + ".cescene"), FILE_MODE_WRITE, writer);
-		file_system_write_bytes(writer, file_size, scn_data);
-		file_system_close(writer);
-		
-		free_memory(MEMORY_TAG_UNKNOWN, scn_data, file_size);*/
 
 		return true;
 	}

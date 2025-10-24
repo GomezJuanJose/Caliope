@@ -40,7 +40,7 @@ namespace caliope {
 
 
 			if (strings_equali(&field, &std::string("name"))) {
-				copy_memory(&sprite_anim_config.name, value.c_str(), MAX_NAME_LENGTH);
+				copy_memory(&sprite_anim_config.name, value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
 			}
 			else if(strings_equali(&field, &std::string("loop")))
 			{

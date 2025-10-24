@@ -123,23 +123,12 @@ namespace caliope {
 
 	typedef struct scene_resource_data {
 		std::array<char, MAX_NAME_LENGTH> name;
+		std::vector<archetype> archetypes;
+		std::vector<std::vector<component_id>> components;
+		std::vector<std::vector<void*>> components_data;
 
-
-		/*uint entities_count;
-		uint components_count;
-		std::array<archetype, 50> entities_archetype; // Entities in the scene
-		std::array<transform_component, 50> entities_transform; // The data of all components in the scene
-		std::array<material_component, 50> entities_material; // The data of all components in the scene
-		std::array<material_animation_component, 50> entities_animation; // The data of all components in the scene
-		std::array<point_light_component,50> entities_light; // The data of all components in the scene*/
-		
-		//void* entities_data;
-		//std::array<char, 2048> enitity_archetype;
-		//std::array<char,49152> entity_data;
-		//std::array<archetype, 500> entity_archetype;
-		//std::array<std::array<const char*,10>, 500> entity_data; // 10 its the number of components per entities
-		//std::array<std::array<component_id,10>, 500> entity_component_ids;
-	} scene_resource_data;
+		std::unordered_map<component_id, uint> components_sizes;
+	}scene_resource_data;
 
 
 

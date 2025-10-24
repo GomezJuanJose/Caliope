@@ -119,7 +119,8 @@ namespace caliope {
 		std::string string_tags[] = {
 			"MEMORY_TAG_UNKNOWN         ",
 			"MEMORY_TAG_NEW_OPERATOR    ",
-			"MEMORY_TAG_ECS             "
+			"MEMORY_TAG_ECS             ",
+			"MEMORY_TAG_LOADERS         "
 		};
 
 		for (int i = 0; i < MAX_MEMORY_TAGS; ++i) {

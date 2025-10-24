@@ -23,133 +23,6 @@
 #include <array>
 #include <vector>
 
-void intialize_sprite_entities() {
-
-
-	caliope::texture_system_adquire(std::string("B_witch_idle"));
-	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
-
-	caliope::sprite_animation_system_register(std::string("witch_idle"));
-
-
-	caliope::transform_component t1;
-	t1.position = glm::vec3(1.0f, 0.0f, 0.0f);
-	t1.scale = glm::vec3(1.0f, 0.5f, 1.0f);
-	t1.roll_rotation = 0.0f;
-
-
-	caliope::transform_component t2;
-	t2.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	t2.scale = glm::vec3(1.0f, 1.0f, 1.0f);
-	t2.roll_rotation = 0.0f;
-
-
-	caliope::transform_component t3;
-	t3.position = glm::vec3(-1.0f, 0.0f, 0.0f);
-	t3.scale = glm::vec3(1.0f, 1.0f, 1.0f);
-	t3.roll_rotation = 45.0f;
-
-
-	caliope::transform_component t4;
-	t4.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	t4.scale = glm::vec3(5.0f, 3.0f, 1.0f);
-	t4.roll_rotation = 0.0f;
-
-
-	caliope::transform_component t5;
-	t5.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	t5.scale = glm::vec3(0.5f, 0.5f, 1.0f);
-	t5.roll_rotation = 0.0f;
-
-
-	caliope::transform_component t6;
-	t6.position = glm::vec3(0.2f, 0.0f, 0.0f);
-	t6.scale = glm::vec3(0.5f, 0.5f, 1.0f);
-	t6.roll_rotation = 0.0f;
-
-
-	caliope::transform_component t7;
-	t7.position = glm::vec3(1.0f, 0.6f, 0.0f);
-	t7.scale = glm::vec3(0.25f, 0.5f, 1.0f);
-	t7.roll_rotation = 0.0f;
-
-
-	caliope::transform_component t8;
-	t8.position = glm::vec3(1.3f, 0.6f, 0.0f);
-	t8.scale = glm::vec3(0.25f, 0.5f, 1.0f);
-	t8.roll_rotation = 0.0f;
-
-
-	std::vector<caliope::transform_component> transforms = { t1, t3, t4, t2, t5, t6, t7, t8 };
-
-	caliope::material_component sc1;
-	sc1.material_name = { "character1" };
-	sc1.z_order = 1;
-	sc1.texture_region[0] = { 258.0f, 1644.0f };
-	sc1.texture_region[1] = {873.0f, 2096.0f};
-
-	caliope::material_component sc2;
-	sc2.material_name = { "character1" };
-	sc2.z_order = 1;
-	sc2.texture_region[0] = { 0.0f, 0.0f };
-	sc2.texture_region[1] = { 0.0f, 0.0f };
-
-	caliope::material_component sc3;
-	sc3.material_name = { "background" };
-	sc3.z_order = 0;
-	sc3.texture_region[0] = { 0.0f, 0.0f };
-	sc3.texture_region[1] = { 0.0f, 0.0f };
-
-	caliope::material_component sc4;
-	sc4.material_name = { "character2" };
-	sc4.z_order = 1;
-	sc4.texture_region[0] = { 0.0f, 0.0f };
-	sc4.texture_region[1] = { 0.0f, 0.0f };
-
-	caliope::material_component sc5;
-	sc5.material_name = { "transparency" };
-	sc5.z_order = 2;
-	sc5.texture_region[0] = { 0.0f, 0.0f };
-	sc5.texture_region[1] = { 0.0f, 0.0f };
-
-	caliope::material_component sc6;
-	sc6.material_name = { "transparency" };
-	sc6.z_order = 2;
-	sc6.texture_region[0] = { 0.0f, 0.0f };
-	sc6.texture_region[1] = { 0.0f, 0.0f };
-
-	caliope::material_component sc7;
-	sc7.material_name = { "spritesheet" };
-	sc7.z_order = 2;
-	sc7.texture_region[0] = { 0.0f, 0.0f };
-	sc7.texture_region[1] = { 32.0f, 48.0f };
-
-
-	std::vector<caliope::material_component> sprites = { sc1, sc2, sc3, sc4, sc5, sc6, sc7};
-
-	for (uint entity_index = 0; entity_index < 7; ++entity_index) {
-
-		std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::MATERIAL_COMPONENT };
-		std::vector<void*> data = { &transforms[entity_index] , &sprites[entity_index] };
-
-		caliope::scene_system_instance_entity(std::string("scene_test1"), caliope::ARCHETYPE_SPRITE, 
-			components,
-			data
-		);
-	}
-
-
-	caliope::material_animation_component sac1;
-	sac1.animation_name = { "witch_idle" };
-	sac1.z_order = 2;
-	std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::MATERIAL_ANIMATION_COMPONENT };
-	std::vector<void*> data = { &t8, &sac1 };
-	caliope::scene_system_instance_entity(std::string("scene_test1"), caliope::ARCHETYPE_SPRITE_ANIMATION,
-		components,
-		data
-	);
-}
-
 void initialize_sounds() {
 	caliope::sound_emmiter_component test_sound_emmiter;
 	caliope::sound_emmiter_component test_music_steeam_emmiter;
@@ -159,47 +32,22 @@ void initialize_sounds() {
 	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id, 0);
 }
 
-void initialize_lights() {
-	caliope::transform_component transform;
-	transform.position = { 0, 0, 1.0f };
-	caliope::point_light_component light;
-	light.color = {0.4f, 0.2f, 0.0f, 1.0f};
-	light.radius = 10.0f;
-	light.constant = 1.0f;
-	light.linear = 0.35f;
-	light.quadratic = 0.44f;
-	std::vector<caliope::component_id> components = { caliope::TRANSFORM_COMPONENT, caliope::POINT_LIGHT_COMPONENT };
-	std::vector<void*> data = { &transform, &light };
-	caliope::scene_system_instance_entity(std::string("scene_test2"), caliope::ARCHETYPE_POINT_LIGHT,
-		components,
-		data
-	);
-
-	caliope::transform_component transform2;
-	transform2.position = { 0.0f, -0.5f, 0.1f };
-	caliope::point_light_component light2;
-	light2.color = { 0.0f, 0.0f, 1.0f, 1.0f };
-	light2.radius = 0.2f;
-	light2.constant = 1.0f;
-	light2.linear = 0.35f;
-	light2.quadratic = 0.44f;
-	data = { &transform2, &light2 };
-	caliope::scene_system_instance_entity(std::string("scene_test2"), caliope::ARCHETYPE_POINT_LIGHT,
-		components,
-		data
-	);
-}
 
 bool initialize_testbed(caliope::game_state& game_state) {
 	CE_LOG_INFO("Initialize testbed");
 
 	game_state.world_camera = caliope::camera_system_get_default();
 
-	caliope::scene_system_create_empty(std::string("scene_test1"), true);
-	caliope::scene_system_create_empty(std::string("scene_test2"), true);
+	caliope::texture_system_adquire(std::string("B_witch_idle"));
+	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
 
-	intialize_sprite_entities();
-	initialize_lights();
+	caliope::sprite_animation_system_register(std::string("witch_idle"));
+
+	caliope::scene_system_load(std::string("scene_test1"), true);
+	caliope::scene_system_load(std::string("scene_test2"), true);
+	//caliope::scene_system_create_empty(std::string("scene_test1"), true);
+	//caliope::scene_system_create_empty(std::string("scene_test2"), true);
+
 
 	initialize_sounds();
 

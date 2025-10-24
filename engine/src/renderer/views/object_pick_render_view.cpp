@@ -239,7 +239,8 @@ namespace caliope {
 		}
 
 		ssbo_object_picking data;
-		renderer_get_descriptor_ssbo(&data, sizeof(ssbo_object_picking), 2, *shader, 2);
+		data.id = -1;
+		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
 		CE_LOG_INFO("%d", data.id);
 
 

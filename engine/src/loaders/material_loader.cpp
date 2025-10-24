@@ -37,7 +37,7 @@ namespace caliope {
 
 
 			if (strings_equali(&field, &std::string("name"))) {
-				copy_memory(&mat_config.name, value.c_str(), MAX_NAME_LENGTH);
+				copy_memory(&mat_config.name, value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
 			}
 			else if (strings_equali(&field, &std::string("shader_name"))) {
 				copy_memory(&mat_config.shader_name, value.c_str(), MAX_NAME_LENGTH);
