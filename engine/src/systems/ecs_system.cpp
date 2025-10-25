@@ -15,7 +15,7 @@ namespace caliope {
 
 	typedef struct archetype_data {
 		std::vector<std::vector<void*>> component_pool;
-		std::vector<uint> component_sizes;
+		std::vector<uint> component_sizes; // TODO: Can be moved into the ecs_system_state due each component is unique using a unordered_map, is more o less efficient?
 		std::vector<component_id> components_tracker; // Has the information about where is stored each component
 		uint entity_count;
 	} archetype_data;
@@ -25,6 +25,8 @@ namespace caliope {
 		std::unordered_map<uint, ecs_entity_entry> entities_tracker; // Has the information about the archetype of the component and where is stored
 		std::unordered_map<archetype, std::vector<uint>> entites_grouped_by_archetypes;
 		std::unordered_map<archetype, std::vector<uint>> enabled_entites_grouped_by_archetypes;
+
+		std::unordered_map<component_id, std::vector<component_data_type>> components_data_types;
 
 		std::stack<uint> reusable_entities_pool;
 		uint system_entities_count;
@@ -46,15 +48,24 @@ namespace caliope {
 		// Builtin archetypes
 		std::vector<uint> new_archetype_size = { sizeof(transform_component), sizeof(material_component) };
 		std::vector<component_id> new_archetype_id = {TRANSFORM_COMPONENT, MATERIAL_COMPONENT};
-		ecs_system_build_archetype(ARCHETYPE_SPRITE, new_archetype_id, new_archetype_size);
+		std::vector<std::vector<component_data_type>> sprite_components_data_types;
+		sprite_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		sprite_components_data_types.push_back({ COMPONENT_DATA_TYPE_STRING,COMPONENT_DATA_TYPE_UINT,COMPONENT_DATA_TYPE_VEC4 });
+		ecs_system_build_archetype(ARCHETYPE_SPRITE, new_archetype_id, new_archetype_size, sprite_components_data_types);
 
 		new_archetype_size = { sizeof(transform_component), sizeof(material_animation_component) };
 		new_archetype_id = { TRANSFORM_COMPONENT, MATERIAL_ANIMATION_COMPONENT };
-		ecs_system_build_archetype(ARCHETYPE_SPRITE_ANIMATION, new_archetype_id, new_archetype_size);
+		std::vector<std::vector<component_data_type>> sprite_animation_components_data_types;
+		sprite_animation_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		sprite_animation_components_data_types.push_back({ COMPONENT_DATA_TYPE_STRING,COMPONENT_DATA_TYPE_UINT });
+		ecs_system_build_archetype(ARCHETYPE_SPRITE_ANIMATION, new_archetype_id, new_archetype_size, sprite_animation_components_data_types);
 
 		new_archetype_size = { sizeof(transform_component), sizeof(point_light_component) };
 		new_archetype_id = { TRANSFORM_COMPONENT, POINT_LIGHT_COMPONENT };
-		ecs_system_build_archetype(ARCHETYPE_POINT_LIGHT, new_archetype_id, new_archetype_size);
+		std::vector<std::vector<component_data_type>> point_light_components_data_types;
+		point_light_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		point_light_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC4, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT });
+		ecs_system_build_archetype(ARCHETYPE_POINT_LIGHT, new_archetype_id, new_archetype_size, point_light_components_data_types);
 
 		CE_LOG_INFO("ECS system initialized.");
 
@@ -225,7 +236,13 @@ namespace caliope {
 		entity_entry.is_enabled = enabled;
 	}
 
-	void ecs_system_build_archetype(archetype archetype, std::vector<component_id>& components_id, std::vector<uint>& components_sizes) {
+	void ecs_system_build_archetype(archetype archetype, std::vector<component_id>& components_id, std::vector<uint>& components_sizes, std::vector<std::vector<component_data_type>>& components_data_types) {
+		
+		if (components_id.empty() || components_sizes.empty() || components_data_types.empty()) {
+			CE_LOG_WARNING("Couldn't build the archetype due to missing information from the components");
+			return;
+		}
+		
 		archetype_data arch_data;
 		for (uint i = 0; i < components_sizes.size(); ++i) {
 			arch_data.component_sizes.push_back(components_sizes[i]);
@@ -234,6 +251,12 @@ namespace caliope {
 			std::vector<void*> component_pool;
 			arch_data.component_pool.push_back(component_pool);
 
+			std::vector<component_data_type> component_types;
+			for (uint j = 0; j < components_data_types[i].size(); ++j) {
+				component_types.push_back(components_data_types[i][j]);
+			}
+
+			state_ptr->components_data_types.insert({ components_id[i], component_types });
 		}
 		arch_data.entity_count = 0;
 		state_ptr->archetypes.insert(state_ptr->archetypes.begin() + archetype, arch_data);
@@ -265,8 +288,14 @@ namespace caliope {
 		ecs_entity_entry entity_entry = state_ptr->entities_tracker.at(entity);
 		return state_ptr->archetypes[entity_entry.archetype].components_tracker;
 	}
-	 archetype ecs_system_get_entity_archetype(uint entity) {
+
+	archetype ecs_system_get_entity_archetype(uint entity) {
 		ecs_entity_entry entity_entry = state_ptr->entities_tracker.at(entity);
 		return entity_entry.archetype;
+	}
+	
+	std::vector<component_data_type>& ecs_system_get_component_data_types(component_id component)
+	{
+		 return state_ptr->components_data_types.at(component);
 	}
 }

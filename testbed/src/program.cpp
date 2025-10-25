@@ -44,6 +44,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::sprite_animation_system_register(std::string("witch_idle"));
 
 	caliope::scene_system_load(std::string("scene_test1"), true);
+	caliope::scene_system_save(std::string("scene_test1"));
 	caliope::scene_system_load(std::string("scene_test2"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test1"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test2"), true);
