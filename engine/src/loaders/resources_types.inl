@@ -125,6 +125,7 @@ namespace caliope {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::vector<archetype> archetypes;
 		std::vector<std::vector<component_id>> components;
+		std::vector< std::vector<std::vector<component_data_type>>> components_data_types; // Note: entity_id < component_id < data_type > > >
 		std::vector<std::vector<void*>> components_data;
 
 		std::unordered_map<component_id, uint> components_sizes;

@@ -46,7 +46,7 @@ namespace caliope {
 		}
 		
 		// Builtin archetypes
-		std::vector<uint> new_archetype_size = { sizeof(transform_component), sizeof(material_component) };
+		std::vector<uint> new_archetype_size = {sizeof(transform_component), sizeof(material_component)};
 		std::vector<component_id> new_archetype_id = {TRANSFORM_COMPONENT, MATERIAL_COMPONENT};
 		std::vector<std::vector<component_data_type>> sprite_components_data_types;
 		sprite_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
@@ -243,6 +243,10 @@ namespace caliope {
 			return;
 		}
 		
+		if (state_ptr->entites_grouped_by_archetypes.find(archetype) != state_ptr->entites_grouped_by_archetypes.end()) {
+			return;
+		}
+
 		archetype_data arch_data;
 		for (uint i = 0; i < components_sizes.size(); ++i) {
 			arch_data.component_sizes.push_back(components_sizes[i]);

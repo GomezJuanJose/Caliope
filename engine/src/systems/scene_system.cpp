@@ -76,15 +76,32 @@ namespace caliope {
 		caliope::scene_system_create_empty(std::string(scene_config.name.data()), enable_by_default);
 
 
-		//TODO: BUILD ARCHETYPES FROM THE FILE IF NOT EXISTS IN THIS FUNCTION??
-
 		for (uint entity_index = 0; entity_index < scene_config.archetypes.size(); ++entity_index) {
+
+			// Tries to build the archetype if not exists
+			std::vector<uint> new_archetype_size;
+			std::vector<component_id> new_archetype_id;
+			std::vector<std::vector<component_data_type>> sprite_components_data_types;
+
+			for (uint component_index = 0; component_index < scene_config.components[entity_index].size(); ++component_index) {
+				component_id comp_id = scene_config.components[entity_index][component_index];
+				new_archetype_id.push_back(comp_id);
+				new_archetype_size.push_back(scene_config.components_sizes.at(comp_id));
+
+				sprite_components_data_types.push_back(std::vector<component_data_type>());
+				for (uint component_data_types_index = 0; component_data_types_index < scene_config.components_data_types[entity_index][component_index].size(); ++component_data_types_index) {
+					sprite_components_data_types[component_index].push_back(scene_config.components_data_types[entity_index][component_index][component_data_types_index]);
+				}
+			}
+			ecs_system_build_archetype(scene_config.archetypes[entity_index], new_archetype_id, new_archetype_size, sprite_components_data_types);
+
+
+			// Creates a new entity
 			std::vector<caliope::component_id> components;
 			std::vector<void*> data;
 
 			for (uint component_index = 0; component_index < scene_config.components[entity_index].size(); ++component_index) {
 				components.push_back(scene_config.components[entity_index][component_index]);
-				transform_component* tran_comp = (transform_component*)scene_config.components_data[entity_index][component_index];
 				data.push_back(scene_config.components_data[entity_index][component_index]);
 			}
 

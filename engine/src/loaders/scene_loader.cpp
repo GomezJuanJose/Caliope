@@ -41,8 +41,6 @@ namespace caliope {
 			string_split(&line, &field, &value, '=');
 			string_trim_character(&field, ' ');
 
-			// TODO: Parse also the type of data of each component
-
 			if (strings_equali(&field, &std::string("name"))) {
 				copy_memory(&scene_config.name, value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
 			}
@@ -53,6 +51,7 @@ namespace caliope {
 				string_to_uint(&value, &archetype_id);
 				scene_config.archetypes.push_back((archetype)archetype_id);
 				scene_config.components.push_back(std::vector<component_id>());
+				scene_config.components_data_types.push_back(std::vector<std::vector<component_data_type>>());
 				scene_config.components_data.push_back(std::vector<void*>());
 				entity_index++;
 
@@ -61,6 +60,9 @@ namespace caliope {
 			{
 				string_to_uint(&value, &compt_id);
 				scene_config.components[entity_index].push_back((component_id)compt_id);
+
+				scene_config.components_data_types[entity_index].push_back(std::vector<component_data_type>());
+
 			}
 			else if (strings_equali(&field, &std::string("component_size")))
 			{
@@ -80,6 +82,8 @@ namespace caliope {
 				char* memory_dir = (char*)scene_config.components_data[entity_index][component_index];
 				copy_memory(memory_dir + offset_component_data, value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
 				offset_component_data += sizeof(char) * MAX_NAME_LENGTH;
+
+				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_STRING);
 			}
 			else if (strings_equali(&field, &std::string("vector4")))
 			{
@@ -88,6 +92,9 @@ namespace caliope {
 				char* memory_dir = (char*)scene_config.components_data[entity_index][component_index];
 				copy_memory(memory_dir + offset_component_data, &vec4, sizeof(glm::vec4));
 				offset_component_data += sizeof(glm::vec4);
+
+				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_VEC4);
+
 			}
 			else if (strings_equali(&field, &std::string("vector3")))
 			{
@@ -95,9 +102,9 @@ namespace caliope {
 				string_to_vec3(&value, &vec3);
 				char* memory_dir = (char*)scene_config.components_data[entity_index][component_index];
 				copy_memory(memory_dir + offset_component_data, &vec3, sizeof(glm::vec3));
-
-
 				offset_component_data += sizeof(glm::vec3);
+
+				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_VEC3);
 			}
 			else if (strings_equali(&field, &std::string("float")))
 			{
@@ -106,6 +113,8 @@ namespace caliope {
 				char* memory_dir = (char*)scene_config.components_data[entity_index][component_index];
 				copy_memory(memory_dir + offset_component_data, &f, sizeof(float));
 				offset_component_data += sizeof(float);
+
+				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_FLOAT);
 			}
 			else if (strings_equali(&field, &std::string("integer")))
 			{
@@ -114,6 +123,8 @@ namespace caliope {
 				char* memory_dir = (char*)scene_config.components_data[entity_index][component_index];
 				copy_memory(memory_dir + offset_component_data, &i, sizeof(uint));
 				offset_component_data += sizeof(uint);
+
+				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_UINT);
 			}
 		}
 
