@@ -1,5 +1,6 @@
 #include "object_pick_render_view.h"
 #include "core/logger.h"
+#include "core/event.h"
 
 #include "renderer/camera.h"
 #include "systems/shader_system.h"
@@ -240,8 +241,7 @@ namespace caliope {
 		ssbo_object_picking data;
 		data.id = -1;
 		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
-		CE_LOG_INFO("%d", data.id);
-
+		event_fire(EVENT_CODE_ON_ENTITY_HOVER, data.id);
 
 		return true;
 	}

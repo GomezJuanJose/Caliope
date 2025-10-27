@@ -78,7 +78,7 @@ namespace caliope{
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
 		renderpass_resource_data pick_object_renderpass_data;
-		pick_object_renderpass_data.clear_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		pick_object_renderpass_data.clear_color = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
 		pick_object_renderpass_data.depth = 1.0f;
 		pick_object_renderpass_data.stencil = 0;
 		pick_object_renderpass_data.has_prev_pass = false;

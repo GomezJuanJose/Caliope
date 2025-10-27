@@ -14,6 +14,8 @@ namespace caliope {
 		EVENT_CODE_MOUSE_WHEEL = 0X07,
 		EVENT_CODE_MOUSE_RESIZED = 0X08,
 
+		EVENT_CODE_ON_ENTITY_HOVER = 0X09,
+		EVENT_CODE_ON_ENTITY_PRESSED = 0X10,
 
 
 		MAX_EVENT_CODE = 0XFF
@@ -24,8 +26,8 @@ namespace caliope {
 	bool event_system_initialize();
 	void event_system_shutdown();
 
-	void event_register(event_system_code code, function_on_event on_event);
-	void event_unregister(event_system_code code, function_on_event on_event);
+	CE_API void event_register(event_system_code code, function_on_event on_event);
+	CE_API void event_unregister(event_system_code code, function_on_event on_event);
 
 	bool event_fire(event_system_code code, std::any data);
 }

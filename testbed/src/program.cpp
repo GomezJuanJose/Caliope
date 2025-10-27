@@ -2,6 +2,7 @@
 #include <cepch.h>
 #include <core/logger.h>
 #include <core/input.h>
+#include <core/event.h>
 
 #include <renderer/camera.h>
 #include <systems/camera_system.h>
@@ -32,6 +33,12 @@ void initialize_sounds() {
 	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id, 0);
 }
 
+bool on_entity_hover(caliope::event_system_code code, std::any data) {
+	uint id = std::any_cast<uint>(data);
+	CE_LOG_INFO("%d", id);
+
+	return true;
+}
 
 bool initialize_testbed(caliope::game_state& game_state) {
 	CE_LOG_INFO("Initialize testbed");
@@ -48,6 +55,8 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::scene_system_load(std::string("scene_test2"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test1"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test2"), true);
+
+	caliope::event_register(caliope::EVENT_CODE_ON_ENTITY_HOVER, on_entity_hover);
 
 
 	initialize_sounds();
