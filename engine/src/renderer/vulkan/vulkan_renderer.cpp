@@ -460,7 +460,7 @@ namespace caliope {
 		scissor.offset = { (int)scissor_offset.x, (int)scissor_offset.y };
 		scissor.extent = {(uint)scissor_extent.x, (uint)scissor_extent.y };
 		
-		if (scissor.extent.width == 0 && scissor.extent.height == 0) { // TODO: Try to refactor this to not branch the code.
+		if (scissor.extent.width == 0 && scissor.extent.height == 0) {
 			scissor.extent = state_ptr->context.swapchain.extent;
 		}
 		

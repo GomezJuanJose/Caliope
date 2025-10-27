@@ -85,7 +85,6 @@ namespace caliope {
 
 	bool object_pick_render_view_on_render(render_view& self, std::any& packet, uint render_target_index) {
 
-		//TODO: ADAPT IT TO THE PICK UP SHADER
 		render_view_object_pick_packet& object_pick_packet = std::any_cast<render_view_object_pick_packet>(packet);
 
 		double cursor_x, cursor_y;

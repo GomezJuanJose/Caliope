@@ -40,6 +40,7 @@ namespace caliope {
 			std::string field, value;
 			string_split(&line, &field, &value, '=');
 			string_trim_character(&field, ' ');
+			string_trim_character(&field, '\t');
 
 			if (strings_equali(&field, &std::string("name"))) {
 				copy_memory(&scene_config.name, value.c_str(), sizeof(char) * MAX_NAME_LENGTH);

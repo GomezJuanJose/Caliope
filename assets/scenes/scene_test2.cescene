@@ -1,7 +1,7 @@
 # Scene definition
 #NOTE: The component information must be in the same order as the defined in the code structure
 
-name=scene_test1
+name=scene_test2
 archetype_id=2
     component_id=0
     # NOTE: Defines the size in bytes of each component_id, if is a string should be counted as 255*sizeof(char)

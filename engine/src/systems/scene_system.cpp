@@ -118,7 +118,7 @@ namespace caliope {
 
 	void scene_system_unload(std::string& name) {
 		if (state_ptr->loaded_scenes.find(name) == state_ptr->loaded_scenes.end()) {
-			CE_LOG_WARNING("scene_system_unload scene not found");
+			CE_LOG_WARNING("scene_system_unload scene %s not found", name.c_str());
 			return;
 		}
 		
@@ -138,7 +138,7 @@ namespace caliope {
 		// TODO: Move all this into the resource system (which will store the future parsers) along with other needed parsers in the future (such as material, shader, sprite animation...)
 
 		file_handle text_file;
-		if (!file_system_open("assets/scenes/" + name + "1.cescene", FILE_MODE_WRITE, text_file)) {
+		if (!file_system_open("assets/scenes/" + name + ".cescene", FILE_MODE_WRITE, text_file)) {
 			CE_LOG_ERROR("Couldnt open %s", name.c_str());
 			return false;
 		}
