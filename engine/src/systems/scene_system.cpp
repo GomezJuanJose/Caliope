@@ -205,6 +205,11 @@ namespace caliope {
 	}
 
 	bool scene_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data) {
+		if (state_ptr->loaded_scenes.find(name) == state_ptr->loaded_scenes.end()) {
+			CE_LOG_WARNING("scene_system_instance_entity scene %s not found", name.c_str());
+			return false;
+		}
+
 		uint entity = ecs_system_add_entity(archetype);
 		for (uint i = 0; i < components.size(); ++i) {
 			ecs_system_insert_data(entity, components[i], components_data[i]);
@@ -219,6 +224,7 @@ namespace caliope {
 	void scene_system_destroy_entity(std::string& name, uint entity) {
 
 		if (state_ptr->loaded_scenes.find(name) == state_ptr->loaded_scenes.end() || state_ptr->entity_index_scene.find(entity) == state_ptr->entity_index_scene.end()) {
+			CE_LOG_WARNING("scene_system_enable scene %s not found", name.c_str());
 			return;
 		}
 
@@ -249,7 +255,7 @@ namespace caliope {
 
 	void scene_system_enable(std::string& name, bool enable) {
 		if (state_ptr->loaded_scenes.find(name) == state_ptr->loaded_scenes.end()) {
-			CE_LOG_WARNING("scene_system_enable scene not found");
+			CE_LOG_WARNING("scene_system_enable scene %s not found", name.c_str());
 			return;
 		}
 
