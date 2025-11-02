@@ -72,11 +72,9 @@ namespace caliope {
 		render_view_object_pick_packet object_pick_packet;
 		object_pick_packet.delta_time = delta_time;
 		object_pick_packet.world_camera = cam;
-
-		object_pick_packet.sprite_definitions.insert({ std::string("Builtin.ObjectPickShader"), {} });//TODO: TEMPORAL
 		
 		for (uint index = 0; index < quads.size(); ++index) {
-			object_pick_packet.sprite_definitions.at(std::string("Builtin.ObjectPickShader")).push(quads[index]);//TODO: TEMPORAL
+			object_pick_packet.sprite_definitions["Builtin.ObjectPickShader"].push(quads[index]);//TODO: TEMPORAL hardcoded name
 		}
 
 		out_packet.view_packet = object_pick_packet;

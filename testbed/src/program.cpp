@@ -49,9 +49,9 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
 
 
-	caliope::scene_system_load(std::string("scene_test1"), true);
-	caliope::scene_system_save(std::string("scene_test1"));
-	caliope::scene_system_load(std::string("scene_test2"), true);
+	//caliope::scene_system_load(std::string("scene_test1"), true);
+	//caliope::scene_system_save(std::string("scene_test1"));
+	//caliope::scene_system_load(std::string("scene_test2"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test1"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test2"), true);
 
