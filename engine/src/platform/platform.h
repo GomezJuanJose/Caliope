@@ -33,4 +33,6 @@ namespace caliope {
 
 	uint64 platform_system_file_read_bytes(std::any& handle, uint64 size, uchar* data);
 	bool platform_system_file_write_bytes(std::any& handle, uint64 size, void* data);
+
+	uint platform_system_get_processor_count();
 }

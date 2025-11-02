@@ -13,7 +13,7 @@
 
 #include <windows.h>
 
-
+#include <thread>
 
 
 namespace caliope {
@@ -222,6 +222,11 @@ namespace caliope {
 		DWORD bytes_written = 0;
 		
 		return WriteFile(h, data, size, &bytes_written, NULL) != FALSE;
+	}
+
+	uint platform_system_get_processor_count()
+	{
+		return std::thread::hardware_concurrency();
 	}
 }
 #endif // CE_PLATFORM_WINDOWS

@@ -8,6 +8,7 @@ typedef signed short int16;
 typedef signed long long int64;
 
 #define INVALID_ID 4294967295U
+#define INVALID_ID_U16 65535U
 
 #define CE_DEBUG
 

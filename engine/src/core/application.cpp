@@ -23,6 +23,7 @@
 #include "systems/audio_system.h"
 #include "systems/scene_system.h"
 #include "systems/render_view_system.h"
+#include "systems/job_system.h"
 
 #include "math/transform.h"
 
@@ -75,6 +76,44 @@ namespace caliope {
 		}
 
 		if (!platform_system_initialize(config.name, config.width, config.height)) {
+			CE_LOG_FATAL("Failed to initialize platform; shutting down");
+			return false;
+		}
+
+		// Gets the number of cores of the computer minus one due to the main thread
+		uint thread_count = platform_system_get_processor_count() - 1;
+		if (thread_count < 1) {
+			CE_LOG_FATAL("Error: Platform reported a processor count of %i. Need at least one addition thread for the job system", thread_count);
+		}
+
+		const uint max_thread_count = 7;
+		if (thread_count > max_thread_count) {
+			thread_count = max_thread_count;
+		}
+
+
+		uint job_thread_types[max_thread_count];
+		for (uint i = 0; i < max_thread_count; ++i) {
+			job_thread_types[i] = JOB_TYPE_GENERAL;
+		}
+
+		if (max_thread_count == 1) {
+			// Everithing on one job thread
+			job_thread_types[0] |= (JOB_TYPE_GPU_RESOURCE | JOB_TYPE_RESOURCE_LOAD);
+		}
+		else if(max_thread_count == 2)
+		{
+			// Split things between the 2 threads
+			job_thread_types[0] |= JOB_TYPE_GPU_RESOURCE;
+			job_thread_types[1] |= JOB_TYPE_RESOURCE_LOAD;
+		}
+		else {
+			// Dedicate the first 2 thrads to these things, pass off general tasks to other threads
+			job_thread_types[0] = JOB_TYPE_GPU_RESOURCE;
+			job_thread_types[1] = JOB_TYPE_RESOURCE_LOAD;
+		}
+
+		if (!job_system_initialize(thread_count, job_thread_types)) {
 			CE_LOG_FATAL("Failed to initialize platform; shutting down");
 			return false;
 		}
@@ -207,6 +246,9 @@ namespace caliope {
 				float delta_time = current_time - state_ptr->last_frame_time;
 				state_ptr->last_frame_time = current_time;
 
+				// Update the job system
+				job_system_update();
+
 				if (!state_ptr->program_config->update(state_ptr->program_config->game_state, delta_time)) {
 					CE_LOG_ERROR("Failed to update the program;");
 				}
@@ -251,6 +293,8 @@ namespace caliope {
 		resource_system_shutdown();
 
 		renderer_system_shutdown();
+
+		job_system_shutdown();
 
 		platform_system_shutdown();
 
