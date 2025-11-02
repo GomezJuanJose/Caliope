@@ -48,7 +48,6 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::texture_system_adquire(std::string("B_witch_idle"));
 	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
 
-	caliope::sprite_animation_system_register(std::string("witch_idle"));
 
 	caliope::scene_system_load(std::string("scene_test1"), true);
 	caliope::scene_system_save(std::string("scene_test1"));
