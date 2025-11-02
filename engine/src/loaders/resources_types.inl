@@ -63,7 +63,6 @@ namespace caliope {
 
 	typedef struct shader_resource_data {
 		std::string name;
-		bool color_blend_enabled;
 		std::vector<uchar> vertex_code;
 		uint64 vertex_code_size;
 		std::vector<uchar> fragment_code;

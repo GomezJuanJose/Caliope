@@ -18,7 +18,6 @@ namespace caliope {
 		VkPipelineShaderStageCreateInfo* stages,
 		VkViewport viewport,
 		VkRect2D scissor,
-		bool color_blend_enabled,
 		bool depth_test_enabled,
 		vulkan_pipeline& out_pipeline
 	) {
@@ -82,7 +81,7 @@ namespace caliope {
 
 		VkPipelineColorBlendAttachmentState color_blend_attachment = {};
 		color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		color_blend_attachment.blendEnable = color_blend_enabled; // TODO: NEEDS TO BE CONFIGURABLE? IF NOT DELETE IT TO AVOID INNECESARY COMPLEXITY AND CONFIGURATION
+		color_blend_attachment.blendEnable = VK_TRUE;
 		color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;

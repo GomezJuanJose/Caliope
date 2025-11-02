@@ -4,7 +4,6 @@ name=Builtin.ObjectPickShader
 vertex_shader_name=Builtin.ObjectPickShader
 fragment_shader_name=Builtin.ObjectPickShader
 renderpass=object_pick_renderpass
-color_blend=false
 
 # Vertex attributes (the order influence the final result!)
 vertex_attribute=vector3

@@ -822,7 +822,6 @@ namespace caliope {
 			shader_stages,
 			viewport,
 			scissor,
-			shader_config.color_blend_enabled,
 			false,
 			vk_shader->pipeline
 			);

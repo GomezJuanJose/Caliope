@@ -4,7 +4,6 @@ name=Builtin.SpriteShader
 vertex_shader_name=Builtin.SpriteShader
 fragment_shader_name=Builtin.SpriteShader
 renderpass=world_renderpass
-color_blend=true
 
 # Vertex attributes (the order influence the final result!)
 vertex_attribute=vector3

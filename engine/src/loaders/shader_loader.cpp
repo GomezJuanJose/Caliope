@@ -49,10 +49,6 @@ namespace caliope {
 
 				}
 			}
-			else if (strings_equali(&field, &std::string("color_blend"))) {
-				string_to_bool(&value, &shader_config.color_blend_enabled);
-
-			}
 			else if (strings_equali(&field, &std::string("vertex_shader_name"))) {
 				resource r;
 				if (!resource_system_load(std::string("shaders/" + value + ".vert.spv"), RESOURCE_TYPE_BINARY, r)) {
