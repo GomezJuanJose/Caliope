@@ -41,7 +41,9 @@ namespace caliope {
 	}
 
 	void scene_system_shutdown() {
-		// TODO: Unload all scenes and free resources
+		for (auto [scene_name, scene] : state_ptr->loaded_scenes) {
+			scene_system_unload(std::string(scene_name.c_str()));
+		}
 
 		state_ptr->loaded_scenes.clear();
 		state_ptr.reset();
@@ -134,8 +136,6 @@ namespace caliope {
 			CE_LOG_WARNING("scene_system_save scene not found");
 			return false;
 		}
-
-		// TODO: Move all this into the resource system (which will store the future parsers) along with other needed parsers in the future (such as material, shader, sprite animation...)
 
 		if (!resource_system_parse(name, RESOURCE_TYPE_SCENE, &state_ptr->loaded_scenes.at(name))) {
 			CE_LOG_ERROR("scene_system_save couldnt save file scene %s", name.c_str());
