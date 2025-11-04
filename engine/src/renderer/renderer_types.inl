@@ -2,7 +2,7 @@
 
 #include "defines.h"
 #include "cepch.h"
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 
 
 namespace caliope {

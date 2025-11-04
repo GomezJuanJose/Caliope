@@ -3,7 +3,7 @@
 
 #include "core/logger.h"
 #include "math/math_types.inl"
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 #include "renderer/renderer_frontend.h"
 
 namespace caliope {

@@ -2,7 +2,7 @@
 #include "cepch.h"
 
 #include "core/logger.h"
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 #include "systems/resource_system.h"
 #include "systems/texture_system.h"
 #include "systems/material_system.h"

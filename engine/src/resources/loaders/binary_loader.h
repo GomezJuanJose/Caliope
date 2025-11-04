@@ -1,6 +1,6 @@
 #pragma once
 #include "defines.h"
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 
 
 

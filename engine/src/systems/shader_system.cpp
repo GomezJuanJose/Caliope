@@ -2,7 +2,7 @@
 #include "cepch.h"
 #include "core/logger.h"
 
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 #include "systems/resource_system.h"
 
 #include "renderer/renderer_frontend.h"

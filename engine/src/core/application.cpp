@@ -27,7 +27,7 @@
 
 #include "math/transform.h"
 
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 #include <glm/glm.hpp>
 
 namespace caliope {

@@ -131,8 +131,6 @@ namespace caliope {
 	}scene_resource_data;
 
 
-
-
 	typedef enum texture_filter {
 		FILTER_LINEAR,
 		FILTER_NEAREST

@@ -3,20 +3,23 @@
 
 #include "core/logger.h"
 
-#include "loaders/resources_types.inl"
-#include "loaders/image_loader.h"
-#include "loaders/binary_loader.h"
-#include "loaders/shader_loader.h"
-#include "loaders/material_loader.h"
-#include "loaders/sprite_animation_loader.h"
-#include "loaders/audio_loader.h"
-#include "loaders/scene_loader.h"
+#include "resources/resources_types.inl"
+#include "resources/loaders/image_loader.h"
+#include "resources/loaders/binary_loader.h"
+#include "resources/loaders/shader_loader.h"
+#include "resources/loaders/material_loader.h"
+#include "resources/loaders/sprite_animation_loader.h"
+#include "resources/loaders/audio_loader.h"
+#include "resources/loaders/scene_loader.h"
+
+#include "resources/parsers/scene_parser.h"
 
 namespace caliope {
 
 	typedef struct resource_system_state {
 		resource_system_config config;
 		std::unordered_map<std::string, resource_loader> loaders;
+		std::unordered_map<std::string, resource_parser> parsers;
 	} resource_system_state;
 
 	static std::unique_ptr<resource_system_state> state_ptr;
@@ -39,6 +42,8 @@ namespace caliope {
 		resource_system_register_loader(audio_resource_loader_create());
 		resource_system_register_loader(scene_resource_loader_create());
 
+		resource_system_register_parser(scene_resource_parser_create());
+
 		CE_LOG_INFO("Resource system initialized.");
 		return true;
 	}
@@ -48,10 +53,17 @@ namespace caliope {
 		state_ptr = nullptr;
 	}
 
-	bool resource_system_register_loader(resource_loader loader) {
+	bool resource_system_register_loader(resource_loader& loader) {
 
 		loader.resource_folder = state_ptr->config.base_path + loader.resource_folder;
 		state_ptr->loaders.insert({std::to_string(loader.type), loader});
+		return true;
+	}
+
+	bool resource_system_register_parser(resource_parser& parser)
+	{
+		parser.resource_folder = state_ptr->config.base_path + parser.resource_folder;
+		state_ptr->parsers.insert({ std::to_string(parser.type), parser });
 		return true;
 	}
 
@@ -79,6 +91,16 @@ namespace caliope {
 		std::string file_path = state_ptr->loaders[custom_type].resource_folder + name;
 		state_ptr->loaders[custom_type].load(&file_path, &resource);
 		return true;
+	}
+
+	bool resource_system_parse(std::string& name, resource_type type, void* data)
+	{
+		if (state_ptr->parsers.find(std::to_string(type)) == state_ptr->parsers.end()) {
+			return false;
+		}
+
+		std::string file_path = state_ptr->parsers[std::to_string(type)].resource_folder + name;
+		return state_ptr->parsers[std::to_string(type)].parse(&file_path, data);
 	}
 
 	void resource_system_unload(resource& resource) {

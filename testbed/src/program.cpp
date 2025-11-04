@@ -17,7 +17,7 @@
 #include <systems/audio_system.h>
 #include <systems/scene_system.h>
 #include <platform/file_system.h>
-#include <loaders/resources_types.inl>
+#include <resources/resources_types.inl>
 #include <core/cestring.h>
 
 #include <any>

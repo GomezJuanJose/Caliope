@@ -4,7 +4,7 @@
 
 
 #include "core/logger.h"
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 #include "systems/resource_system.h"
 
 namespace caliope {

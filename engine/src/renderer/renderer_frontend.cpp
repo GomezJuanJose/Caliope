@@ -8,7 +8,7 @@
 #include "renderer/renderer_backend.h"
 #include "renderer/camera.h"
 
-#include "loaders/resources_types.inl"
+#include "resources/resources_types.inl"
 
 #include "systems/shader_system.h"
 #include "systems/material_system.h"
