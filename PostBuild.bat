@@ -13,8 +13,11 @@ for %%A IN ("assets\shaders\*.frag.glsl") DO (
 )
 
 
-xcopy /s /y /q /I assets bin\Debug\assets
-xcopy /s /y /q /I assets build\assets
+xcopy /s /y /q /I assets build\testbed\assets
+xcopy /s /y /q /I assets build\testbed\Debug\assets
+
+if not exist ".\build\testbed\logs" mkdir .\build\testbed\logs
+if not exist ".\build\testbed\Debug\logs" mkdir .\build\testbed\Debug\logs
 
 echo "Done."
 

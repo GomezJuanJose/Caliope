@@ -15,7 +15,7 @@ namespace caliope {
 
 	typedef struct archetype_data {
 		std::vector<std::vector<void*>> component_pool;
-		std::vector<uint> component_sizes; // TODO: Can be moved into the ecs_system_state due each component is unique using a unordered_map, is more o less efficient?
+		std::vector<uint> component_sizes;
 		std::vector<component_id> components_tracker; // Has the information about where is stored each component
 		uint entity_count;
 	} archetype_data;
