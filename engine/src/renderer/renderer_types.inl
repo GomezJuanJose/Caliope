@@ -185,6 +185,12 @@ namespace caliope {
 		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 	};
 
+	typedef struct render_view_ui_packet {
+		float delta_time;
+		camera* ui_camera;
+		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator >> quad_definitions; // Key : shader name, Value: vector of materials
+	};
+
 	typedef struct render_view_object_pick_packet {
 		float delta_time;
 		camera* world_camera;
@@ -211,6 +217,14 @@ namespace caliope {
 		uint max_textures_per_batch;
 		float aspect_ratio;
 	} render_view_world_config;
+
+	typedef struct render_view_ui_config {
+		uint window_width;
+		uint window_height;
+		uint max_number_quads;
+		uint max_textures_per_batch;
+		float aspect_ratio;
+	} render_view_ui_config;
 
 	typedef struct render_view_pick_config {
 		uint window_width;

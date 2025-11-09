@@ -10,5 +10,6 @@ namespace caliope {
 	CE_API camera* camera_system_acquire(const std::string& name);
 	CE_API void camera_system_release(const std::string& name);
 
-	CE_API camera* camera_system_get_default();
+	CE_API camera* camera_system_get_default_world();
+	CE_API camera* camera_system_get_default_ui();
 }

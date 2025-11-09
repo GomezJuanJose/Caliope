@@ -16,6 +16,7 @@
 #include <systems/sprite_animation_system.h>
 #include <systems/audio_system.h>
 #include <systems/scene_system.h>
+#include <systems/ui_system.h>
 #include <platform/file_system.h>
 #include <resources/resources_types.inl>
 #include <core/cestring.h>
@@ -43,7 +44,8 @@ bool on_entity_hover(caliope::event_system_code code, std::any data) {
 bool initialize_testbed(caliope::game_state& game_state) {
 	CE_LOG_INFO("Initialize testbed");
 
-	game_state.world_camera = caliope::camera_system_get_default();
+	game_state.world_camera = caliope::camera_system_get_default_world();
+	game_state.ui_camera = caliope::camera_system_get_default_ui();
 
 	caliope::texture_system_adquire(std::string("B_witch_idle"));
 	caliope::texture_system_change_filter(std::string("B_witch_idle"), caliope::FILTER_NEAREST, caliope::FILTER_NEAREST);
@@ -57,6 +59,18 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 	caliope::event_register(caliope::EVENT_CODE_ON_ENTITY_HOVER, on_entity_hover);
 
+
+	caliope::ui_system_create_empty_layout(std::string("ui_layout_test"), true);
+
+	caliope::transform_component t;
+	t.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	t.scale = glm::vec3(0.5f, 0.5f, 0.5f);
+	t.roll_rotation = 0.0f;
+	caliope::ui_material_component sc;
+	sc.material_name = { "ui_image_test" };
+	sc.texture_region[0] = { 0.0f, 0.0f };
+	sc.texture_region[1] = { 0.0f, 0.0f };
+	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc);
 
 	initialize_sounds();
 

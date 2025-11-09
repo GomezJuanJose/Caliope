@@ -1,0 +1,20 @@
+# Shader configuration
+
+name=Builtin.UIShader
+vertex_shader_name=Builtin.UIShader
+fragment_shader_name=Builtin.UIShader
+renderpass=ui_renderpass
+
+# Vertex attributes (the order influence the final result!)
+vertex_attribute=vector3
+vertex_attribute=vector2
+
+# Descriptor set layout (descriptorType,descriptorCount,stageFlags)
+descriptor=uniform,1,vertex
+descriptor=image,1024,fragment
+descriptor=storage,1,vertex
+
+# Descriptor buffer properties (usage,size)
+descriptor_buffer=uniform,140
+descriptor_buffer=storage,1280000
+# The 1280000 implicity defines the maximum number of quads that can draw

@@ -67,6 +67,13 @@ namespace caliope {
 		point_light_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC4, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT });
 		ecs_system_build_archetype(ARCHETYPE_POINT_LIGHT, new_archetype_id, new_archetype_size, point_light_components_data_types);
 
+		new_archetype_size = { sizeof(transform_component), sizeof(ui_material_component) };
+		new_archetype_id = { TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT };
+		std::vector<std::vector<component_data_type>> ui_image_components_data_types;
+		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_STRING, COMPONENT_DATA_TYPE_VEC4 });
+		ecs_system_build_archetype(ARCHETYPE_UI_IMAGE, new_archetype_id, new_archetype_size, ui_image_components_data_types);
+
 		CE_LOG_INFO("ECS system initialized.");
 
 		return true;
@@ -264,6 +271,7 @@ namespace caliope {
 		}
 		arch_data.entity_count = 0;
 		state_ptr->archetypes.insert(state_ptr->archetypes.begin() + archetype, arch_data);
+		state_ptr->entites_grouped_by_archetypes.insert({ archetype, std::vector<uint>() });
 	}
 
 	std::vector<uint>& ecs_system_get_entities_by_archetype(archetype archetype){

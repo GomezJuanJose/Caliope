@@ -4,7 +4,7 @@
 #include <string>
 
 namespace caliope {
-	struct shader_quad_properties;
+	struct shader_world_quad_properties;
 	struct shader_pick_quad_properties;
 
 	bool vulkan_renderer_backend_initialize(const renderer_backend_config& config);

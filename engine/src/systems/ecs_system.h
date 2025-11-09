@@ -7,7 +7,9 @@ namespace caliope {
 	typedef enum archetype {
 		ARCHETYPE_SPRITE = 0,
 		ARCHETYPE_SPRITE_ANIMATION,
-		ARCHETYPE_POINT_LIGHT
+		ARCHETYPE_POINT_LIGHT,
+
+		ARCHETYPE_UI_IMAGE,
 	}archetype;
 
 	typedef enum component_id {
@@ -15,7 +17,9 @@ namespace caliope {
 		MATERIAL_COMPONENT,
 		MATERIAL_ANIMATION_COMPONENT,
 		SOUND_EMMITER_COMPONENT,
-		POINT_LIGHT_COMPONENT
+		POINT_LIGHT_COMPONENT,
+
+		UI_MATERIAL_COMPONENT,
 	} component_id;
 
 	typedef enum component_data_type {

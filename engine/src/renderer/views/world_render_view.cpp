@@ -26,7 +26,7 @@ namespace caliope {
 	} uniform_fragment_buffer_object;
 
 	typedef struct world_view_state {
-		std::vector<shader_quad_properties> quads;
+		std::vector<shader_world_quad_properties> quads;
 		std::vector<texture*> batch_textures;
 
 		uint binded_textures_count;
@@ -87,7 +87,7 @@ namespace caliope {
 		}
 
 		for (uint index = 0; index < lights.size(); ++index) {
-			// TODO: Hardcoded config, move to an project settings config
+			// TODO: Hardcoded config, move to an project settings config (the maximum number of lights)
 			if (world_packet.point_light_definitions.size() < 10) {
 				world_packet.point_light_definitions.push_back(lights[index]);
 			}
@@ -210,7 +210,7 @@ namespace caliope {
 					texture_id++;
 				}
 
-				shader_quad_properties sp;
+				shader_world_quad_properties sp;
 				sp.model = transform_get_world(sprite.transform);
 				sp.diffuse_color = mat->diffuse_color;
 				sp.id = sprite.id;
@@ -235,7 +235,7 @@ namespace caliope {
 
 			renderer_set_descriptor_sampler(state_ptr->batch_textures, 1, *shader);
 
-			renderer_set_descriptor_ssbo(state_ptr->quads.data(), sizeof(shader_quad_properties) * number_of_instances, 2, *shader, 2);
+			renderer_set_descriptor_ssbo(state_ptr->quads.data(), sizeof(shader_world_quad_properties) * number_of_instances, 2, *shader, 2);
 
 			uniform_fragment_buffer_object ubo_frag;
 			ubo_frag.ambient_color = world_packet.ambient_color;

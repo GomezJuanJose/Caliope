@@ -62,7 +62,7 @@ namespace caliope{
 		world_renderpass_data.clear_color = glm::vec4(0.0f, 0.2f, 0.6f, 1.0f);
 		world_renderpass_data.depth = 1.0f;
 		world_renderpass_data.stencil = 0;
-		world_renderpass_data.has_next_pass = false;
+		world_renderpass_data.has_next_pass = true;
 		world_renderpass_data.has_prev_pass = false;
 		world_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_SWAPCHAIN };
 		world_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_LATE_FRAGMENT_TESTS;
@@ -71,6 +71,25 @@ namespace caliope{
 		world_renderpass_data.subpass_dst_access_mask = RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_READ | RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE | RENDERPASS_ACCESS_TYPE_DEPTH_STENCIL_ATTACHMENT_WRITE;
 		state_ptr->backend.renderpass_create(pass, world_renderpass_data);
 		state_ptr->renderpasses.insert({pass.type, pass});
+
+		//UI renderpass
+		pass = {};
+		pass.type = RENDERPASS_TYPE_UI;
+		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_NONE);
+		pass.targets.resize(state_ptr->backend.window_images_count_get());
+		renderpass_resource_data ui_renderpass_data;
+		ui_renderpass_data.clear_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		ui_renderpass_data.depth = 1.0f;
+		ui_renderpass_data.stencil = 0;
+		ui_renderpass_data.has_next_pass = false;
+		ui_renderpass_data.has_prev_pass = true;
+		ui_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_SWAPCHAIN };
+		ui_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_LATE_FRAGMENT_TESTS;
+		ui_renderpass_data.subpass_src_access_mask = RENDERPASS_ACCESS_TYPE_DEPTH_STENCIL_ATTACHMENT_WRITE;
+		ui_renderpass_data.subpass_dst_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		ui_renderpass_data.subpass_dst_access_mask = RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_READ | RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE | RENDERPASS_ACCESS_TYPE_DEPTH_STENCIL_ATTACHMENT_WRITE;
+		state_ptr->backend.renderpass_create(pass, ui_renderpass_data);
+		state_ptr->renderpasses.insert({ pass.type, pass });
 
 		//Pick object renderpass
 		pass = {};
@@ -237,6 +256,11 @@ namespace caliope{
 			state_ptr->backend.render_target_destroy(world_pass.targets[i]);
 			world_pass.targets[i].attachments = { state_ptr->backend.window_attachment_get(i), state_ptr->backend.depth_attachment_get() };
 			state_ptr->backend.render_target_create(world_pass, world_pass.targets[i]);
+
+			renderpass& ui_pass = state_ptr->renderpasses.at(RENDERPASS_TYPE_UI);
+			state_ptr->backend.render_target_destroy(ui_pass.targets[i]);
+			ui_pass.targets[i].attachments = { state_ptr->backend.window_attachment_get(i)};
+			state_ptr->backend.render_target_create(ui_pass, ui_pass.targets[i]);
 
 			renderpass& object_pick_pass = state_ptr->renderpasses.at(RENDERPASS_TYPE_OBJECT_PICK);
 

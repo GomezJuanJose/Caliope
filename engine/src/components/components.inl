@@ -37,4 +37,9 @@ namespace caliope {
 		float linear;
 		float quadratic;
 	} point_light_component;
+
+	typedef struct ui_material_component {
+		std::array<char, MAX_NAME_LENGTH> material_name;
+		std::array<glm::vec2, 2> texture_region;
+	} ui_material_component;
 }

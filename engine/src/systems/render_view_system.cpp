@@ -5,6 +5,7 @@
 
 #include "renderer/views/world_render_view.h"
 #include "renderer/views/object_pick_render_view.h"
+#include "renderer/views/ui_render_view.h"
 
 namespace caliope {
 
@@ -53,7 +54,15 @@ namespace caliope {
 			view.on_resize_window = object_pick_render_view_on_resize_window;
 			view.on_build_package = object_pick_render_view_on_build_package;
 			view.on_render = object_pick_render_view_on_render;
+		
+		}else if (view.type == VIEW_TYPE_UI) {
+			view.on_create = ui_render_view_on_create;
+			view.on_destroy = ui_render_view_on_destroy;
+			view.on_resize_window = ui_render_view_on_resize_window;
+			view.on_build_package = ui_render_view_on_build_package;
+			view.on_render = ui_render_view_on_render;
 		}
+
 		state_ptr->registered_views.insert({ view.type, view });
 
 		view.on_create(view);

@@ -44,6 +44,9 @@ namespace caliope {
 				if (strings_equali(&value, &std::string("world_renderpass"))) {
 					shader_config.renderpass_type = RENDERPASS_TYPE_WORLD;
 
+				} else if (strings_equali(&value, &std::string("ui_renderpass"))) {
+					shader_config.renderpass_type = RENDERPASS_TYPE_UI;
+
 				} else if (strings_equali(&value, &std::string("object_pick_renderpass"))) {
 					shader_config.renderpass_type = RENDERPASS_TYPE_OBJECT_PICK;
 

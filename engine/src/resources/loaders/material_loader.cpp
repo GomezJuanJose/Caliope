@@ -14,15 +14,25 @@ namespace caliope {
 
 	bool material_loader_load(std::string* file, resource* out_resource) {
 	
-		file_handle text_file;
-		if (!file_system_open(*file + ".cemat", FILE_MODE_READ, text_file)) {
+		#define MATERIAL_FORMATS_COUNT 2
+		std::string formats[MATERIAL_FORMATS_COUNT] = { ".cemat", ".cematui"};
+		std::string selected_format = "";
+		for (int i = 0; i < MATERIAL_FORMATS_COUNT; ++i) {
+			if (file_system_exists(*file + formats[i])) {
+				selected_format = formats[i];
+				break;
+			}
+		}
+
+		file_handle mat_file;
+		if (!file_system_open(*file + selected_format, FILE_MODE_READ, mat_file)) {
 			CE_LOG_ERROR("Couldnt open %s", file->c_str());
 			return false;
 		}
 		material_resource_data mat_config = {};
 		std::string text;
 		uint64 read_bytes;
-		file_system_read_all_text(text_file, text, read_bytes);
+		file_system_read_all_text(mat_file, text, read_bytes);
 
 		std::istringstream stream(text.c_str());
 		std::string line;
@@ -68,7 +78,7 @@ namespace caliope {
 
 		}
 		out_resource->data = mat_config;
-		file_system_close(text_file);
+		file_system_close(mat_file);
 
 		return true;
 	}

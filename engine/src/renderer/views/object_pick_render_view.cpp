@@ -96,7 +96,7 @@ namespace caliope {
 		scissor_extent = { 1,1 };
 
 		if (!renderer_renderpass_begin(self.renderpass, render_target_index, scissor_extent, scissor_offset)) {
-			CE_LOG_ERROR("world_render_view_on_render failed renderpass begin. Application shutting down");
+			CE_LOG_ERROR("object_pick_render_view_on_render failed renderpass begin. Application shutting down");
 			return false;
 		}
 
@@ -232,7 +232,7 @@ namespace caliope {
 		}
 
 		if (!renderer_renderpass_end()) {
-			CE_LOG_ERROR("world_render_view_on_render failed renderpass end. Application shutting down");
+			CE_LOG_ERROR("object_pick_render_view_on_render failed renderpass end. Application shutting down");
 			return false;
 		}
 

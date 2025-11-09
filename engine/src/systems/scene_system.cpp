@@ -75,7 +75,7 @@ namespace caliope {
 		scene_resource_data scene_config = std::any_cast<scene_resource_data>(r.data);
 
 
-		caliope::scene_system_create_empty(std::string(scene_config.name.data()), enable_by_default);
+		scene_system_create_empty(std::string(scene_config.name.data()), enable_by_default);
 
 
 		for (uint entity_index = 0; entity_index < scene_config.archetypes.size(); ++entity_index) {
@@ -99,7 +99,7 @@ namespace caliope {
 
 
 			// Creates a new entity
-			std::vector<caliope::component_id> components;
+			std::vector<component_id> components;
 			std::vector<void*> data;
 
 			for (uint component_index = 0; component_index < scene_config.components[entity_index].size(); ++component_index) {
@@ -107,7 +107,7 @@ namespace caliope {
 				data.push_back(scene_config.components_data[entity_index][component_index]);
 			}
 
-			caliope::scene_system_instance_entity(std::string(scene_config.name.data()), scene_config.archetypes[entity_index],
+			scene_system_instance_entity(std::string(scene_config.name.data()), scene_config.archetypes[entity_index],
 				components,
 				data
 			);
@@ -189,8 +189,6 @@ namespace caliope {
 		}
 		
 		state_ptr->entity_index_scene.erase(entity);
-
-		std::vector<uint> x = state_ptr->loaded_scenes.at(name).entities;
 
 	}
 
@@ -298,5 +296,6 @@ namespace caliope {
 		pick_object_packet.view_type = VIEW_TYPE_OBJECT_PICK;
 		render_view_system_on_build_packet(VIEW_TYPE_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ quads_data, world_cam_in_use, delta_time}));
 		packets.push_back(pick_object_packet);
+
 	}
 }

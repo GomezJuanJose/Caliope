@@ -1,0 +1,6 @@
+# Material config
+
+name=ui_image_test
+shader_name=Builtin.UIShader
+diffuse_texture=ui_image_test
+diffuse_color=1.0 1.0 1.0

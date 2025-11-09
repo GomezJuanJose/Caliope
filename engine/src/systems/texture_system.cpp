@@ -1,6 +1,7 @@
 #include "texture_system.h"
 #include "cepch.h"
 #include "core/logger.h"
+#include "core/cememory.h"
 
 #include "resources/resources_types.inl"
 #include "systems/resource_system.h"
@@ -176,9 +177,10 @@ namespace caliope {
 		const uint texture_dimensions = 256;
 		const uint texture_channels = 4;
 		uchar pixels[262144]; // texture_dimensions * texture_dimensions
+		set_memory(pixels, 255, sizeof(uchar) * (256*256) * texture_channels);
 
 		for (uint row = 0; row < texture_dimensions; row++) {
-			for (uint col = 0; col < texture_dimensions; col++) {
+			for (uint col = 0; col < texture_dimensions; ++col) {
 				uint index = (row * texture_dimensions) + col;
 				uint index_bpp = index * texture_channels;
 				if (row % 2) {

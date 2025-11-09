@@ -8,6 +8,7 @@ namespace caliope {
 
 	typedef struct game_state {
 		camera* world_camera;
+		camera* ui_camera;
 	} game_state;
 
 	typedef struct program_config {

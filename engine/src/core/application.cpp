@@ -22,6 +22,7 @@
 #include "systems/ecs_system.h"
 #include "systems/audio_system.h"
 #include "systems/scene_system.h"
+#include "systems/ui_system.h"
 #include "systems/render_view_system.h"
 #include "systems/job_system.h"
 
@@ -185,6 +186,18 @@ namespace caliope {
 		world_view.internal_config = world_config;
 		render_view_system_add_view(world_view);
 
+		render_view_ui_config ui_config;
+		ui_config.window_width = renderer_config.window_width;
+		ui_config.window_height = renderer_config.window_height;
+		ui_config.max_number_quads = config.maximum_number_entities_per_frame;
+		ui_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
+
+		render_view ui_view;
+		ui_view.name = "ui_view";
+		ui_view.type = VIEW_TYPE_UI;
+		ui_view.renderpass = RENDERPASS_TYPE_UI;
+		ui_view.internal_config = ui_config;
+		render_view_system_add_view(ui_view);
 
 		render_view_pick_config object_pick_config;
 		object_pick_config.window_width = renderer_config.window_width;
@@ -210,12 +223,21 @@ namespace caliope {
 			return false;
 		}
 
-		scene_system_configuration scene_config;
-		scene_config.max_number_entities = 500;
-		if (!scene_system_initialize(scene_config)) {
+		scene_system_configuration scene_system_config;
+		scene_system_config.max_number_entities = 500;
+		if (!scene_system_initialize(scene_system_config)) {
 			CE_LOG_FATAL("Failed to initialize scene system; shutting down");
 			return false;
 		}
+
+		ui_system_configuration ui_system_config;
+		ui_system_config.max_number_entities = 500;
+		if (!ui_system_initialize(ui_system_config)) {
+			CE_LOG_FATAL("Failed to initialize scene system; shutting down");
+			return false;
+		}
+
+
 
 		if (!state_ptr->program_config->initialize(state_ptr->program_config->game_state)) {
 			CE_LOG_FATAL("Failed to initialize the program; shutting down");
@@ -255,6 +277,7 @@ namespace caliope {
 
 				std::vector<renderer_view_packet> packets;
 				scene_system_populate_render_packet(packets, state_ptr->program_config->game_state.world_camera, delta_time);
+				ui_system_populate_render_packet(packets, state_ptr->program_config->game_state.ui_camera, delta_time);
 
 				if (!renderer_draw_frame(packets, delta_time)) {
 					CE_LOG_FATAL("Failed to render frame");
@@ -267,6 +290,8 @@ namespace caliope {
 
 		state_ptr->program_config.reset();
 		state_ptr.reset();
+
+		ui_system_shutdown();
 
 		scene_system_shutdown();
 

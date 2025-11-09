@@ -14,7 +14,8 @@ namespace caliope {
 	typedef struct camera_system_state {
 		std::unordered_map<std::string, camera_reference> registered_cameras;
 
-		camera default_camera;
+		camera default_world_camera;
+		camera default_ui_camera;
 
 	}camera_system_state;
 
@@ -28,7 +29,8 @@ namespace caliope {
 			return false;
 		}
 
-		state_ptr->default_camera = camera_create();
+		state_ptr->default_world_camera = camera_create();
+		state_ptr->default_ui_camera = camera_create();
 
 		CE_LOG_INFO("Camera system initialized.");
 		return true;
@@ -61,7 +63,11 @@ namespace caliope {
 		}
 	}
 	
-	camera* camera_system_get_default() {
-		return &state_ptr->default_camera;
+	camera* camera_system_get_default_world() {
+		return &state_ptr->default_world_camera;
+	}
+
+	camera* camera_system_get_default_ui() {
+		return &state_ptr->default_ui_camera;
 	}
 }
