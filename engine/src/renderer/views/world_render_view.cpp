@@ -161,50 +161,50 @@ namespace caliope {
 
 				// TODO: INSTEAD OF COMPARE NAMES COMPARE RANDOM NUMBERS OR HASHED NAMES FOR BETTER PERFORMANCE
 				// TODO: DRY
-				if (state_ptr->batch_textures[aux_diffuse_texture->id] && state_ptr->batch_textures[aux_diffuse_texture->id]->name == aux_diffuse_texture->name) {
-					diffuse_id = aux_diffuse_texture->id;
+				if (state_ptr->batch_textures[aux_diffuse_texture->world_batch_index] && state_ptr->batch_textures[aux_diffuse_texture->world_batch_index]->name == aux_diffuse_texture->name) {
+					diffuse_id = aux_diffuse_texture->world_batch_index;
 				}
 				else {
 					if (mat->diffuse_texture) {
 						state_ptr->batch_textures[texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->id = texture_id;
+						mat->diffuse_texture->world_batch_index = texture_id;
 					}
 					else {
 						state_ptr->batch_textures[texture_id] = material_system_get_default()->diffuse_texture;
-						material_system_get_default()->diffuse_texture->id = texture_id;
+						material_system_get_default()->diffuse_texture->world_batch_index = texture_id;
 					}
 					diffuse_id = texture_id;
 					texture_id++;
 				}
 
-				if (state_ptr->batch_textures[aux_specular_texture->id] && state_ptr->batch_textures[aux_specular_texture->id]->name == aux_specular_texture->name) {
-					specula_id = aux_specular_texture->id;
+				if (state_ptr->batch_textures[aux_specular_texture->world_batch_index] && state_ptr->batch_textures[aux_specular_texture->world_batch_index]->name == aux_specular_texture->name) {
+					specula_id = aux_specular_texture->world_batch_index;
 				}
 				else {
 					if (mat->specular_texture) {
 						state_ptr->batch_textures[texture_id] = mat->specular_texture;
-						mat->specular_texture->id = texture_id;
+						mat->specular_texture->world_batch_index = texture_id;
 					}
 					else {
 						state_ptr->batch_textures[texture_id] = material_system_get_default()->specular_texture;
-						material_system_get_default()->specular_texture->id = texture_id;
+						material_system_get_default()->specular_texture->world_batch_index = texture_id;
 					}
 					specula_id = texture_id;
 					texture_id++;
 				}
 
-				if (state_ptr->batch_textures[aux_normal_texture->id] && state_ptr->batch_textures[aux_normal_texture->id]->name == aux_normal_texture->name) {
-					normal_id = aux_normal_texture->id;
+				if (state_ptr->batch_textures[aux_normal_texture->world_batch_index] && state_ptr->batch_textures[aux_normal_texture->world_batch_index]->name == aux_normal_texture->name) {
+					normal_id = aux_normal_texture->world_batch_index;
 				}
 				else {
 					if (mat->normal_texture) {
 						state_ptr->batch_textures[texture_id] = mat->normal_texture;
-						mat->normal_texture->id = texture_id;
+						mat->normal_texture->world_batch_index = texture_id;
 
 					}
 					else {
 						state_ptr->batch_textures[texture_id] = material_system_get_default()->normal_texture;
-						material_system_get_default()->normal_texture->id = texture_id;
+						material_system_get_default()->normal_texture->world_batch_index = texture_id;
 					}
 					normal_id = texture_id;
 					texture_id++;
@@ -244,7 +244,8 @@ namespace caliope {
 				ubo_frag.point_lights[i] = world_packet.point_light_definitions[i];
 			}
 			renderer_set_descriptor_ubo(&ubo_frag, sizeof(uniform_fragment_buffer_object), 3, *shader, 1);
-
+			std::vector<texture*> batch_textures = state_ptr->batch_textures;
+			std::vector<shader_world_quad_properties> d = state_ptr->quads;
 			renderer_apply_descriptors(*shader);
 			renderer_draw_geometry(number_of_instances, *geometry_system_get_quad());
 

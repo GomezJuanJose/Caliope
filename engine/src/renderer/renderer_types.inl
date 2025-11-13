@@ -81,8 +81,9 @@ namespace caliope {
 
 	typedef enum renderpass_type {
 		RENDERPASS_TYPE_WORLD = 0,
-		RENDERPASS_TYPE_OBJECT_PICK,
-		RENDERPASS_TYPE_UI
+		RENDERPASS_TYPE_WORLD_OBJECT_PICK,
+		RENDERPASS_TYPE_UI,
+		RENDERPASS_TYPE_UI_OBJECT_PICK
 	} renderpass_type;
 
 	// NOTE: Aligned with vulkan types 

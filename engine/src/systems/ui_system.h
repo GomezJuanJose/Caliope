@@ -9,6 +9,7 @@ namespace caliope {
 	struct camera;
 	struct transform_component;
 	struct ui_material_component;
+	struct quad_definition;
 	enum archetype;
 	enum component_id;
 
@@ -18,6 +19,7 @@ namespace caliope {
 
 	bool ui_system_initialize(ui_system_configuration& config);
 	void ui_system_shutdown();
+
 	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time);
 
 	CE_API bool ui_system_create_empty_layout(std::string& name, bool enable_by_default);

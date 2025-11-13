@@ -1,9 +1,9 @@
 # Shader configuration
 
-name=Builtin.ObjectPickShader
-vertex_shader_name=Builtin.ObjectPickShader
-fragment_shader_name=Builtin.ObjectPickShader
-renderpass=object_pick_renderpass
+name=Builtin.WorldObjectPickShader
+vertex_shader_name=Builtin.WorldObjectPickShader
+fragment_shader_name=Builtin.WorldObjectPickShader
+renderpass=world_object_pick_renderpass
 
 # Vertex attributes (the order influence the final result!)
 vertex_attribute=vector3

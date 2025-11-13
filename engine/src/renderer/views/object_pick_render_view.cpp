@@ -8,6 +8,8 @@
 #include "systems/geometry_system.h"
 #include "renderer/renderer_frontend.h"
 
+#include "renderer/renderer_types.inl"
+
 #include "platform/platform.h"
 
 
@@ -23,43 +25,57 @@ namespace caliope {
 		uint id;
 	}ssbo_object_picking;
 
-
-	typedef struct object_pick_view_state {
+	typedef struct object_pick_view_data {
 		std::vector<shader_pick_quad_properties> pick_objects;
 		std::vector<texture*> batch_textures;
 
 		uint binded_textures_count;
 		uint max_textures_per_batch;
 
+		std::string pick_shader;
+
 		float aspect_ratio;
+	} object_pick_view_data;
 
-
-	}object_pick_view_state;
+	typedef struct object_pick_view_state {
+		std::unordered_map<int, object_pick_view_data> view_data;
+	} object_pick_view_state;
 
 	static std::unique_ptr<object_pick_view_state> state_ptr;
 
 	void object_pick_render_view_on_create(render_view& self) {
+
+		if (state_ptr == nullptr) {
+			state_ptr = std::make_unique<object_pick_view_state>();
+		}
+
+		state_ptr->view_data.insert({ self.type, object_pick_view_data() });
+
 		render_view_pick_config& internal_config = std::any_cast<render_view_pick_config>(self.internal_config);
-		state_ptr = std::make_unique<object_pick_view_state>();
 
-		state_ptr->pick_objects.resize(internal_config.max_number_quads);
-		state_ptr->batch_textures.resize(internal_config.max_textures_per_batch);
+		state_ptr->view_data.at(self.type).pick_objects.resize(internal_config.max_number_quads);
+		state_ptr->view_data.at(self.type).batch_textures.resize(internal_config.max_textures_per_batch);
 
-		state_ptr->binded_textures_count = 0;
-		state_ptr->max_textures_per_batch = internal_config.max_textures_per_batch;
+		state_ptr->view_data.at(self.type).binded_textures_count = 0;
+		state_ptr->view_data.at(self.type).max_textures_per_batch = internal_config.max_textures_per_batch;
 
-		state_ptr->aspect_ratio = (float)internal_config.window_width / (float)internal_config.window_height;
+		state_ptr->view_data.at(self.type).aspect_ratio = (float)internal_config.window_width / (float)internal_config.window_height;
+
 	}
 
 	void object_pick_render_view_on_destroy(render_view& self) {
-		state_ptr->batch_textures.clear();
-		state_ptr->pick_objects.clear();
-		state_ptr.reset();
-		state_ptr = nullptr;
+		state_ptr->view_data.at(self.type).batch_textures.clear();
+		state_ptr->view_data.at(self.type).pick_objects.clear();
+		state_ptr->view_data.erase(self.type);
+		
+		if (state_ptr->view_data.size() == 0) {
+			state_ptr.reset();
+			state_ptr = nullptr;
+		}
 	}
 
 	void object_pick_render_view_on_resize_window(render_view& self, uint width, uint height) {
-		state_ptr->aspect_ratio = (float)width / (float)height;
+		state_ptr->view_data.at(self.type).aspect_ratio = (float)width / (float)height;
 
 		renderer_renderpass_set_render_area(self.renderpass, { 0, 0, width, height });
 	}
@@ -73,8 +89,11 @@ namespace caliope {
 		object_pick_packet.delta_time = delta_time;
 		object_pick_packet.world_camera = cam;
 		
+		state_ptr->view_data.at(self.type).pick_shader = (int)out_packet.view_type == 1 ? "Builtin.WorldObjectPickShader" : "Builtin.UIObjectPickShader"; // TODO: Remove this hardcoded line by detecting wich shader use based on the package. Note 1 correspond to VIEW_TYPE_WORLD_OBJECT_PICK
+
 		for (uint index = 0; index < quads.size(); ++index) {
-			object_pick_packet.sprite_definitions["Builtin.ObjectPickShader"].push(quads[index]);//TODO: TEMPORAL hardcoded name
+			object_pick_packet.sprite_definitions.insert({ state_ptr->view_data.at(self.type).pick_shader , {} });
+			object_pick_packet.sprite_definitions.at(state_ptr->view_data.at(self.type).pick_shader).push(quads[index]);
 		}
 
 		out_packet.view_packet = object_pick_packet;
@@ -100,7 +119,7 @@ namespace caliope {
 			return false;
 		}
 
-		shader* shader = shader_system_adquire(std::string("Builtin.ObjectPickShader"));//TODO: TEMPORAL
+		shader* shader = shader_system_adquire(std::string(state_ptr->view_data.at(self.type).pick_shader));
 		
 		// Groups the materials and transforms by shader. This is to batch maximum information in a single drawcall
 		//for (auto [shader_name, material_name] : packet.quad_materials) {
@@ -118,8 +137,6 @@ namespace caliope {
 				//std::vector<transform>& transforms = packet.quad_transforms[material_name];
 
 				texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
-				texture* aux_specular_texture = mat->specular_texture ? mat->specular_texture : material_system_get_default()->specular_texture;
-				texture* aux_normal_texture = mat->normal_texture ? mat->normal_texture : material_system_get_default()->normal_texture;
 
 				// TODO: detect batch and better integration with the algorithm
 				// TODO: Probar a hacer que cuando el texture_id(es decir el numero de texturas que lleva en el batch) sobrepase el maximo sutituya los primeros(pero antes de eso tiene que haber hecho el draw)
@@ -146,66 +163,33 @@ namespace caliope {
 				//-----------------
 
 				uint diffuse_id = 0;
-				uint specula_id = 0;
-				uint normal_id = 0;
+		
 
 				// TODO: INSTEAD OF COMPARE NAMES COMPARE RANDOM NUMBERS OR HASHED NAMES FOR BETTER PERFORMANCE
 				// TODO: DRY
-				if (state_ptr->batch_textures[aux_diffuse_texture->id] && state_ptr->batch_textures[aux_diffuse_texture->id]->name == aux_diffuse_texture->name) {
-					diffuse_id = aux_diffuse_texture->id;
+				if (state_ptr->view_data.at(self.type).batch_textures[aux_diffuse_texture->ui_batch_index] && state_ptr->view_data.at(self.type).batch_textures[aux_diffuse_texture->ui_batch_index]->name == aux_diffuse_texture->name) {
+					diffuse_id = aux_diffuse_texture->ui_batch_index;
 				}
 				else {
 					if (mat->diffuse_texture) {
-						state_ptr->batch_textures[texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->id = texture_id;
+						state_ptr->view_data.at(self.type).batch_textures[texture_id] = mat->diffuse_texture;
+						mat->diffuse_texture->ui_batch_index = texture_id;
 					}
 					else {
-						state_ptr->batch_textures[texture_id] = material_system_get_default()->diffuse_texture;
-						material_system_get_default()->diffuse_texture->id = texture_id;
+						state_ptr->view_data.at(self.type).batch_textures[texture_id] = material_system_get_default()->diffuse_texture;
+						material_system_get_default()->diffuse_texture->ui_batch_index = texture_id;
 					}
 					diffuse_id = texture_id;
 					texture_id++;
 				}
 
-				if (state_ptr->batch_textures[aux_specular_texture->id] && state_ptr->batch_textures[aux_specular_texture->id]->name == aux_specular_texture->name) {
-					specula_id = aux_specular_texture->id;
-				}
-				else {
-					if (mat->specular_texture) {
-						state_ptr->batch_textures[texture_id] = mat->specular_texture;
-						mat->specular_texture->id = texture_id;
-					}
-					else {
-						state_ptr->batch_textures[texture_id] = material_system_get_default()->specular_texture;
-						material_system_get_default()->specular_texture->id = texture_id;
-					}
-					specula_id = texture_id;
-					texture_id++;
-				}
-
-				if (state_ptr->batch_textures[aux_normal_texture->id] && state_ptr->batch_textures[aux_normal_texture->id]->name == aux_normal_texture->name) {
-					normal_id = aux_normal_texture->id;
-				}
-				else {
-					if (mat->normal_texture) {
-						state_ptr->batch_textures[texture_id] = mat->normal_texture;
-						mat->normal_texture->id = texture_id;
-
-					}
-					else {
-						state_ptr->batch_textures[texture_id] = material_system_get_default()->normal_texture;
-						material_system_get_default()->normal_texture->id = texture_id;
-					}
-					normal_id = texture_id;
-					texture_id++;
-				}
-
+			
 				shader_pick_quad_properties psp;
 				psp.model = transform_get_world(sprite.transform);
 				psp.id = sprite.id;
 				psp.diffuse_index = diffuse_id;
 				psp.texture_region = sprite.texture_region;
-				state_ptr->pick_objects.at(instance_index) = psp;
+				state_ptr->view_data.at(self.type).pick_objects.at(instance_index) = psp;
 
 				number_of_instances++;
 				instance_index--;
@@ -220,10 +204,11 @@ namespace caliope {
 			ubo_vertex.view_position = object_pick_packet.world_camera->position;
 			renderer_set_descriptor_ubo(&ubo_vertex, sizeof(uniform_vertex_buffer_object), 0, *shader, 0);
 			
-			renderer_set_descriptor_ssbo(state_ptr->pick_objects.data(), sizeof(shader_pick_quad_properties)* number_of_instances, 1, *shader, 1);
+			renderer_set_descriptor_ssbo(state_ptr->view_data.at(self.type).pick_objects.data(), sizeof(shader_pick_quad_properties)* number_of_instances, 1, *shader, 1);
 			renderer_set_descriptor_ssbo(0, sizeof(ssbo_object_picking), 2, *shader, 2);
 			
-			renderer_set_descriptor_sampler(state_ptr->batch_textures, 3, *shader);// TODO: Reuse the already existing textures from the world view, to avoid to do the internal for loop of this function
+			std::vector<texture*> batch_textures = state_ptr->view_data.at(self.type).batch_textures;
+			renderer_set_descriptor_sampler(state_ptr->view_data.at(self.type).batch_textures, 3, *shader);// TODO: Reuse the already existing textures from the world view, to avoid to do the internal for loop of this function
 
 
 			renderer_apply_descriptors(*shader);
@@ -239,7 +224,8 @@ namespace caliope {
 		ssbo_object_picking data;
 		data.id = -1;
 		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
-		event_fire(EVENT_CODE_ON_ENTITY_HOVER, data.id);
+		uint event_data[2] = {data.id, self.type};
+		event_fire(EVENT_CODE_ON_ENTITY_HOVER, event_data);
 
 		return true;
 	}

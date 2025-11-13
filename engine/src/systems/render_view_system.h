@@ -11,8 +11,9 @@ namespace caliope {
 
 	typedef enum view_type {
 		VIEW_TYPE_WORLD = 0,
-		VIEW_TYPE_OBJECT_PICK,
-		VIEW_TYPE_UI
+		VIEW_TYPE_WORLD_OBJECT_PICK,
+		VIEW_TYPE_UI,
+		VIEW_TYPE_UI_OBJECT_PICK
 	}view_type;
 
 

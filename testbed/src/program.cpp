@@ -35,8 +35,8 @@ void initialize_sounds() {
 }
 
 bool on_entity_hover(caliope::event_system_code code, std::any data) {
-	uint id = std::any_cast<uint>(data);
-	CE_LOG_INFO("%d", id);
+	uint* id = std::any_cast<uint*>(data);
+	//CE_LOG_INFO("%d", id);
 
 	return true;
 }

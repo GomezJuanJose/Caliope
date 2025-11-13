@@ -292,10 +292,10 @@ namespace caliope {
 		render_view_system_on_build_packet(VIEW_TYPE_WORLD, world_packet, std::vector<std::any>({ quads_data, lights_data, world_cam_in_use, delta_time }));
 		packets.push_back(world_packet);
 
-		renderer_view_packet pick_object_packet;
-		pick_object_packet.view_type = VIEW_TYPE_OBJECT_PICK;
-		render_view_system_on_build_packet(VIEW_TYPE_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ quads_data, world_cam_in_use, delta_time}));
-		packets.push_back(pick_object_packet);
 
+		renderer_view_packet pick_object_packet;
+		pick_object_packet.view_type = VIEW_TYPE_WORLD_OBJECT_PICK;
+		render_view_system_on_build_packet(VIEW_TYPE_WORLD_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ quads_data, world_cam_in_use, delta_time }));
+		packets.push_back(pick_object_packet);
 	}
 }

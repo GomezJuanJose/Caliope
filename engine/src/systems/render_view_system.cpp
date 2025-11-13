@@ -48,7 +48,7 @@ namespace caliope {
 			view.on_build_package = world_render_view_on_build_package;
 			view.on_render = world_render_view_on_render;
 		
-		}else if (view.type == VIEW_TYPE_OBJECT_PICK) {
+		}else if (view.type == VIEW_TYPE_WORLD_OBJECT_PICK || view.type == VIEW_TYPE_UI_OBJECT_PICK) {
 			view.on_create = object_pick_render_view_on_create;
 			view.on_destroy = object_pick_render_view_on_destroy;
 			view.on_resize_window = object_pick_render_view_on_resize_window;

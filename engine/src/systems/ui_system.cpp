@@ -21,7 +21,7 @@ namespace caliope {
 		std::unordered_map<uint, uint> entity_index_layout; // Index of the entity that occupies in the layout
 		uint layout_count;
 		uint max_number_entities;
-	}ui_system_state;
+	} ui_system_state;
 
 	static std::unique_ptr<ui_system_state> state_ptr;
 
@@ -229,7 +229,7 @@ namespace caliope {
 
 			ui_material_component* ui_image_comp = (ui_material_component*)ecs_system_get_component_data(ui_images[entity_index], UI_MATERIAL_COMPONENT, size);
 			quad_definition.material_name = std::string(ui_image_comp->material_name.data()); // TODO: Change to char array
-			quad_definition.z_order = 0;
+			quad_definition.z_order = 9999999;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_image_comp->material_name.data()))->diffuse_texture,
 				ui_image_comp->texture_region[0],
@@ -244,5 +244,9 @@ namespace caliope {
 		render_view_system_on_build_packet(VIEW_TYPE_UI, ui_packet, std::vector<std::any>({ quads_data, ui_cam_in_use, delta_time }));
 		packets.push_back(ui_packet);
 
+		renderer_view_packet pick_object_packet;
+		pick_object_packet.view_type = VIEW_TYPE_UI_OBJECT_PICK;
+		render_view_system_on_build_packet(VIEW_TYPE_UI_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ quads_data, ui_cam_in_use, delta_time }));
+		packets.push_back(pick_object_packet);
 	}
 }

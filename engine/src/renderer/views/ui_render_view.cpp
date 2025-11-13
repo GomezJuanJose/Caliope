@@ -112,17 +112,17 @@ namespace caliope {
 				texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
 				uint diffuse_id = 0;
 
-				if (state_ptr->batch_textures[aux_diffuse_texture->id] && state_ptr->batch_textures[aux_diffuse_texture->id]->name == aux_diffuse_texture->name) {
-					diffuse_id = aux_diffuse_texture->id;
+				if (state_ptr->batch_textures[aux_diffuse_texture->world_batch_index] && state_ptr->batch_textures[aux_diffuse_texture->world_batch_index]->name == aux_diffuse_texture->name) {
+					diffuse_id = aux_diffuse_texture->world_batch_index;
 				}
 				else {
 					if (mat->diffuse_texture) {
 						state_ptr->batch_textures[texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->id = texture_id;
+						mat->diffuse_texture->world_batch_index = texture_id;
 					}
 					else {
 						state_ptr->batch_textures[texture_id] = material_system_get_default()->diffuse_texture;
-						material_system_get_default()->diffuse_texture->id = texture_id;
+						material_system_get_default()->diffuse_texture->world_batch_index = texture_id;
 					}
 					diffuse_id = texture_id;
 					texture_id++;

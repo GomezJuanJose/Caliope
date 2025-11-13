@@ -53,7 +53,7 @@ namespace caliope{
 		// Creates renderpasses
 		renderpass pass;
 
-		//World renderpass
+		// World renderpass
 		pass = {};
 		pass.type = RENDERPASS_TYPE_WORLD;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER | RENDERPASS_CLEAR_FLAG_DEPTH_BUFFER);
@@ -72,7 +72,7 @@ namespace caliope{
 		state_ptr->backend.renderpass_create(pass, world_renderpass_data);
 		state_ptr->renderpasses.insert({pass.type, pass});
 
-		//UI renderpass
+		// UI renderpass
 		pass = {};
 		pass.type = RENDERPASS_TYPE_UI;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_NONE);
@@ -91,23 +91,42 @@ namespace caliope{
 		state_ptr->backend.renderpass_create(pass, ui_renderpass_data);
 		state_ptr->renderpasses.insert({ pass.type, pass });
 
-		//Pick object renderpass
+		// World pick object renderpass
 		pass = {};
-		pass.type = RENDERPASS_TYPE_OBJECT_PICK;
+		pass.type = RENDERPASS_TYPE_WORLD_OBJECT_PICK;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
-		renderpass_resource_data pick_object_renderpass_data;
-		pick_object_renderpass_data.clear_color = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
-		pick_object_renderpass_data.depth = 1.0f;
-		pick_object_renderpass_data.stencil = 0;
-		pick_object_renderpass_data.has_prev_pass = false;
-		pick_object_renderpass_data.has_next_pass = true;
-		pick_object_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_R32_SFLOAT };
-		pick_object_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
-		pick_object_renderpass_data.subpass_src_access_mask = 0;
-		pick_object_renderpass_data.subpass_dst_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
-		pick_object_renderpass_data.subpass_dst_access_mask =  RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE;
-		state_ptr->backend.renderpass_create(pass, pick_object_renderpass_data);
+		renderpass_resource_data world_pick_object_renderpass_data;
+		world_pick_object_renderpass_data.clear_color = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
+		world_pick_object_renderpass_data.depth = 1.0f;
+		world_pick_object_renderpass_data.stencil = 0;
+		world_pick_object_renderpass_data.has_prev_pass = false;
+		world_pick_object_renderpass_data.has_next_pass = false;
+		world_pick_object_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_R32_SFLOAT };
+		world_pick_object_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		world_pick_object_renderpass_data.subpass_src_access_mask = 0;
+		world_pick_object_renderpass_data.subpass_dst_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		world_pick_object_renderpass_data.subpass_dst_access_mask =  RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE;
+		state_ptr->backend.renderpass_create(pass, world_pick_object_renderpass_data);
+		state_ptr->renderpasses.insert({ pass.type, pass });
+
+		// UI pick object renderpass
+		pass = {};
+		pass.type = RENDERPASS_TYPE_UI_OBJECT_PICK;
+		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
+		pass.targets.resize(state_ptr->backend.window_images_count_get());
+		renderpass_resource_data ui_pick_object_renderpass_data;
+		ui_pick_object_renderpass_data.clear_color = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
+		ui_pick_object_renderpass_data.depth = 1.0f;
+		ui_pick_object_renderpass_data.stencil = 0;
+		ui_pick_object_renderpass_data.has_prev_pass = false;
+		ui_pick_object_renderpass_data.has_next_pass = false;
+		ui_pick_object_renderpass_data.attachment_formats = { ATTACHMENT_FORMAT_TYPE_R32_SFLOAT };
+		ui_pick_object_renderpass_data.subpass_src_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		ui_pick_object_renderpass_data.subpass_src_access_mask = 0;
+		ui_pick_object_renderpass_data.subpass_dst_stage_mask = RENDERPASS_STAGE_TYPE_COLOR_ATTACHMENT_OUTPUT | RENDERPASS_STAGE_TYPE_EARLY_FRAGMENT_TESTS;
+		ui_pick_object_renderpass_data.subpass_dst_access_mask = RENDERPASS_ACCESS_TYPE_COLOR_ATTACHMENT_WRITE;
+		state_ptr->backend.renderpass_create(pass, ui_pick_object_renderpass_data);
 		state_ptr->renderpasses.insert({ pass.type, pass });
 
 		generate_render_targets();
@@ -160,7 +179,7 @@ namespace caliope{
 			for(uint index = 0; index < packets.size(); ++index){
 				render_view_system_on_render(packets[index].view_type, packets[index].view_packet, render_target_index);
 			}
-
+	
 			if (!state_ptr->backend.end_frame(delta_time)) {
 				CE_LOG_ERROR("renderer_end_frame failed. Application shutting down");
 				return false;
@@ -262,11 +281,15 @@ namespace caliope{
 			ui_pass.targets[i].attachments = { state_ptr->backend.window_attachment_get(i)};
 			state_ptr->backend.render_target_create(ui_pass, ui_pass.targets[i]);
 
-			renderpass& object_pick_pass = state_ptr->renderpasses.at(RENDERPASS_TYPE_OBJECT_PICK);
+			renderpass& world_object_pick_pass = state_ptr->renderpasses.at(RENDERPASS_TYPE_WORLD_OBJECT_PICK);
+			state_ptr->backend.render_target_destroy(world_object_pick_pass.targets[i]);
+			world_object_pick_pass.targets[i].attachments = { state_ptr->backend.object_pick_attachment_get() };
+			state_ptr->backend.render_target_create(world_object_pick_pass, world_object_pick_pass.targets[i]);
 
-			state_ptr->backend.render_target_destroy(object_pick_pass.targets[i]);
-			object_pick_pass.targets[i].attachments = { state_ptr->backend.object_pick_attachment_get() };
-			state_ptr->backend.render_target_create(object_pick_pass, object_pick_pass.targets[i]);
+			renderpass& ui_object_pick_pass = state_ptr->renderpasses.at(RENDERPASS_TYPE_UI_OBJECT_PICK);
+			state_ptr->backend.render_target_destroy(ui_object_pick_pass.targets[i]);
+			ui_object_pick_pass.targets[i].attachments = { state_ptr->backend.object_pick_attachment_get() };
+			state_ptr->backend.render_target_create(ui_object_pick_pass, ui_object_pick_pass.targets[i]);
 		}
 
 

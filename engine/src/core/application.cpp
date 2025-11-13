@@ -23,8 +23,10 @@
 #include "systems/audio_system.h"
 #include "systems/scene_system.h"
 #include "systems/ui_system.h"
+#include "systems/object_pick_system.h"
 #include "systems/render_view_system.h"
 #include "systems/job_system.h"
+#include "systems/object_pick_system.h"
 
 #include "math/transform.h"
 
@@ -178,7 +180,6 @@ namespace caliope {
 		world_config.window_height = renderer_config.window_height;
 		world_config.max_number_quads = config.maximum_number_entities_per_frame;
 		world_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
-
 		render_view world_view;
 		world_view.name = "world_view";
 		world_view.type = VIEW_TYPE_WORLD;
@@ -191,7 +192,6 @@ namespace caliope {
 		ui_config.window_height = renderer_config.window_height;
 		ui_config.max_number_quads = config.maximum_number_entities_per_frame;
 		ui_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
-
 		render_view ui_view;
 		ui_view.name = "ui_view";
 		ui_view.type = VIEW_TYPE_UI;
@@ -199,19 +199,29 @@ namespace caliope {
 		ui_view.internal_config = ui_config;
 		render_view_system_add_view(ui_view);
 
-		render_view_pick_config object_pick_config;
-		object_pick_config.window_width = renderer_config.window_width;
-		object_pick_config.window_height = renderer_config.window_height;
-		object_pick_config.max_number_quads = config.maximum_number_entities_per_frame;
-		object_pick_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
+		render_view_pick_config world_object_pick_config;
+		world_object_pick_config.window_width = renderer_config.window_width;
+		world_object_pick_config.window_height = renderer_config.window_height;
+		world_object_pick_config.max_number_quads = config.maximum_number_entities_per_frame;
+		world_object_pick_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
+		render_view world_object_pick_view;
+		world_object_pick_view.name = "world_object_pick_view";
+		world_object_pick_view.type = VIEW_TYPE_WORLD_OBJECT_PICK;
+		world_object_pick_view.renderpass = RENDERPASS_TYPE_WORLD_OBJECT_PICK;
+		world_object_pick_view.internal_config = world_object_pick_config;
+		render_view_system_add_view(world_object_pick_view);
 
-		render_view object_pick_view;
-		object_pick_view.name = "object_pick_view";
-		object_pick_view.type = VIEW_TYPE_OBJECT_PICK;
-		object_pick_view.renderpass = RENDERPASS_TYPE_OBJECT_PICK;
-		object_pick_view.internal_config = object_pick_config;
-		render_view_system_add_view(object_pick_view);
-
+		render_view_pick_config ui_object_pick_config;
+		ui_object_pick_config.window_width = renderer_config.window_width;
+		ui_object_pick_config.window_height = renderer_config.window_height;
+		ui_object_pick_config.max_number_quads = config.maximum_number_entities_per_frame;
+		ui_object_pick_config.max_textures_per_batch = config.maximum_number_textures_per_frame;
+		render_view ui_object_pick_view;
+		ui_object_pick_view.name = "ui_object_pick_view";
+		ui_object_pick_view.type = VIEW_TYPE_UI_OBJECT_PICK;
+		ui_object_pick_view.renderpass = RENDERPASS_TYPE_UI_OBJECT_PICK;
+		ui_object_pick_view.internal_config = ui_object_pick_config;
+		render_view_system_add_view(ui_object_pick_view);
 
 		if (!ecs_system_initialize()) {
 			CE_LOG_FATAL("Failed to initialize ecs system; shutting down");
@@ -230,10 +240,15 @@ namespace caliope {
 			return false;
 		}
 
+		if (!object_pick_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize object pick system; shutting down");
+			return false;
+		}
+
 		ui_system_configuration ui_system_config;
 		ui_system_config.max_number_entities = 500;
 		if (!ui_system_initialize(ui_system_config)) {
-			CE_LOG_FATAL("Failed to initialize scene system; shutting down");
+			CE_LOG_FATAL("Failed to initialize ui system; shutting down");
 			return false;
 		}
 
@@ -275,7 +290,9 @@ namespace caliope {
 					CE_LOG_ERROR("Failed to update the program;");
 				}
 
+
 				std::vector<renderer_view_packet> packets;
+
 				scene_system_populate_render_packet(packets, state_ptr->program_config->game_state.world_camera, delta_time);
 				ui_system_populate_render_packet(packets, state_ptr->program_config->game_state.ui_camera, delta_time);
 
@@ -292,6 +309,8 @@ namespace caliope {
 		state_ptr.reset();
 
 		ui_system_shutdown();
+
+		object_pick_system_shutdown();
 
 		scene_system_shutdown();
 
