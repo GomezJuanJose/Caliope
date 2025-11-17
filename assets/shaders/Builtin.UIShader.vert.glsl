@@ -17,10 +17,6 @@ struct quad_properties {
 	vec2 texture_coordinates[4];
 	uint id;
 	uint diffuse_index;
-	uint normal_index;
-	uint specular_index;
-	float shininess_intensity;
-	float shininess_sharpness;
 };
 
 layout(std430, binding = 2) readonly buffer quad_buffer{

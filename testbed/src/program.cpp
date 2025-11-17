@@ -34,11 +34,30 @@ void initialize_sounds() {
 	//caliope::audio_system_play_emmiter(test_music_steeam_emmiter.id, 0);
 }
 
-bool on_entity_hover(caliope::event_system_code code, std::any data) {
-	uint* id = std::any_cast<uint*>(data);
-	//CE_LOG_INFO("%d", id);
 
-	return true;
+
+bool on_button_pressed(caliope::event_system_code code, std::any data) {
+	CE_LOG_INFO("BUTTON PRESSED");
+
+	caliope::scene_system_enable(std::string("scene_test1"), false);
+	return false;
+}
+
+bool on_button_released(caliope::event_system_code code, std::any data) {
+	CE_LOG_INFO("BUTTON RELEASED");
+	return false;
+}
+
+bool on_button_hover(caliope::event_system_code code, std::any data) {
+	CE_LOG_INFO("BUTTON HOVER");
+
+	return false;
+}
+
+bool on_button_unhover(caliope::event_system_code code, std::any data) {
+	CE_LOG_INFO("BUTTON UNHOVER");
+
+	return false;
 }
 
 bool initialize_testbed(caliope::game_state& game_state) {
@@ -57,7 +76,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	//caliope::scene_system_create_empty(std::string("scene_test1"), true);
 	//caliope::scene_system_create_empty(std::string("scene_test2"), true);
 
-	caliope::event_register(caliope::EVENT_CODE_ON_ENTITY_HOVER, on_entity_hover);
+	//caliope::event_register(caliope::EVENT_CODE_ON_ENTITY_HOVER, on_entity_hover);
 
 
 	caliope::ui_system_create_empty_layout(std::string("ui_layout_test"), true);
@@ -71,6 +90,30 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	sc.texture_region[0] = { 0.0f, 0.0f };
 	sc.texture_region[1] = { 0.0f, 0.0f };
 	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc);
+
+	caliope::transform_component t2;
+	t2.position = glm::vec3(0.5f, 0.0f, 0.0f);
+	t2.scale = glm::vec3(0.15f, 0.15f, 0.15f);
+	t2.roll_rotation = 0.0f;
+	caliope::ui_dynamic_material_component dmc;
+	dmc.normal_texture = {"ui_button"};
+	dmc.hover_texture = { "ui_button" };
+	dmc.pressed_texture = { "ui_button_pressed" };
+
+	dmc.normal_color = {1.0f, 1.0f, 1.0f, 1.0f};
+	dmc.hover_color = { 0.5f, 0.5f, 0.5f, 1.0f };
+	dmc.pressed_color = { 0.25f, 0.25f, 0.25f, 1.0f };
+
+	dmc.material_name = { "ui_button_test" };
+	dmc.texture_region[0] = { 0.0f, 0.0f };
+	dmc.texture_region[1] = { 0.0f, 0.0f };
+
+	caliope::ui_events_component me;
+	me.on_ui_pressed = on_button_pressed;
+	me.on_ui_released = on_button_released;
+	me.on_ui_hover = on_button_hover;
+	me.on_ui_unhover = on_button_unhover;
+	caliope::ui_system_instance_button(std::string("ui_layout_test"), t2, dmc, me);
 
 	initialize_sounds();
 

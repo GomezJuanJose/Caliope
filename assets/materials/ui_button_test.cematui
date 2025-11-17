@@ -1,0 +1,6 @@
+# Material config
+
+name=ui_button_test
+shader_name=Builtin.UIShader
+diffuse_texture=ui_button
+diffuse_color=1.0 1.0 1.0

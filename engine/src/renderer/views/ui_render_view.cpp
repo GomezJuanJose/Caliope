@@ -26,7 +26,7 @@ namespace caliope {
 		uint max_textures_per_batch;
 
 		float aspect_ratio;
-
+		uint texture_id;
 	} ui_view_state;
 
 	static std::unique_ptr<ui_view_state> state_ptr;
@@ -101,8 +101,6 @@ namespace caliope {
 			renderer_shader_use(*shader);
 
 			uint number_of_instances = 0;
-			uint texture_id = 0;
-
 
 			while (!sprites.empty()) {
 				quad_definition sprite = sprites.top();
@@ -112,20 +110,20 @@ namespace caliope {
 				texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
 				uint diffuse_id = 0;
 
-				if (state_ptr->batch_textures[aux_diffuse_texture->world_batch_index] && state_ptr->batch_textures[aux_diffuse_texture->world_batch_index]->name == aux_diffuse_texture->name) {
-					diffuse_id = aux_diffuse_texture->world_batch_index;
+				if (state_ptr->batch_textures[aux_diffuse_texture->normal_render_batch_index] && state_ptr->batch_textures[aux_diffuse_texture->normal_render_batch_index]->name == aux_diffuse_texture->name) {
+					diffuse_id = aux_diffuse_texture->normal_render_batch_index;
 				}
 				else {
 					if (mat->diffuse_texture) {
-						state_ptr->batch_textures[texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->world_batch_index = texture_id;
+						state_ptr->batch_textures[state_ptr->texture_id] = mat->diffuse_texture;
+						mat->diffuse_texture->normal_render_batch_index = state_ptr->texture_id;
 					}
 					else {
-						state_ptr->batch_textures[texture_id] = material_system_get_default()->diffuse_texture;
-						material_system_get_default()->diffuse_texture->world_batch_index = texture_id;
+						state_ptr->batch_textures[state_ptr->texture_id] = material_system_get_default()->diffuse_texture;
+						material_system_get_default()->diffuse_texture->normal_render_batch_index = state_ptr->texture_id;
 					}
-					diffuse_id = texture_id;
-					texture_id++;
+					diffuse_id = state_ptr->texture_id;
+					state_ptr->texture_id++;
 				}
 
 

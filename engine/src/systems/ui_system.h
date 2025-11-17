@@ -9,6 +9,8 @@ namespace caliope {
 	struct camera;
 	struct transform_component;
 	struct ui_material_component;
+	struct ui_dynamic_material_component;
+	struct ui_events_component;
 	struct quad_definition;
 	enum archetype;
 	enum component_id;
@@ -29,6 +31,7 @@ namespace caliope {
 	//CE_API bool ui_system_save_layout(std::string& name);
 
 	CE_API bool ui_system_instance_image(std::string& name, transform_component& transform, ui_material_component& ui_material);
+	CE_API bool ui_system_instance_button(std::string& name, transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events);
 	CE_API void ui_system_destroy_entity(std::string& name, uint entity);
 
 	CE_API void ui_system_enable_layout(std::string& name, bool enable);

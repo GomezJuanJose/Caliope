@@ -42,4 +42,24 @@ namespace caliope {
 		std::array<char, MAX_NAME_LENGTH> material_name;
 		std::array<glm::vec2, 2> texture_region;
 	} ui_material_component;
+
+	typedef struct ui_dynamic_material_component {
+		std::array<char, MAX_NAME_LENGTH> normal_texture;
+		std::array<char, MAX_NAME_LENGTH> hover_texture;
+		std::array<char, MAX_NAME_LENGTH> pressed_texture;
+		glm::vec4 normal_color;
+		glm::vec4 hover_color;
+		glm::vec4 pressed_color;
+
+		std::array<char, MAX_NAME_LENGTH> material_name;
+		std::array<glm::vec2, 2> texture_region;
+	} ui_dynamic_material_component;
+
+	enum event_system_code;
+	typedef struct ui_events_component {
+		bool(*on_ui_hover)(event_system_code code, std::any data);
+		bool(*on_ui_unhover)(event_system_code code, std::any data);
+		bool(*on_ui_pressed)(event_system_code code, std::any data);
+		bool(*on_ui_released)(event_system_code code, std::any data);
+	} ui_events_component;
 }

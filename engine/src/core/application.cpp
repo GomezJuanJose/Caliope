@@ -285,14 +285,12 @@ namespace caliope {
 
 				// Update the job system
 				job_system_update();
-
+				
 				if (!state_ptr->program_config->update(state_ptr->program_config->game_state, delta_time)) {
 					CE_LOG_ERROR("Failed to update the program;");
 				}
 
-
 				std::vector<renderer_view_packet> packets;
-
 				scene_system_populate_render_packet(packets, state_ptr->program_config->game_state.world_camera, delta_time);
 				ui_system_populate_render_packet(packets, state_ptr->program_config->game_state.ui_camera, delta_time);
 

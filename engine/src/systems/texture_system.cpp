@@ -147,8 +147,8 @@ namespace caliope {
 		image_resource_data image_data = std::any_cast<image_resource_data>(r.data);
 
 		t.name = name;
-		t.world_batch_index = 0;
-		t.ui_batch_index = 0;
+		t.normal_render_batch_index = 0;
+		t.pick_render_batch_index = 0;
 		t.width = image_data.width;
 		t.height = image_data.height;
 		t.channel_count = image_data.channel_count;
@@ -199,7 +199,7 @@ namespace caliope {
 			}
 		}
 		state_ptr->default_diffuse_texture.name = std::string("default_texture");
-		state_ptr->default_diffuse_texture.world_batch_index = 0;
+		state_ptr->default_diffuse_texture.normal_render_batch_index = 0;
 		state_ptr->default_diffuse_texture.width = texture_dimensions;
 		state_ptr->default_diffuse_texture.height = texture_dimensions;
 		state_ptr->default_diffuse_texture.channel_count = texture_channels;
@@ -211,7 +211,7 @@ namespace caliope {
 
 		std::array<uchar, 16 * 16 * 4> spec_pixels = { 0 };
 		state_ptr->default_specular_texture.name = std::string("default_spec");
-		state_ptr->default_specular_texture.world_batch_index = 0;
+		state_ptr->default_specular_texture.normal_render_batch_index = 0;
 		state_ptr->default_specular_texture.width = 16;
 		state_ptr->default_specular_texture.height = 16;
 		state_ptr->default_specular_texture.channel_count = texture_channels;
@@ -233,7 +233,7 @@ namespace caliope {
 			}
 		}
 		state_ptr->default_normal_texture.name = std::string("default_normal");
-		state_ptr->default_normal_texture.world_batch_index = 0;
+		state_ptr->default_normal_texture.normal_render_batch_index = 0;
 		state_ptr->default_normal_texture.width = 16;
 		state_ptr->default_normal_texture.height = 16;
 		state_ptr->default_normal_texture.channel_count = texture_channels;

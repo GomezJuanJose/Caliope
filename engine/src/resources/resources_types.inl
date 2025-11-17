@@ -138,8 +138,8 @@ namespace caliope {
 
 	typedef struct texture {
 		std::string name;
-		uint world_batch_index; // Position that occupies into the render world batch texture array
-		uint ui_batch_index; // Position that occupies into the render ui batch texture array
+		uint normal_render_batch_index; // Position that occupies into the render world batch texture array
+		uint pick_render_batch_index; // Position that occupies into the render ui batch texture array
 		uint width;
 		uint height;
 		uint channel_count;

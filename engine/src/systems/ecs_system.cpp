@@ -67,12 +67,26 @@ namespace caliope {
 		point_light_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC4, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_FLOAT });
 		ecs_system_build_archetype(ARCHETYPE_POINT_LIGHT, new_archetype_id, new_archetype_size, point_light_components_data_types);
 
+
 		new_archetype_size = { sizeof(transform_component), sizeof(ui_material_component) };
 		new_archetype_id = { TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT };
 		std::vector<std::vector<component_data_type>> ui_image_components_data_types;
 		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
 		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_STRING, COMPONENT_DATA_TYPE_VEC4 });
 		ecs_system_build_archetype(ARCHETYPE_UI_IMAGE, new_archetype_id, new_archetype_size, ui_image_components_data_types);
+
+		new_archetype_size = { sizeof(transform_component), sizeof(ui_dynamic_material_component), sizeof(ui_events_component)};
+		new_archetype_id = { TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT };
+		std::vector<std::vector<component_data_type>> ui_button_components_data_types;
+		ui_button_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		ui_button_components_data_types.push_back({ 
+			COMPONENT_DATA_TYPE_STRING,COMPONENT_DATA_TYPE_STRING,COMPONENT_DATA_TYPE_STRING, 
+			COMPONENT_DATA_TYPE_VEC4,COMPONENT_DATA_TYPE_VEC4,COMPONENT_DATA_TYPE_VEC4, 
+			COMPONENT_DATA_TYPE_STRING, COMPONENT_DATA_TYPE_VEC4 });
+		ui_button_components_data_types.push_back({
+			// TODO: How to parse a function?
+			});
+		ecs_system_build_archetype(ARCHETYPE_UI_BUTTON, new_archetype_id, new_archetype_size, ui_button_components_data_types);
 
 		CE_LOG_INFO("ECS system initialized.");
 
@@ -279,6 +293,11 @@ namespace caliope {
 	}
 
 	void* ecs_system_get_component_data(uint entity, component_id component, uint64& out_component_size){
+
+		if (state_ptr->entities_tracker.find(entity) == state_ptr->entities_tracker.end()) {
+			return nullptr;
+		}
+
 		ecs_entity_entry entity_entry = state_ptr->entities_tracker.at(entity);
 		uint component_index = -1;
 		std::vector<component_id> components = state_ptr->archetypes[entity_entry.archetype].components_tracker;

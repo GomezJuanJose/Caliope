@@ -1,11 +1,13 @@
 #include "ui_system.h"
 #include "core/logger.h"
 #include "core/cememory.h"
+#include "core/event.h"
 #include "resources/resources_types.inl"
 #include "platform/file_system.h"
 
 #include "components/components.inl"
 #include "ecs_system.h"
+#include "object_pick_system.h"
 
 #include "sprite_animation_system.h"
 #include "material_system.h"
@@ -13,7 +15,8 @@
 #include "resource_system.h"
 
 #include "renderer/renderer_types.inl"
-#include "systems/render_view_system.h"
+#include "render_view_system.h"
+
 
 namespace caliope {
 	typedef struct ui_system_state {
@@ -21,10 +24,82 @@ namespace caliope {
 		std::unordered_map<uint, uint> entity_index_layout; // Index of the entity that occupies in the layout
 		uint layout_count;
 		uint max_number_entities;
+
+		uint previous_hover_entity;
 	} ui_system_state;
 
 	static std::unique_ptr<ui_system_state> state_ptr;
 
+	// NOTE: Data is the key current entity pressed
+	bool on_ui_pressed(event_system_code code, std::any data) {
+		uint hover_entity = std::any_cast<uint>(data);
+		uint64 size;
+
+		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
+		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
+		if (ui_dynamic_image_comp != nullptr) {
+			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->pressed_color;
+			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->pressed_texture[0]));
+		}
+		if (ui_events_comp != nullptr) {
+			ui_events_comp->on_ui_pressed(EVENT_CODE_ON_UI_BUTTON_PRESSED, 0);
+		}
+
+		return false;
+	}
+
+	// NOTE: Data is the key current entity released
+	bool on_ui_released(event_system_code code, std::any data) {
+		uint hover_entity = std::any_cast<uint>(data);
+		uint64 size;
+
+		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
+		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
+		if (ui_dynamic_image_comp != nullptr) {
+			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->normal_color;
+			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->normal_texture[0]));
+		}
+		if (ui_events_comp != nullptr) {
+			ui_events_comp->on_ui_released(EVENT_CODE_ON_UI_BUTTON_RELEASED, 0);
+		}
+
+		return false;
+	}
+
+	// NOTE: Data is the hover entity and if is world type or not
+	bool on_ui_hover(event_system_code code, std::any data) {
+		uint hover_entity = std::any_cast<uint>(data);
+		uint previous_hover_entity = state_ptr->previous_hover_entity;
+		uint64 size;
+
+		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
+		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(previous_hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
+		if (ui_dynamic_image_comp != nullptr) {
+			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->hover_color;
+			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->hover_texture[0]));
+		}
+		if (ui_events_comp != nullptr) {
+			ui_events_comp->on_ui_hover(EVENT_CODE_ON_UI_BUTTON_HOVER, 0);
+		}
+
+		if (hover_entity == previous_hover_entity) {
+			return false;
+		}
+
+		ui_dynamic_material_component* previous_ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(previous_hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
+		ui_events_component* previous_ui_events_comp = (ui_events_component*)ecs_system_get_component_data(previous_hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
+		if (previous_ui_dynamic_image_comp != nullptr) {
+			material_system_adquire(std::string(&previous_ui_dynamic_image_comp->material_name[0]))->diffuse_color = previous_ui_dynamic_image_comp->normal_color;
+			material_system_adquire(std::string(&previous_ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&previous_ui_dynamic_image_comp->normal_texture[0]));
+		}
+		if (previous_ui_events_comp != nullptr) {
+			previous_ui_events_comp->on_ui_unhover(EVENT_CODE_ON_UI_BUTTON_UNHOVER, 0);
+		}
+
+		state_ptr->previous_hover_entity = hover_entity;
+
+		return false;
+	}
 
 	bool ui_system_initialize(ui_system_configuration& config) {
 		state_ptr = std::make_unique<ui_system_state>();
@@ -34,6 +109,11 @@ namespace caliope {
 		}
 
 		state_ptr->max_number_entities = config.max_number_entities;
+
+
+		event_register(EVENT_CODE_ON_ENTITY_PRESSED, on_ui_pressed);
+		event_register(EVENT_CODE_ON_ENTITY_RELEASED, on_ui_released);
+		event_register(EVENT_CODE_ON_ENTITY_HOVER, on_ui_hover);
 
 		CE_LOG_INFO("UI system initialized.");
 
@@ -166,6 +246,33 @@ namespace caliope {
 		return true;
 	}
 
+	bool ui_system_instance_button(std::string& name, transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events)
+	{
+		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
+			CE_LOG_WARNING("ui_system_instance_button scene %s not found", name.c_str());
+			return false;
+		}
+
+		std::vector<component_id> components = { TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT };
+		std::vector<void*> data = { &transform , &ui_dynamic_material, &ui_mouse_events };
+
+		uint entity = ecs_system_add_entity(ARCHETYPE_UI_BUTTON);
+		for (uint i = 0; i < components.size(); ++i) {
+			ecs_system_insert_data(entity, components[i], data[i]);
+		}
+
+
+		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
+		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
+
+		event_register(EVENT_CODE_ON_UI_BUTTON_PRESSED, ui_mouse_events.on_ui_pressed);
+		event_register(EVENT_CODE_ON_UI_BUTTON_RELEASED, ui_mouse_events.on_ui_released);
+		event_register(EVENT_CODE_ON_UI_BUTTON_HOVER, ui_mouse_events.on_ui_hover);
+		event_register(EVENT_CODE_ON_UI_BUTTON_UNHOVER, ui_mouse_events.on_ui_unhover);
+
+		return true;
+	}
+
 	void ui_system_destroy_entity(std::string& name, uint entity) {
 
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end() || state_ptr->entity_index_layout.find(entity) == state_ptr->entity_index_layout.end()) {
@@ -229,11 +336,37 @@ namespace caliope {
 
 			ui_material_component* ui_image_comp = (ui_material_component*)ecs_system_get_component_data(ui_images[entity_index], UI_MATERIAL_COMPONENT, size);
 			quad_definition.material_name = std::string(ui_image_comp->material_name.data()); // TODO: Change to char array
-			quad_definition.z_order = 9999999;
+			quad_definition.z_order = 0;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_image_comp->material_name.data()))->diffuse_texture,
 				ui_image_comp->texture_region[0],
 				ui_image_comp->texture_region[1]
+			);
+
+			quads_data.push_back(quad_definition);
+		}
+
+		std::vector<uint> ui_button = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_BUTTON);// TODO: If the vector is a reference and there is no button, calling the function the renderer crash, investigate why!
+		for (uint entity_index = 0; entity_index < ui_button.size(); ++entity_index) {
+
+			uint64 size;
+			quad_definition quad_definition;
+			quad_definition.id = ui_button[entity_index];
+
+			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_button[entity_index], TRANSFORM_COMPONENT, size);
+			transform transform = transform_create();
+			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
+			transform_set_scale(transform, tran_comp->scale);
+			transform_set_position(transform, tran_comp->position);
+			quad_definition.transform = transform;
+
+			ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, size);
+			quad_definition.material_name = std::string(ui_dynamic_image_comp->material_name.data()); // TODO: Change to char array
+			quad_definition.z_order = 0;
+			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
+				*material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data()))->diffuse_texture,
+				ui_dynamic_image_comp->texture_region[0],
+				ui_dynamic_image_comp->texture_region[1]
 			);
 
 			quads_data.push_back(quad_definition);

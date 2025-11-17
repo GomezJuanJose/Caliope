@@ -1,11 +1,11 @@
 #include "object_pick_render_view.h"
 #include "core/logger.h"
-#include "core/event.h"
 
 #include "renderer/camera.h"
 #include "systems/shader_system.h"
 #include "systems/material_system.h"
 #include "systems/geometry_system.h"
+#include "systems/object_pick_system.h"
 #include "renderer/renderer_frontend.h"
 
 #include "renderer/renderer_types.inl"
@@ -35,6 +35,8 @@ namespace caliope {
 		std::string pick_shader;
 
 		float aspect_ratio;
+
+		uint texture_id;
 	} object_pick_view_data;
 
 	typedef struct object_pick_view_state {
@@ -128,7 +130,7 @@ namespace caliope {
 			renderer_shader_use(*shader);
 			uint instance_index = sprites.size() - 1;
 			uint number_of_instances = 0;
-			uint texture_id = 0;
+			
 
 			while (!sprites.empty()) {
 				quad_definition sprite = sprites.top();
@@ -167,20 +169,20 @@ namespace caliope {
 
 				// TODO: INSTEAD OF COMPARE NAMES COMPARE RANDOM NUMBERS OR HASHED NAMES FOR BETTER PERFORMANCE
 				// TODO: DRY
-				if (state_ptr->view_data.at(self.type).batch_textures[aux_diffuse_texture->ui_batch_index] && state_ptr->view_data.at(self.type).batch_textures[aux_diffuse_texture->ui_batch_index]->name == aux_diffuse_texture->name) {
-					diffuse_id = aux_diffuse_texture->ui_batch_index;
+				if (state_ptr->view_data.at(self.type).batch_textures[aux_diffuse_texture->pick_render_batch_index] && state_ptr->view_data.at(self.type).batch_textures[aux_diffuse_texture->pick_render_batch_index]->name == aux_diffuse_texture->name) {
+					diffuse_id = aux_diffuse_texture->pick_render_batch_index;
 				}
 				else {
 					if (mat->diffuse_texture) {
-						state_ptr->view_data.at(self.type).batch_textures[texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->ui_batch_index = texture_id;
+						state_ptr->view_data.at(self.type).batch_textures[state_ptr->view_data.at(self.type).texture_id] = mat->diffuse_texture;
+						mat->diffuse_texture->pick_render_batch_index = state_ptr->view_data.at(self.type).texture_id;
 					}
 					else {
-						state_ptr->view_data.at(self.type).batch_textures[texture_id] = material_system_get_default()->diffuse_texture;
-						material_system_get_default()->diffuse_texture->ui_batch_index = texture_id;
+						state_ptr->view_data.at(self.type).batch_textures[state_ptr->view_data.at(self.type).texture_id] = material_system_get_default()->diffuse_texture;
+						material_system_get_default()->diffuse_texture->pick_render_batch_index = state_ptr->view_data.at(self.type).texture_id;
 					}
-					diffuse_id = texture_id;
-					texture_id++;
+					diffuse_id = state_ptr->view_data.at(self.type).texture_id;
+					state_ptr->view_data.at(self.type).texture_id++;
 				}
 
 			
@@ -224,8 +226,8 @@ namespace caliope {
 		ssbo_object_picking data;
 		data.id = -1;
 		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
-		uint event_data[2] = {data.id, self.type};
-		event_fire(EVENT_CODE_ON_ENTITY_HOVER, event_data);
+
+		object_pick_system_set_hover_entity(self.type == 1 ? true : false, data.id); // 1 means VIEW_TYPE_WORLD_OBJECT_PICK
 
 		return true;
 	}
