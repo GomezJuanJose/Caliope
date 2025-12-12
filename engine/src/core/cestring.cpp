@@ -51,13 +51,17 @@ namespace caliope {
 			str->end());
 	}
 	
-	std::string string_substring(std::string* str, uint start, int end)
+	std::string string_substring(std::string* str, uint start, int count)
 	{
 		if (!str) {
 			return std::string();
 		}
 
-		return str->substr(start, end);
+		if (count + start > str->size() - 1 || count == -1) {
+			count = - 1;
+		}
+
+		return str->substr(start, count);
 	}
 	
 	void string_split(std::string* str, std::string* left, std::string* right, char separator)

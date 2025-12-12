@@ -69,6 +69,21 @@ namespace caliope {
 		return &state_ptr->registered_materials[name].material;
 	}
 
+	material* material_system_adquire_from_config(material_resource_data& material_config)
+	{
+		if (state_ptr->registered_materials.find(std::string(&material_config.name[0])) == state_ptr->registered_materials.end()) {
+
+			if (!load_material(material_config)) {
+				CE_LOG_ERROR("material_system_adquire_from_config couldnt adquire material");
+				return material_system_get_default();
+			}
+
+		}
+
+		state_ptr->registered_materials[std::string(&material_config.name[0])].reference_count++;
+		return &state_ptr->registered_materials[std::string(&material_config.name[0])].material;
+	}
+
 	void material_system_release(std::string& name) {
 		if (state_ptr->registered_materials.find(name) != state_ptr->registered_materials.end()) {
 			

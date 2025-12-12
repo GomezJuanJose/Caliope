@@ -11,6 +11,7 @@ namespace caliope {
 
 		ARCHETYPE_UI_IMAGE,
 		ARCHETYPE_UI_BUTTON,
+		ARCHETYPE_UI_TEXT_BOX
 	}archetype;
 
 	typedef enum component_id {
@@ -23,6 +24,7 @@ namespace caliope {
 		UI_MATERIAL_COMPONENT,
 		UI_DYNAMIC_MATERIAL_COMPONENT,
 		UI_MOUSE_EVENTS_COMPONENT,
+		UI_TEXT_COMPONENT,
 	} component_id;
 
 	typedef enum component_data_type {

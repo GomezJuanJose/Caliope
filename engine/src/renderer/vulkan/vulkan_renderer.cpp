@@ -588,25 +588,6 @@ namespace caliope {
 		vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&t.internal_data);
 		VkDeviceSize image_size = t.width * t.height * t.channel_count;
 
-		vulkan_buffer staging_buffer;
-		vulkan_buffer_create(
-			state_ptr->context,
-			image_size,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			true,
-			staging_buffer
-		);
-
-		vulkan_buffer_load_data(
-			state_ptr->context,
-			staging_buffer,
-			0,
-			image_size,
-			0,
-			pixels
-		);
-
 
 		vulkan_image_create(
 			state_ptr->context, 
@@ -622,47 +603,30 @@ namespace caliope {
 			vk_texture->image
 		);
 
+		vulkan_renderer_texture_write_data(t, 0, image_size, pixels);
 
-		vulkan_command_buffer temp_command_buffer;
-		vulkan_command_buffer_allocate_and_begin_single_use(
-			state_ptr->context,
-			state_ptr->context.device.command_pool,
-			temp_command_buffer
-		);
+		vulkan_renderer_texture_change_filter(t);
 
-		vulkan_image_transition_layout(
-			state_ptr->context,
-			temp_command_buffer,
-			vk_texture->image,
-			VK_FORMAT_R8G8B8A8_SRGB,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-		);
-			
-		vulkan_image_copy_buffer_to_image(
-			state_ptr->context,
-			vk_texture->image,
-			staging_buffer.handle,
-			temp_command_buffer
-		);
+	}
+
+	void vulkan_renderer_texture_create_writeable(texture& t)
+	{
+		t.internal_data = vulkan_texture();
+		vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&t.internal_data);
 		
-		vulkan_image_transition_layout(
+		vulkan_image_create(
 			state_ptr->context,
-			temp_command_buffer,
-			vk_texture->image,
+			VK_IMAGE_TYPE_2D,
+			t.width,
+			t.height,
 			VK_FORMAT_R8G8B8A8_SRGB,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			true,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			vk_texture->image
 		);
-
-		vulkan_command_buffer_end_single_use(
-			state_ptr->context,
-			state_ptr->context.device.command_pool,
-			temp_command_buffer,
-			state_ptr->context.device.graphics_queue
-		);
-
-		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 
 		vulkan_renderer_texture_change_filter(t);
 
@@ -704,6 +668,72 @@ namespace caliope {
 		vkDestroyImageView(state_ptr->context.device.logical_device, vk_t->image.view, nullptr);
 		vkDestroyImage(state_ptr->context.device.logical_device, vk_t->image.handle, nullptr);
 		vkFreeMemory(state_ptr->context.device.logical_device, vk_t->image.memory, nullptr);
+	}
+
+	void vulkan_renderer_texture_write_data(texture& t, uint offser, uint size, uchar* pixels)
+	{
+		vulkan_texture* vk_texture = std::any_cast<vulkan_texture>(&t.internal_data);
+		VkDeviceSize image_size = t.width * t.height * t.channel_count;
+
+		vulkan_buffer staging_buffer;
+		vulkan_buffer_create(
+			state_ptr->context,
+			image_size,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			true,
+			staging_buffer
+		);
+
+		vulkan_buffer_load_data(
+			state_ptr->context,
+			staging_buffer,
+			0,
+			image_size,
+			0,
+			pixels
+		);
+
+		vulkan_command_buffer temp_command_buffer;
+		vulkan_command_buffer_allocate_and_begin_single_use(
+			state_ptr->context,
+			state_ptr->context.device.command_pool,
+			temp_command_buffer
+		);
+
+		vulkan_image_transition_layout(
+			state_ptr->context,
+			temp_command_buffer,
+			vk_texture->image,
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+		);
+
+		vulkan_image_copy_buffer_to_image(
+			state_ptr->context,
+			vk_texture->image,
+			staging_buffer.handle,
+			temp_command_buffer
+		);
+
+		vulkan_image_transition_layout(
+			state_ptr->context,
+			temp_command_buffer,
+			vk_texture->image,
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+
+		vulkan_command_buffer_end_single_use(
+			state_ptr->context,
+			state_ptr->context.device.command_pool,
+			temp_command_buffer,
+			state_ptr->context.device.graphics_queue
+		);
+
+		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 	}
 
 	bool vulkan_renderer_shader_create(shader_resource_data& shader_config, shader& out_shader, renderpass& pass) {

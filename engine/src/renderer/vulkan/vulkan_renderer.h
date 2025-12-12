@@ -40,7 +40,9 @@ namespace caliope {
 	void vulkan_renderer_get_descriptor_ssbo(void* out_data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
 
 	void vulkan_renderer_texture_create(texture& t, uchar* pixels);
+	void vulkan_renderer_texture_create_writeable(texture& t);
 	void vulkan_renderer_texture_destroy(texture& t);
+	void vulkan_renderer_texture_write_data(texture& t, uint offser, uint size, uchar* pixels);
 	void vulkan_renderer_texture_change_filter(texture& t);
 
 	bool vulkan_renderer_shader_create(shader_resource_data& shader_config, shader& out_shader, renderpass& pass);

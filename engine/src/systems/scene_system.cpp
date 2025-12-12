@@ -226,6 +226,7 @@ namespace caliope {
 
 			material_component* sprite_comp = (material_component*)ecs_system_get_component_data(sprites[entity_index], MATERIAL_COMPONENT, size);
 			quad_definition.material_name = std::string(sprite_comp->material_name.data()); // TODO: Change to char array
+			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
 			quad_definition.z_order = sprite_comp->z_order;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
@@ -251,6 +252,7 @@ namespace caliope {
 			}
 
 			quad_definition.material_name = frame->material_name;
+			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
 			quad_definition.z_order = anim_comp->z_order;
 			quad_definition.texture_region = frame->texture_region;
 

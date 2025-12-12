@@ -5,6 +5,8 @@
 #include "components/components.inl"
 
 #include <glm/glm.hpp>
+#include <vendors/stb_truetype/stb_truetype.h>
+#include <string>
 
 namespace caliope {
 	struct audio_file_internal;
@@ -29,7 +31,10 @@ namespace caliope {
 		RESOURCE_TYPE_MATERIAL,
 		RESOURCE_TYPE_SPRITE_ANIMATION,
 		RESOURCE_TYPE_AUDIO,
-		RESOURCE_TYPE_SCENE
+		RESOURCE_TYPE_SCENE,
+		RESOURCE_TYPE_TEXT_FONT,
+		RESOURCE_TYPE_TEXT_STYLE
+
 	} resource_type;
 
 	typedef struct resource {
@@ -77,7 +82,6 @@ namespace caliope {
 	typedef struct material_resource_data {
 		std::array<char, MAX_NAME_LENGTH> name;
 		std::array<char, MAX_NAME_LENGTH> shader_name;
-		uint renderpass_type;
 		glm::vec3 diffuse_color;
 		float shininess_intensity;
 		float shininess_sharpness;
@@ -129,6 +133,28 @@ namespace caliope {
 
 		std::unordered_map<component_id, uint> components_sizes;
 	}scene_resource_data;
+
+	typedef struct text_font_resource_data {
+		std::array<char, MAX_NAME_LENGTH> name;
+		std::vector<uchar> binary_data;
+		stbtt_fontinfo stb_font_info;
+	} text_font_resource_data;
+
+	typedef struct text_style_resource_data {
+		std::array<char, MAX_NAME_LENGTH> name;
+
+		std::vector<std::array<char, MAX_NAME_LENGTH>> style_tag_names;
+		std::vector<std::array<char, MAX_NAME_LENGTH>> text_fonts;
+		std::vector<uint> font_sizes;
+		std::vector<glm::vec4> text_colors;
+		std::vector<float> additional_interline_spaces;
+
+		std::vector<std::array<char, MAX_NAME_LENGTH>> image_tag_names;
+		std::vector<std::array<char, MAX_NAME_LENGTH>> image_materials;
+		std::vector<float> image_sizes;
+	} text_style_resource_data;
+
+
 
 
 	typedef enum texture_filter {
@@ -213,7 +239,8 @@ namespace caliope {
 	typedef struct quad_definition {
 		uint id;
 		uint z_order;
-		std::string material_name;
+		std::string material_name;//TODO: Make it pointer or store all the material values individually 
+		glm::vec3 diffuse_color;
 		transform transform;
 		std::array<glm::vec2,4> texture_region;
 	} quad_definition;
@@ -239,4 +266,55 @@ namespace caliope {
 		std::array<char, MAX_NAME_LENGTH> name;
 		bool is_enabled;
 	} scene;
+
+
+	typedef struct text_font_glyph {
+		uint codepoint;
+		uint kerning_index;
+		uint16 x;
+		uint16 y;
+		uint16 width;
+		uint16 height;
+		int16 x_offset;
+		int16 y_offset;
+		int16 y_offset2;
+		int16 x_advance;
+
+	}text_font_glyph;
+
+	typedef struct text_font_kerning {
+		uint codepoint1;
+		uint codepoint2;
+		int advance;
+	} text_font_kerning;
+
+	typedef struct text_font {
+		std::string name;
+
+		glm::vec2 atlas_size;
+		material* atlas_material;
+
+		std::vector<int> codepoints;
+		std::vector<text_font_glyph> glyphs;
+		std::vector<text_font_kerning> kernings;
+
+		int line_height;
+		int x_advance_space;
+		int x_advance_tab;
+
+	} text_font;
+
+	typedef struct text_style_table {
+		std::string name;
+
+		std::unordered_map<std::string,uint> tag_style_indexes;
+		std::vector<text_font*> fonts;
+		std::vector <uint> text_sizes;
+		std::vector <glm::vec4> text_colors;
+		std::vector<float> additional_interline_spaces;
+
+		std::unordered_map<std::string, uint> tag_image_indexes;
+		std::vector<material*> materials;
+		std::vector<float> image_sizes;
+	};
 }

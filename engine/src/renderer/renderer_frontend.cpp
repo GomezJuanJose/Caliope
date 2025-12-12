@@ -198,8 +198,18 @@ namespace caliope{
 		state_ptr->backend.texture_create(texture, pixels);
 	}
 
+	void renderer_texture_create_writeable(texture& texture)
+	{
+		state_ptr->backend.texture_create_writeable(texture);
+	}
+
 	void renderer_texture_destroy(texture& texture) {
 		state_ptr->backend.texture_destroy(texture);
+	}
+
+	void renderer_texture_write_data(texture& t, uint offset, uint size, uchar* pixels)
+	{
+		state_ptr->backend.texture_write_data(t, offset, size, pixels);
 	}
 
 	void renderer_texture_change_filter(texture& texture) {

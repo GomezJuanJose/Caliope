@@ -13,6 +13,8 @@
 #include "material_system.h"
 #include "texture_system.h"
 #include "resource_system.h"
+#include "text_font_system.h"
+#include "text_style_system.h"
 
 #include "renderer/renderer_types.inl"
 #include "render_view_system.h"
@@ -273,6 +275,29 @@ namespace caliope {
 		return true;
 	}
 
+	bool ui_system_instance_text_box(std::string& name, transform_component& transform, ui_text_component& ui_text)
+	{
+		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
+			CE_LOG_WARNING("ui_system_instance_text_box scene %s not found", name.c_str());
+			return false;
+		}
+
+		std::vector<component_id> components = { TRANSFORM_COMPONENT, UI_TEXT_COMPONENT};
+		std::vector<void*> data = { &transform , &ui_text };
+
+		uint entity = ecs_system_add_entity(ARCHETYPE_UI_TEXT_BOX);
+		for (uint i = 0; i < components.size(); ++i) {
+			ecs_system_insert_data(entity, components[i], data[i]);
+		}
+
+
+		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
+		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
+
+
+		return true;
+	}
+
 	void ui_system_destroy_entity(std::string& name, uint entity) {
 
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end() || state_ptr->entity_index_layout.find(entity) == state_ptr->entity_index_layout.end()) {
@@ -298,7 +323,7 @@ namespace caliope {
 			uint last_index = state_ptr->loaded_ui_layouts.at(name).entities.size() - 1;
 			state_ptr->loaded_ui_layouts.at(name).entities.erase(state_ptr->loaded_ui_layouts.at(name).entities.begin() + last_index);
 		}
-		
+
 		state_ptr->entity_index_layout.erase(entity);
 
 	}
@@ -315,11 +340,7 @@ namespace caliope {
 		}
 	}
 
-	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time) {
-			
-		std::vector<quad_definition> quads_data;
-
-		// Gets all sprites entities
+	void populate_package_with_ui_image(std::vector<quad_definition>& quads_data) {
 		std::vector<uint>& ui_images = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_IMAGE);
 		for (uint entity_index = 0; entity_index < ui_images.size(); ++entity_index) {
 
@@ -336,6 +357,7 @@ namespace caliope {
 
 			ui_material_component* ui_image_comp = (ui_material_component*)ecs_system_get_component_data(ui_images[entity_index], UI_MATERIAL_COMPONENT, size);
 			quad_definition.material_name = std::string(ui_image_comp->material_name.data()); // TODO: Change to char array
+			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
 			quad_definition.z_order = 0;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_image_comp->material_name.data()))->diffuse_texture,
@@ -345,7 +367,9 @@ namespace caliope {
 
 			quads_data.push_back(quad_definition);
 		}
+	}
 
+	void populate_package_with_ui_button(std::vector<quad_definition>& quads_data) {
 		std::vector<uint> ui_button = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_BUTTON);// TODO: If the vector is a reference and there is no button, calling the function the renderer crash, investigate why!
 		for (uint entity_index = 0; entity_index < ui_button.size(); ++entity_index) {
 
@@ -361,7 +385,8 @@ namespace caliope {
 			quad_definition.transform = transform;
 
 			ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, size);
-			quad_definition.material_name = std::string(ui_dynamic_image_comp->material_name.data()); // TODO: Change to char array
+			quad_definition.material_name = std::string(ui_dynamic_image_comp->material_name.data()); // TODO: Change to char array TODO: Use a built in material UI
+			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
 			quad_definition.z_order = 0;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data()))->diffuse_texture,
@@ -371,6 +396,138 @@ namespace caliope {
 
 			quads_data.push_back(quad_definition);
 		}
+	}
+
+	void populate_package_with_ui_text(std::vector<quad_definition>& quads_data) {
+		// TODO: Cache the data and only recalculate it if changes the text
+
+		std::vector<uint> ui_text = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_TEXT_BOX);// TODO: If the vector is a reference and there is no text, calling the function the renderer crash?, investigate why!
+		for (uint entity_index = 0; entity_index < ui_text.size(); ++entity_index) {
+
+			uint64 size;
+			quad_definition quad_definition;
+			quad_definition.id = ui_text[entity_index];// TODO: If wants to make each character a unique id then move this inside the for loop
+
+			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_text[entity_index], TRANSFORM_COMPONENT, size);
+			transform transform = transform_create();
+			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
+			transform_set_scale(transform, tran_comp->scale);
+			transform_set_position(transform, tran_comp->position);
+			quad_definition.transform = transform;
+
+			ui_text_component* ui_text_comp = (ui_text_component*)ecs_system_get_component_data(ui_text[entity_index], UI_TEXT_COMPONENT, size);
+			// Found the glyph. generate points.
+			text_style_table* style_table = text_style_system_adquire_text_style_table(std::string(&ui_text_comp->style_table_name[0]));
+			
+			text_style default_style = text_style_system_adquire_text_style(style_table, std::string("default"));
+			
+			text_style* in_use_style = &default_style;
+
+			// Gets the style list applied to the text
+			// Vectors used as stacks because they are contigous in memory
+			uint current_candidate_style_index = 0;
+			std::vector<text_style> styles;
+			std::vector<uint> style_starting_indices;
+			std::vector<uint> style_ending_indices;
+			text_style_system_get_metrics(style_table, std::string(&ui_text_comp->text[0]), styles, style_starting_indices, style_ending_indices); // TODO: Do this operation every time the text change or precalculate it at the level beggining
+			
+
+			float x_advance = 0;
+			float y_advance = 0;
+			// Iterates each string character
+			for (uint char_index = 0; char_index < ui_text_comp->text.size(); ++char_index) {
+
+				//Checks if it needs no apply a new style 
+				if (current_candidate_style_index < style_starting_indices.size() && char_index == style_starting_indices[current_candidate_style_index]) {
+					in_use_style = &styles[current_candidate_style_index];
+					char_index += styles[current_candidate_style_index].tag_name_length + 1; // The plus 1 is to skip the separator character '|' too
+					continue;
+				}
+
+				if (current_candidate_style_index < style_starting_indices.size() && char_index == style_ending_indices[current_candidate_style_index]) {
+					in_use_style = &default_style;
+					current_candidate_style_index++;
+					continue;
+				}
+
+				text_font_glyph* g = text_font_system_get_glyph(in_use_style->font, ui_text_comp->text[char_index]);
+
+				// TODO: Remove this, because it will be used an dynamic string, and test if all the text its printed with different fonts and styles (for example with 'red' only prints the first line)
+				if (ui_text_comp->text[char_index] == '\0') {
+					break;
+				}
+
+				if (ui_text_comp->text[char_index] == ' ') {
+					// If there is a blank space skip to next char
+					x_advance += in_use_style->font->x_advance_space;
+					continue;
+				}
+
+				if (ui_text_comp->text[char_index] == '\t') {
+					// If there is a tab space skip to next char
+					x_advance += in_use_style->font->x_advance_tab;
+					continue;
+				}
+
+				if (ui_text_comp->text[char_index] == '\n') {
+					x_advance = 0;
+					y_advance += (in_use_style->font->line_height) + in_use_style->additional_interlinial_space; // TODO: Be careful with a bigger font used in the same line and fix it
+					continue;
+				}
+
+				// TODO: Do the alignment position calculation, kerning and spacing inside the text font system and return its value with functions?
+				quad_definition.transform.position.x = transform.position.x + (x_advance)+(g->width / 2) + g->x_offset;
+				float glyph_pos_y = ((g->y_offset2 + g->y_offset) / 2);
+				quad_definition.transform.position.y = transform.position.y - y_advance - (glyph_pos_y);// TODO: Change the - with + when the projection is fixed
+
+
+				int kerning_advance = 0;
+
+				// Try to find kerning, if does, applies it to x_advance 
+				if (char_index + 1 < ui_text_comp->text.size()) {
+					text_font_glyph* g_next = text_font_system_get_glyph(in_use_style->font, ui_text_comp->text[char_index + 1]);
+
+					//TODO: Make it more efficient!!
+					for (uint i = 0; i < in_use_style->font->kernings.size(); ++i) {
+						text_font_kerning* k = &in_use_style->font->kernings[i];
+						if (g->kerning_index == k->codepoint1 && g_next->kerning_index == k->codepoint2) {
+							kerning_advance = -(k->advance);
+							break;
+						}
+					}
+				}
+
+
+				x_advance += (g->x_advance) + (kerning_advance);
+
+				caliope::quad_definition qd = quads_data[quads_data.size() - 1];
+				quad_definition.transform.scale.x = g->width;
+				quad_definition.transform.scale.y = g->height;
+
+				quad_definition.material_name = in_use_style->font->atlas_material->name;
+				quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
+				quad_definition.diffuse_color = in_use_style->text_color;
+				quad_definition.z_order = 0;
+				quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
+					*in_use_style->font->atlas_material->diffuse_texture,
+					{ g->x, (g->y + g->height) },// NOTE: Y is flipped due stbi is from top to bottom
+					{ g->x + g->width, g->y }
+				);
+
+				quads_data.push_back(quad_definition);
+			}
+		}
+	}
+
+	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time) {
+
+		std::vector<quad_definition> quads_data;
+
+		
+		populate_package_with_ui_image(quads_data);
+		populate_package_with_ui_button(quads_data);
+		populate_package_with_ui_text(quads_data);
+		
 
 		renderer_view_packet ui_packet;
 		ui_packet.view_type = VIEW_TYPE_UI;

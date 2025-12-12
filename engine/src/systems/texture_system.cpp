@@ -67,9 +67,37 @@ namespace caliope {
 		if (state_ptr->registered_textures.find(name) == state_ptr->registered_textures.end()) {
 			texture_reference tr;
 			if (!load_texture(name, tr.texture)) {
-				CE_LOG_ERROR("texture_system_adquire failed to load texture %s", name.c_str());
+				CE_LOG_WARNING("texture_system_adquire failed to load texture %s", name.c_str());
 				return false;
 			}
+
+			state_ptr->registered_textures.insert({ name, tr });
+		}
+
+		state_ptr->registered_textures[name].reference_count++;
+		return &state_ptr->registered_textures[name].texture;
+	}
+
+	texture* texture_system_adquire_writeable(std::string& name, uint width, uint height, uchar channel_count, bool has_transparency)
+	{
+		if (name == "") {
+			return nullptr;
+		}
+
+		if (state_ptr->registered_textures.find(name) == state_ptr->registered_textures.end()) {
+			texture_reference tr;
+
+			tr.texture.name = name;
+			tr.texture.normal_render_batch_index = 0;
+			tr.texture.pick_render_batch_index = 0;
+			tr.texture.width = width;
+			tr.texture.height = height;
+			tr.texture.channel_count = channel_count;
+			tr.texture.has_transparency = has_transparency;
+			tr.texture.magnification_filter = FILTER_LINEAR;
+			tr.texture.minification_filter = FILTER_LINEAR;
+
+			renderer_texture_create_writeable(tr.texture);
 
 			state_ptr->registered_textures.insert({ name, tr });
 		}
@@ -87,6 +115,11 @@ namespace caliope {
 				state_ptr->registered_textures.erase(name);
 			}
 		}
+	}
+
+	void texture_system_write_data(texture& t, uint offset, uint size, uchar* pixels)
+	{
+		renderer_texture_write_data(t, offset, size, pixels);
 	}
 
 	void texture_system_change_filter(std::string& name, texture_filter new_mag_filter, texture_filter new_min_filter) {

@@ -8,6 +8,7 @@
 #include "core/input.h"
 
 #include "renderer/renderer_frontend.h"
+#include "renderer/camera.h"
 
 #include "platform/file_system.h"
 #include "platform/platform.h"
@@ -26,7 +27,8 @@
 #include "systems/object_pick_system.h"
 #include "systems/render_view_system.h"
 #include "systems/job_system.h"
-#include "systems/object_pick_system.h"
+#include "systems/text_font_system.h"
+#include "systems/text_style_system.h"
 
 #include "math/transform.h"
 
@@ -175,6 +177,7 @@ namespace caliope {
 		}
 
 		// Creates the views
+		float aspect_ratio = config.width/ config.height;
 		render_view_world_config world_config;
 		world_config.window_width = renderer_config.window_width;
 		world_config.window_height = renderer_config.window_height;
@@ -245,6 +248,16 @@ namespace caliope {
 			return false;
 		}
 
+		if (!text_font_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize text font system; shutting down");
+			return false;
+		}
+
+		if (!text_style_system_initialize()) {
+			CE_LOG_FATAL("Failed to initialize text style system; shutting down");
+			return false;
+		}
+
 		ui_system_configuration ui_system_config;
 		ui_system_config.max_number_entities = 500;
 		if (!ui_system_initialize(ui_system_config)) {
@@ -307,6 +320,10 @@ namespace caliope {
 		state_ptr.reset();
 
 		ui_system_shutdown();
+
+		text_style_system_shutdown();
+
+		text_font_system_shutdown();
 
 		object_pick_system_shutdown();
 

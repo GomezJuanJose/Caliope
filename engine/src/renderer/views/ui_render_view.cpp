@@ -25,8 +25,14 @@ namespace caliope {
 		uint binded_textures_count;
 		uint max_textures_per_batch;
 
-		float aspect_ratio;
 		uint texture_id;
+
+		float width;
+		float height;
+
+		glm::mat4 projection;
+		float zoom;
+		bool regenerate_projection;
 	} ui_view_state;
 
 	static std::unique_ptr<ui_view_state> state_ptr;
@@ -43,7 +49,11 @@ namespace caliope {
 		state_ptr->binded_textures_count = 0;
 		state_ptr->max_textures_per_batch = internal_config.max_textures_per_batch;
 
-		state_ptr->aspect_ratio = (float)internal_config.window_width / (float)internal_config.window_height;
+		state_ptr->width = internal_config.window_width;
+		state_ptr->height = internal_config.window_height;
+
+		state_ptr->regenerate_projection = true;
+
 	}
 
 	void ui_render_view_on_destroy(render_view& self) {
@@ -54,8 +64,9 @@ namespace caliope {
 	}
 
 	void ui_render_view_on_resize_window(render_view& self, uint width, uint height) {
-		state_ptr->aspect_ratio = (float)width / (float)height;
-
+		state_ptr->regenerate_projection = true;
+		state_ptr->width = width;
+		state_ptr->height = height;
 		renderer_renderpass_set_render_area(self.renderpass, {0, 0, width, height});
 	}
 
@@ -91,7 +102,10 @@ namespace caliope {
 			return false;
 		}
 
-		camera_aspect_ratio_set(*ui_packet.ui_camera, state_ptr->aspect_ratio);
+		if (state_ptr->regenerate_projection) {
+			state_ptr->projection = glm::ortho( 0.0f, state_ptr->width, -state_ptr->height, 0.0f, -100.0f, 100.0f); // TODO: FIX THIS FOR THE UI 
+			state_ptr->regenerate_projection = false;
+		}
 
 		// Groups the materials and transforms by shader. This is to batch maximum information in a single drawcall
 		//for (auto [shader_name, material_name] : packet.quad_materials) {
@@ -129,7 +143,7 @@ namespace caliope {
 
 				shader_ui_quad_properties sp;
 				sp.model = transform_get_world(sprite.transform);
-				sp.diffuse_color = mat->diffuse_color;
+				sp.diffuse_color = sprite.diffuse_color;
 				sp.id = sprite.id;
 				sp.diffuse_index = diffuse_id;
 				sp.texture_region = sprite.texture_region;
@@ -142,7 +156,7 @@ namespace caliope {
 			// Updates the descriptors, NOTE: Order matters!!!
 			uniform_vertex_buffer_object ubo_vertex;
 			ubo_vertex.view = camera_view_get(*ui_packet.ui_camera);
-			ubo_vertex.proj = camera_projection_get(*ui_packet.ui_camera);
+			ubo_vertex.proj = state_ptr->projection;
 			ubo_vertex.view_position = ui_packet.ui_camera->position;
 			renderer_set_descriptor_ubo(&ubo_vertex, sizeof(uniform_vertex_buffer_object), 0, *shader, 0);
 

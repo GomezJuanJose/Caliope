@@ -5,7 +5,7 @@
 
 namespace caliope {
 
-
+	
 	typedef struct camera {
 		glm::vec3 position;
 		float rotation;
@@ -14,7 +14,6 @@ namespace caliope {
 		float aspect_ratio;
 
 		glm::mat4 view;
-		glm::mat4 projection;
 
 		bool is_view_dirty;
 		bool is_projection_dirty;
@@ -26,7 +25,6 @@ namespace caliope {
 	void camera_aspect_ratio_set(camera& c, float aspect_ratio);
 
 	glm::mat4 camera_view_get(camera& c);
-	glm::mat4 camera_projection_get(camera& c);
 
 	CE_API glm::vec3 camera_position_get(const camera& c);
 	CE_API void camera_position_set(camera& c, glm::vec3 position);

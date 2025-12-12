@@ -62,4 +62,9 @@ namespace caliope {
 		bool(*on_ui_pressed)(event_system_code code, std::any data);
 		bool(*on_ui_released)(event_system_code code, std::any data);
 	} ui_events_component;
+
+	typedef struct ui_text_component {
+		std::array<char, 2048> text; // TODO: Do it dynamically to avoid great memory consumption
+		std::array<char, MAX_NAME_LENGTH> style_table_name;
+	}ui_text_component;
 }

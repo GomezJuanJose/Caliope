@@ -30,7 +30,9 @@ namespace caliope {
 	bool renderer_draw_frame(std::vector<renderer_view_packet>& packets, float delta_time);
 
 	void renderer_texture_create(texture& texture, uchar* pixels);
+	void renderer_texture_create_writeable(texture& texture);
 	void renderer_texture_destroy(texture& texture);
+	void renderer_texture_write_data(texture& t, uint offset, uint size, uchar* pixels);
 	void renderer_texture_change_filter(texture& texture);
 
 	bool renderer_shader_create(shader_resource_data& shader_config, shader& shader);

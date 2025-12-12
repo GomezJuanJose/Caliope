@@ -17,7 +17,6 @@ namespace caliope {
 		c.zoom = 1.0f;
 		c.aspect_ratio = 1.0f;
 		c.view = camera_view_get(c);
-		c.projection  = camera_projection_get(c);
 		c.is_view_dirty = false;
 		c.is_projection_dirty = false;
 	}
@@ -68,17 +67,6 @@ namespace caliope {
 		}
 
 		return c.view;
-	}
-
-	glm::mat4 camera_projection_get(camera& c) {
-		
-		if (c.is_projection_dirty) {
-			c.projection = glm::ortho(-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom, -100.0f, 100.0f);
-			
-			c.is_projection_dirty = false;
-		}
-
-		return c.projection;
 	}
 
 	void camera_move_left(camera& c, float amount) {

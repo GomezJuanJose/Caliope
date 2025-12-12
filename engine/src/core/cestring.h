@@ -13,7 +13,7 @@ namespace caliope {
 	CE_API void string_format(std::string* str_format, char(&out_buffer)[2048], ...);
 	CE_API void string_trim_character(std::string* str, char character);
 	// If end is -1 means to the end of the string
-	CE_API std::string string_substring(std::string* str, uint start, int end);
+	CE_API std::string string_substring(std::string* str, uint start, int count);
 	CE_API void string_split(std::string* str, std::string* left, std::string* right, char separator);
 
 	CE_API bool string_to_vec4(std::string* str, glm::vec4* out_vec);

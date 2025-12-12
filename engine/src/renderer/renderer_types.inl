@@ -57,7 +57,9 @@ namespace caliope {
 		void (*draw_geometry)(uint quad_count, geometry& geometry);
 
 		void (*texture_create)(texture& t, uchar* pixels);
+		void (*texture_create_writeable)(texture& t);
 		void (*texture_destroy)(texture& t);
+		void (*texture_write_data)(texture& t, uint offser, uint size, uchar* pixels);
 		void (*texture_change_filter)(texture& t);
 
 		bool (*shader_create)(shader_resource_data& shader_config, shader& out_shader, renderpass& pass);
@@ -194,7 +196,7 @@ namespace caliope {
 
 	typedef struct render_view_object_pick_packet {
 		float delta_time;
-		camera* world_camera;
+		camera* pick_camera;
 		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 	}render_view_object_pick_packet;
 

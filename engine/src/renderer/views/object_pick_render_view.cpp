@@ -34,9 +34,14 @@ namespace caliope {
 
 		std::string pick_shader;
 
-		float aspect_ratio;
-
 		uint texture_id;
+
+		glm::mat4 projection;
+		float width;
+		float height;
+		float aspect_ratio;
+		float zoom;
+		bool regenerate_projection;
 	} object_pick_view_data;
 
 	typedef struct object_pick_view_state {
@@ -61,7 +66,11 @@ namespace caliope {
 		state_ptr->view_data.at(self.type).binded_textures_count = 0;
 		state_ptr->view_data.at(self.type).max_textures_per_batch = internal_config.max_textures_per_batch;
 
+		state_ptr->view_data.at(self.type).width = internal_config.window_width;
+		state_ptr->view_data.at(self.type).height = internal_config.window_height;
 		state_ptr->view_data.at(self.type).aspect_ratio = (float)internal_config.window_width / (float)internal_config.window_height;
+
+		state_ptr->view_data.at(self.type).regenerate_projection = true;
 
 	}
 
@@ -78,6 +87,10 @@ namespace caliope {
 
 	void object_pick_render_view_on_resize_window(render_view& self, uint width, uint height) {
 		state_ptr->view_data.at(self.type).aspect_ratio = (float)width / (float)height;
+		state_ptr->view_data.at(self.type).regenerate_projection = true;
+
+		state_ptr->view_data.at(self.type).width = width;
+		state_ptr->view_data.at(self.type).height = height;
 
 		renderer_renderpass_set_render_area(self.renderpass, { 0, 0, width, height });
 	}
@@ -89,7 +102,7 @@ namespace caliope {
 
 		render_view_object_pick_packet object_pick_packet;
 		object_pick_packet.delta_time = delta_time;
-		object_pick_packet.world_camera = cam;
+		object_pick_packet.pick_camera = cam;
 		
 		state_ptr->view_data.at(self.type).pick_shader = (int)out_packet.view_type == 1 ? "Builtin.WorldObjectPickShader" : "Builtin.UIObjectPickShader"; // TODO: Remove this hardcoded line by detecting wich shader use based on the package. Note 1 correspond to VIEW_TYPE_WORLD_OBJECT_PICK
 
@@ -119,6 +132,20 @@ namespace caliope {
 		if (!renderer_renderpass_begin(self.renderpass, render_target_index, scissor_extent, scissor_offset)) {
 			CE_LOG_ERROR("object_pick_render_view_on_render failed renderpass begin. Application shutting down");
 			return false;
+		}
+
+		state_ptr->view_data.at(self.type).regenerate_projection |= !(std::fabs(object_pick_packet.pick_camera->zoom - state_ptr->view_data.at(self.type).zoom) < std::numeric_limits<float>::epsilon());
+		if (state_ptr->view_data.at(self.type).regenerate_projection) {
+
+			// NOTE: 1 is VIEW_TYPE_WORLD_OBJECT_PICK, TODO: Instead use the enums
+			float left = self.type == 1 ? -state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : 0.0f;
+			float right = self.type == 1 ? state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).width;
+			float top = self.type == 1 ? object_pick_packet.pick_camera->zoom : 0.0f;
+			float bottom = self.type == 1 ? -object_pick_packet.pick_camera->zoom : -state_ptr->view_data.at(self.type).height;
+
+			state_ptr->view_data.at(self.type).projection = glm::ortho(left, right, bottom, top, -100.0f, 100.0f);
+			state_ptr->view_data.at(self.type).zoom = object_pick_packet.pick_camera->zoom;
+			state_ptr->view_data.at(self.type).regenerate_projection = false;
 		}
 
 		shader* shader = shader_system_adquire(std::string(state_ptr->view_data.at(self.type).pick_shader));
@@ -201,9 +228,9 @@ namespace caliope {
 
 			// Updates the descriptors, NOTE: Order matters!!!
 			uniform_vertex_buffer_object ubo_vertex;
-			ubo_vertex.view = camera_view_get(*object_pick_packet.world_camera);
-			ubo_vertex.proj = camera_projection_get(*object_pick_packet.world_camera);
-			ubo_vertex.view_position = object_pick_packet.world_camera->position;
+			ubo_vertex.view = camera_view_get(*object_pick_packet.pick_camera);
+			ubo_vertex.proj = state_ptr->view_data.at(self.type).projection;
+			ubo_vertex.view_position = object_pick_packet.pick_camera->position;
 			renderer_set_descriptor_ubo(&ubo_vertex, sizeof(uniform_vertex_buffer_object), 0, *shader, 0);
 			
 			renderer_set_descriptor_ssbo(state_ptr->view_data.at(self.type).pick_objects.data(), sizeof(shader_pick_quad_properties)* number_of_instances, 1, *shader, 1);
@@ -226,7 +253,6 @@ namespace caliope {
 		ssbo_object_picking data;
 		data.id = -1;
 		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
-
 		object_pick_system_set_hover_entity(self.type == 1 ? true : false, data.id); // 1 means VIEW_TYPE_WORLD_OBJECT_PICK
 
 		return true;

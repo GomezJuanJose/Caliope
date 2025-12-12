@@ -11,6 +11,8 @@
 #include "resources/loaders/sprite_animation_loader.h"
 #include "resources/loaders/audio_loader.h"
 #include "resources/loaders/scene_loader.h"
+#include "resources/loaders/text_font_loader.h"
+#include "resources/loaders/text_style_loader.h"
 
 #include "resources/parsers/scene_parser.h"
 
@@ -34,6 +36,7 @@ namespace caliope {
 
 		state_ptr->config = config;
 
+		// Loaders
 		resource_system_register_loader(binary_resource_loader_create());
 		resource_system_register_loader(image_resource_loader_create());
 		resource_system_register_loader(shader_resource_loader_create());
@@ -41,7 +44,10 @@ namespace caliope {
 		resource_system_register_loader(sprite_animation_resource_loader_create());
 		resource_system_register_loader(audio_resource_loader_create());
 		resource_system_register_loader(scene_resource_loader_create());
+		resource_system_register_loader(text_font_resource_loader_create());
+		resource_system_register_loader(text_style_resource_loader_create());
 
+		// Parsers
 		resource_system_register_parser(scene_resource_parser_create());
 
 		CE_LOG_INFO("Resource system initialized.");

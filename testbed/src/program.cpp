@@ -82,8 +82,8 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::ui_system_create_empty_layout(std::string("ui_layout_test"), true);
 
 	caliope::transform_component t;
-	t.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	t.scale = glm::vec3(0.5f, 0.5f, 0.5f);
+	t.position = glm::vec3(100.0f, -100.0f, 0.0f);
+	t.scale = glm::vec3(100.0f, 100.f, 0.5f);
 	t.roll_rotation = 0.0f;
 	caliope::ui_material_component sc;
 	sc.material_name = { "ui_image_test" };
@@ -92,8 +92,8 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc);
 
 	caliope::transform_component t2;
-	t2.position = glm::vec3(0.5f, 0.0f, 0.0f);
-	t2.scale = glm::vec3(0.15f, 0.15f, 0.15f);
+	t2.position = glm::vec3(400.5f, -100.0f, 0.0f);
+	t2.scale = glm::vec3(50.0f, 50.f, 0.5f);
 	t2.roll_rotation = 0.0f;
 	caliope::ui_dynamic_material_component dmc;
 	dmc.normal_texture = {"ui_button"};
@@ -114,6 +114,17 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	me.on_ui_hover = on_button_hover;
 	me.on_ui_unhover = on_button_unhover;
 	caliope::ui_system_instance_button(std::string("ui_layout_test"), t2, dmc, me);
+
+
+	caliope::transform_component t3;
+	t3.position = glm::vec3(400.5f, -400.0f, 0.0f);
+	t3.scale = glm::vec3(20.0f, 20.0f, 1.0f);
+	t3.roll_rotation = 0.0f;
+	caliope::ui_text_component tc;
+	tc.style_table_name = { "test_style"};
+	tc.text = { "{abc def ghi jkl {green|mno} pqr stu vwx yz\nABC DEF GHI JKL MNO PQRS TUV A{red|{W}X YZ\n!\"§$%&/()=?*'<>#|;²³~@`´©«»¤¼×{}\nLorem {red|ipsum} do{blue|lor sit amet,} consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{\nTODO: Haz que quad_definition.diffuse_color\nsea por material no valor hardcoded" };
+	//tc.text = { "ef hi jk AW VW" };
+	caliope::ui_system_instance_text_box(std::string("ui_layout_test"), t3, tc);
 
 	initialize_sounds();
 
