@@ -151,7 +151,8 @@ namespace caliope {
 
 		std::vector<std::array<char, MAX_NAME_LENGTH>> image_tag_names;
 		std::vector<std::array<char, MAX_NAME_LENGTH>> image_materials;
-		std::vector<float> image_sizes;
+		std::vector<glm::vec2> image_sizes;
+		std::vector<glm::vec4> texture_coordinates;
 	} text_style_resource_data;
 
 
@@ -236,14 +237,21 @@ namespace caliope {
 	} shader_pick_quad_properties;
 
 
-	typedef struct quad_definition {
+	typedef struct quad_instance_definition {
 		uint id;
 		uint z_order;
-		std::string material_name;//TODO: Make it pointer or store all the material values individually 
-		glm::vec3 diffuse_color;
 		transform transform;
 		std::array<glm::vec2,4> texture_region;
-	} quad_definition;
+	
+		glm::vec3 diffuse_color;
+		float shininess_intensity;
+		float shininess_sharpness;
+		shader* shader;
+		texture* diffuse_texture;
+		texture* specular_texture;
+		texture* normal_texture;
+
+	} quad_instance_definition;
 
 	typedef struct point_light_definition {
 		glm::vec4 color;
@@ -315,6 +323,7 @@ namespace caliope {
 
 		std::unordered_map<std::string, uint> tag_image_indexes;
 		std::vector<material*> materials;
-		std::vector<float> image_sizes;
+		std::vector<glm::vec2> image_sizes;
+		std::vector<std::array<glm::vec2, 2>> texture_coordinates;
 	};
 }

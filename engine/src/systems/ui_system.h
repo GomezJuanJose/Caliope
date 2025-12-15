@@ -12,7 +12,7 @@ namespace caliope {
 	struct ui_dynamic_material_component;
 	struct ui_events_component;
 	struct ui_text_component;
-	struct quad_definition;
+	struct quad_instance_definition;
 	enum archetype;
 	enum component_id;
 

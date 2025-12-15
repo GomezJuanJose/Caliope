@@ -83,16 +83,22 @@ namespace caliope {
 				copy_memory(&text_style_config.image_tag_names[image_index], value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
 
 				text_style_config.image_materials.push_back(std::array<char, MAX_NAME_LENGTH>());
-				text_style_config.image_sizes.push_back(20);
+				text_style_config.image_sizes.push_back(glm::vec2({ 20 }));
+				text_style_config.texture_coordinates.push_back(glm::vec4({ 0 }));
 			}
 			else if (strings_equali(&field, &std::string("material")))
 			{
 				copy_memory(&text_style_config.image_materials[image_index], value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
 			}
 			else if (strings_equali(&field, &std::string("size"))) {
-				float size;
-				string_to_float(&value, &size);
+				glm::vec2 size;
+				string_to_vec2(&value, &size);
 				text_style_config.image_sizes[image_index] = size;
+			}
+			else if (strings_equali(&field, &std::string("texture_coordinates"))) {
+				glm::vec4 coords;
+				string_to_vec4(&value, &coords);
+				text_style_config.texture_coordinates[image_index] = coords;
 			}
 			else if (strings_equali(&field, &std::string("end_style_tag"))) {
 				image_index++;

@@ -96,7 +96,7 @@ namespace caliope {
 	}
 
 	bool object_pick_render_view_on_build_package(render_view& self, renderer_view_packet& out_packet, std::vector<std::any>& variadic_data) {
-		std::vector<quad_definition>& quads = std::any_cast<std::vector<quad_definition>>(variadic_data[0]);
+		std::vector<quad_instance_definition>& quads = std::any_cast<std::vector<quad_instance_definition>>(variadic_data[0]);
 		camera* cam = std::any_cast<camera*>(variadic_data[1]);
 		float delta_time = std::any_cast<float>(variadic_data[2]);
 
@@ -160,12 +160,12 @@ namespace caliope {
 			
 
 			while (!sprites.empty()) {
-				quad_definition sprite = sprites.top();
+				quad_instance_definition sprite = sprites.top();
 
-				material* mat = material_system_adquire(sprite.material_name);
+			
 				//std::vector<transform>& transforms = packet.quad_transforms[material_name];
 
-				texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
+				texture* aux_diffuse_texture = sprite.diffuse_texture ? sprite.diffuse_texture : material_system_get_default()->diffuse_texture;
 
 				// TODO: detect batch and better integration with the algorithm
 				// TODO: Probar a hacer que cuando el texture_id(es decir el numero de texturas que lleva en el batch) sobrepase el maximo sutituya los primeros(pero antes de eso tiene que haber hecho el draw)
@@ -200,9 +200,9 @@ namespace caliope {
 					diffuse_id = aux_diffuse_texture->pick_render_batch_index;
 				}
 				else {
-					if (mat->diffuse_texture) {
-						state_ptr->view_data.at(self.type).batch_textures[state_ptr->view_data.at(self.type).texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->pick_render_batch_index = state_ptr->view_data.at(self.type).texture_id;
+					if ( sprite.diffuse_texture) {
+						state_ptr->view_data.at(self.type).batch_textures[state_ptr->view_data.at(self.type).texture_id] =  sprite.diffuse_texture;
+						 sprite.diffuse_texture->pick_render_batch_index = state_ptr->view_data.at(self.type).texture_id;
 					}
 					else {
 						state_ptr->view_data.at(self.type).batch_textures[state_ptr->view_data.at(self.type).texture_id] = material_system_get_default()->diffuse_texture;

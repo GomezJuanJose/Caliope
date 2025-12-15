@@ -206,7 +206,7 @@ namespace caliope {
 
 	void scene_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* world_cam_in_use, float delta_time) {
 			
-		std::vector<quad_definition> quads_data;
+		std::vector<quad_instance_definition> quads_data;
 		std::vector<point_light_definition> lights_data;
 
 		// Gets all sprites entities
@@ -214,7 +214,7 @@ namespace caliope {
 		for (uint entity_index = 0; entity_index < sprites.size(); ++entity_index) {
 
 			uint64 size;
-			quad_definition quad_definition;
+			quad_instance_definition quad_definition;
 			quad_definition.id = sprites[entity_index];
 
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(sprites[entity_index], TRANSFORM_COMPONENT, size);
@@ -225,8 +225,15 @@ namespace caliope {
 			quad_definition.transform = transform;
 
 			material_component* sprite_comp = (material_component*)ecs_system_get_component_data(sprites[entity_index], MATERIAL_COMPONENT, size);
-			quad_definition.material_name = std::string(sprite_comp->material_name.data()); // TODO: Change to char array
-			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
+			material* mat = material_system_adquire(std::string(sprite_comp->material_name.data()));
+			quad_definition.diffuse_color = mat->diffuse_color;
+			quad_definition.shininess_intensity = mat->shininess_intensity;
+			quad_definition.shininess_sharpness = mat->shininess_sharpness;
+			quad_definition.shader = mat->shader;
+			quad_definition.diffuse_texture = mat->diffuse_texture;
+			quad_definition.specular_texture = mat->specular_texture;
+			quad_definition.normal_texture = mat->normal_texture;
+
 			quad_definition.z_order = sprite_comp->z_order;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
@@ -242,7 +249,7 @@ namespace caliope {
 		for (uint entity_index = 0; entity_index < sprites_animation.size(); ++entity_index) {
 
 			uint64 size;
-			quad_definition quad_definition;
+			quad_instance_definition quad_definition;
 			quad_definition.id = sprites_animation[entity_index];
 
 			material_animation_component* anim_comp = (material_animation_component*)ecs_system_get_component_data(sprites_animation[entity_index], MATERIAL_ANIMATION_COMPONENT, size);
@@ -251,8 +258,15 @@ namespace caliope {
 				continue;
 			}
 
-			quad_definition.material_name = frame->material_name;
-			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
+			material* mat = material_system_adquire(frame->material_name);
+			quad_definition.diffuse_color = mat->diffuse_color;
+			quad_definition.shininess_intensity = mat->shininess_intensity;
+			quad_definition.shininess_sharpness = mat->shininess_sharpness;
+			quad_definition.shader = mat->shader;
+			quad_definition.diffuse_texture = mat->diffuse_texture;
+			quad_definition.specular_texture = mat->specular_texture;
+			quad_definition.normal_texture = mat->normal_texture;
+
 			quad_definition.z_order = anim_comp->z_order;
 			quad_definition.texture_region = frame->texture_region;
 

@@ -1,6 +1,7 @@
 #include "ui_system.h"
 #include "core/logger.h"
 #include "core/cememory.h"
+#include "core/cestring.h"
 #include "core/event.h"
 #include "resources/resources_types.inl"
 #include "platform/file_system.h"
@@ -340,12 +341,12 @@ namespace caliope {
 		}
 	}
 
-	void populate_package_with_ui_image(std::vector<quad_definition>& quads_data) {
+	void populate_package_with_ui_image(std::vector<quad_instance_definition>& quads_data) {
 		std::vector<uint>& ui_images = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_IMAGE);
 		for (uint entity_index = 0; entity_index < ui_images.size(); ++entity_index) {
 
 			uint64 size;
-			quad_definition quad_definition;
+			quad_instance_definition quad_definition;
 			quad_definition.id = ui_images[entity_index];
 
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_images[entity_index], TRANSFORM_COMPONENT, size);
@@ -356,8 +357,16 @@ namespace caliope {
 			quad_definition.transform = transform;
 
 			ui_material_component* ui_image_comp = (ui_material_component*)ecs_system_get_component_data(ui_images[entity_index], UI_MATERIAL_COMPONENT, size);
-			quad_definition.material_name = std::string(ui_image_comp->material_name.data()); // TODO: Change to char array
-			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
+
+			material* mat = material_system_adquire(std::string(ui_image_comp->material_name.data()));
+			quad_definition.diffuse_color = mat->diffuse_color;
+			quad_definition.shininess_intensity = mat->shininess_intensity;
+			quad_definition.shininess_sharpness = mat->shininess_sharpness;
+			quad_definition.shader = mat->shader;
+			quad_definition.diffuse_texture = mat->diffuse_texture;
+			quad_definition.specular_texture = mat->specular_texture;
+			quad_definition.normal_texture = mat->normal_texture;
+
 			quad_definition.z_order = 0;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_image_comp->material_name.data()))->diffuse_texture,
@@ -369,12 +378,12 @@ namespace caliope {
 		}
 	}
 
-	void populate_package_with_ui_button(std::vector<quad_definition>& quads_data) {
+	void populate_package_with_ui_button(std::vector<quad_instance_definition>& quads_data) {
 		std::vector<uint> ui_button = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_BUTTON);// TODO: If the vector is a reference and there is no button, calling the function the renderer crash, investigate why!
 		for (uint entity_index = 0; entity_index < ui_button.size(); ++entity_index) {
 
 			uint64 size;
-			quad_definition quad_definition;
+			quad_instance_definition quad_definition;
 			quad_definition.id = ui_button[entity_index];
 
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_button[entity_index], TRANSFORM_COMPONENT, size);
@@ -385,8 +394,15 @@ namespace caliope {
 			quad_definition.transform = transform;
 
 			ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, size);
-			quad_definition.material_name = std::string(ui_dynamic_image_comp->material_name.data()); // TODO: Change to char array TODO: Use a built in material UI
-			quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
+			material* mat = material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data())); //TODO: Use a built in material UI?
+			quad_definition.diffuse_color = mat->diffuse_color;
+			quad_definition.shininess_intensity = mat->shininess_intensity;
+			quad_definition.shininess_sharpness = mat->shininess_sharpness;
+			quad_definition.shader = mat->shader;
+			quad_definition.diffuse_texture = mat->diffuse_texture;
+			quad_definition.specular_texture = mat->specular_texture;
+			quad_definition.normal_texture = mat->normal_texture;
+
 			quad_definition.z_order = 0;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data()))->diffuse_texture,
@@ -398,14 +414,178 @@ namespace caliope {
 		}
 	}
 
-	void populate_package_with_ui_text(std::vector<quad_definition>& quads_data) {
+
+	void get_metrics_applying_style_to_text(text_style_table* style_table, std::string& text,
+		std::vector<text_style>& styles, std::vector<uint>& style_starting_indices, std::vector<uint>& style_ending_indices,
+		std::vector<text_image_style>& insterted_images, std::vector<uint>& inserted_image_starting_indices, std::vector<uint>& inserted_image_ending_indices,
+		uint max_width_line, std::vector<uint>& break_line_indices, std::vector<uint>& line_heighs)
+	{
+
+		bool start_tag_retrieving = false;
+		bool tag_matches = false;
+		std::string found_tag_name = "";
+
+		uint found_tag_starting_index = 0;
+		uint found_tag_ending_index = 0;
+
+		text_style default_style = text_style_system_adquire_text_style(style_table, std::string("default"));
+		text_style* in_use_style = &default_style;
+		uint x_advance = 0;
+		uint char_to_break_index = 0;
+		std::string word_to_recheck = "";
+
+		uint max_line_height = 0;
+
+		for (uint char_index = 0; char_index < text.size(); ++char_index) {
+			char_to_break_index++;
+
+			// Inserted image retrieving
+			if (start_tag_retrieving && text[char_index] == '#') {
+				start_tag_retrieving = false;
+
+				for (auto [tag_image, id] : style_table->tag_image_indexes) {
+					bool has_close_symbol = text.at(char_index + tag_image.size() + 1) == '}'; // Offset the substraction by one to get the '}' char
+
+					std::string found_tag_image_name = string_substring(&text, char_index + 1, tag_image.size()); // Offset the substraction by one to avoid the '#' and get the last character
+					bool image_matches = style_table->tag_image_indexes.find(found_tag_image_name) != style_table->tag_image_indexes.end();
+
+					if (has_close_symbol && image_matches) {
+						text_image_style* image = &text_style_system_adquire_text_image_style(style_table, found_tag_image_name);
+						insterted_images.push_back(*image);
+						inserted_image_starting_indices.push_back(char_index - 1); // Minus 1 due to  previous iteration has the special character '{'
+						inserted_image_ending_indices.push_back(char_index + tag_image.size() + 1); // Plus 1 to get the character '{'
+						char_index += tag_image.size();
+						char_to_break_index += tag_image.size();
+						x_advance += image->image_size.x;
+
+						if (max_line_height < image->image_size.y + (in_use_style->font->line_height/2)) {
+							max_line_height = image->image_size.y + (in_use_style->font->line_height/2);
+						}
+
+						break;
+					}
+				}
+
+				continue;
+			}
+
+			// Text style retrieving
+			if (start_tag_retrieving == true) {
+				start_tag_retrieving = false;
+
+				if (tag_matches == false) {
+					// Iterates the style table to get each tag and first check if it has a > at the end, 
+					// second substring the tag found in the text and check if the name exists in the table
+					for (auto [tag, id] : style_table->tag_style_indexes) {
+						bool has_close_symbol = text.at(char_index + tag.size()) == '|';
+
+						found_tag_name = string_substring(&text, char_index, tag.size());
+						tag_matches = style_table->tag_style_indexes.find(found_tag_name) != style_table->tag_style_indexes.end();
+
+						if (has_close_symbol && tag_matches) {
+							found_tag_starting_index = char_index - 1; // Minus 1 due to  previous iteration has the special character '{'
+
+							// Inserts the style right away, this means that the style will be applied even if it not has a close character '{', in that case the style will be applied until the end
+							styles.push_back(text_style_system_adquire_text_style(style_table, found_tag_name));
+							in_use_style = &styles.back();
+							style_starting_indices.push_back(found_tag_starting_index);
+							style_ending_indices.push_back(-1);
+
+							char_index += tag.size();
+							char_to_break_index += tag.size();
+							break;
+						}
+					}
+				}
+			}
+
+			// If is the end format tag (}), reset
+			if (tag_matches && text[char_index] == '}') {
+				found_tag_ending_index = char_index;
+
+				style_ending_indices[style_ending_indices.size()-1] = found_tag_ending_index; // Updates the last index to have a end format
+
+				found_tag_name = "";
+				tag_matches = false;
+				found_tag_starting_index = 0;
+				found_tag_ending_index = 0;
+				in_use_style = &default_style;
+				continue;
+			}
+
+			// If is start format, starts to the search for the tag name
+			if (text.at(char_index) == '{') {
+				start_tag_retrieving = true;
+				continue;
+			}
+
+			if (text[char_index] == '\n') {
+				if (x_advance > max_width_line) {
+					break_line_indices.push_back(char_index - char_to_break_index);
+				}
+				line_heighs.push_back(max_line_height);
+				break_line_indices.push_back(char_index);
+
+				max_line_height = 0;
+				x_advance = 0;
+				char_to_break_index = 0;
+				word_to_recheck = "";
+				continue;
+			}
+
+			// Auto wrapping detection by words
+			if (text[char_index] == ' ' || text[char_index] == '\t') {
+
+				// If there is a blank space skip to next char
+				x_advance += text[char_index] == ' ' ? in_use_style->font->x_advance_space : in_use_style->font->x_advance_tab;
+
+				if (x_advance > max_width_line) {
+					x_advance = 0;
+					break_line_indices.push_back(char_index - char_to_break_index);
+					line_heighs.push_back(max_line_height);
+					max_line_height = 0;
+
+					// This is to avoid cases where there is a long word and breaks into a new line and the same word is long enough to occupie the entirety of the line
+					for (uint char_index = 0; char_index < word_to_recheck.size(); ++char_index) {
+						text_font_glyph* g = text_font_system_get_glyph(in_use_style->font, text[char_index]);
+						x_advance += g->x_advance; // Kerning is ignored because adds compleixty to the code and are very few pixels in specific situations
+
+						if (max_line_height < in_use_style->font->line_height) {
+							max_line_height = in_use_style->font->line_height;
+						}
+
+						if (x_advance > max_width_line) {
+							break_line_indices.push_back(char_index);
+							line_heighs.push_back(max_line_height);
+							x_advance = 0;
+							max_line_height = 0;
+						}
+					}
+				}
+
+				char_to_break_index = 0;
+				word_to_recheck = "";
+				continue;
+			}
+
+			text_font_glyph* g = text_font_system_get_glyph(in_use_style->font, text[char_index]);
+			x_advance += g->x_advance; // Kerning is ignored because adds compleixty to the code and are very few pixels in specific situations
+			word_to_recheck += text[char_index];
+
+			if (max_line_height < in_use_style->font->line_height) {
+				max_line_height = in_use_style->font->line_height;
+			}
+		}
+	}
+
+	void populate_package_with_ui_text(std::vector<quad_instance_definition>& quads_data) {
 		// TODO: Cache the data and only recalculate it if changes the text
 
 		std::vector<uint> ui_text = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_TEXT_BOX);// TODO: If the vector is a reference and there is no text, calling the function the renderer crash?, investigate why!
 		for (uint entity_index = 0; entity_index < ui_text.size(); ++entity_index) {
 
 			uint64 size;
-			quad_definition quad_definition;
+			quad_instance_definition quad_definition;
 			quad_definition.id = ui_text[entity_index];// TODO: If wants to make each character a unique id then move this inside the for loop
 
 			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_text[entity_index], TRANSFORM_COMPONENT, size);
@@ -429,15 +609,73 @@ namespace caliope {
 			std::vector<text_style> styles;
 			std::vector<uint> style_starting_indices;
 			std::vector<uint> style_ending_indices;
-			text_style_system_get_metrics(style_table, std::string(&ui_text_comp->text[0]), styles, style_starting_indices, style_ending_indices); // TODO: Do this operation every time the text change or precalculate it at the level beggining
+
+			uint current_candidate_image_index = 0;
+			std::vector<text_image_style> insterted_images;
+			std::vector<uint> inserted_image_starting_indices;
+			std::vector<uint> inserted_image_ending_indices;
+
+			uint current_break_line_index = 0;
+			std::vector<uint> break_line_indices;
+			std::vector<uint> line_heights;
+
+			get_metrics_applying_style_to_text(style_table, std::string(&ui_text_comp->text[0]),
+				styles, style_starting_indices, style_ending_indices,
+				insterted_images, inserted_image_starting_indices, inserted_image_ending_indices,// TODO: Do this operation every time the text change or precalculate it at the level beggining
+				600, break_line_indices, line_heights); // TODO: Replace the 200 by a component value.
 			
 
 			float x_advance = 0;
 			float y_advance = 0;
 			// Iterates each string character
 			for (uint char_index = 0; char_index < ui_text_comp->text.size(); ++char_index) {
+				// TODO: Remove this, because it will be used an dynamic string, and test if all the text its printed with different fonts and styles (for example with 'red' only prints the first line)
+				if (ui_text_comp->text[char_index] == '\0') {
+					break;
+				}
 
-				//Checks if it needs no apply a new style 
+
+				caliope::quad_instance_definition qd = quads_data[quads_data.size() - 1];
+
+				// Check if needs to insert a inline image
+				if (current_candidate_image_index < inserted_image_starting_indices.size() && char_index == inserted_image_starting_indices[current_candidate_image_index]) {
+
+					// For correct spacing
+					quad_definition.transform.position.x = transform.position.x + (x_advance)+(insterted_images[current_candidate_image_index].image_size.x / 2) ;
+					quad_definition.transform.position.y = transform.position.y - y_advance + (insterted_images[current_candidate_image_index].image_size.y / 2);
+
+					x_advance += insterted_images[current_candidate_image_index].image_size.x;
+
+
+					// Quad for the inline image
+					quad_definition.transform.scale.x = insterted_images[current_candidate_image_index].image_size.x;
+					quad_definition.transform.scale.y = insterted_images[current_candidate_image_index].image_size.y;
+
+					material* mat = insterted_images[current_candidate_image_index].material;
+					quad_definition.diffuse_color = mat->diffuse_color;
+					quad_definition.shininess_intensity = mat->shininess_intensity;
+					quad_definition.shininess_sharpness = mat->shininess_sharpness;
+					quad_definition.shader = mat->shader;
+					quad_definition.diffuse_texture = mat->diffuse_texture;
+					quad_definition.specular_texture = mat->specular_texture;
+					quad_definition.normal_texture = mat->normal_texture;
+
+					quad_definition.diffuse_color = insterted_images[current_candidate_image_index].material->diffuse_color;
+					quad_definition.z_order = 0;
+					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
+						*insterted_images[current_candidate_image_index].material->diffuse_texture,
+						insterted_images[current_candidate_image_index].texture_coord[0] ,
+						insterted_images[current_candidate_image_index].texture_coord[1]
+					);
+
+					quads_data.push_back(quad_definition);
+
+					char_index = inserted_image_ending_indices[current_candidate_image_index];
+					current_candidate_image_index++;
+					continue;
+				}
+
+				//Checks if it needs to apply a new style 
 				if (current_candidate_style_index < style_starting_indices.size() && char_index == style_starting_indices[current_candidate_style_index]) {
 					in_use_style = &styles[current_candidate_style_index];
 					char_index += styles[current_candidate_style_index].tag_name_length + 1; // The plus 1 is to skip the separator character '|' too
@@ -450,31 +688,35 @@ namespace caliope {
 					continue;
 				}
 
-				text_font_glyph* g = text_font_system_get_glyph(in_use_style->font, ui_text_comp->text[char_index]);
-
-				// TODO: Remove this, because it will be used an dynamic string, and test if all the text its printed with different fonts and styles (for example with 'red' only prints the first line)
-				if (ui_text_comp->text[char_index] == '\0') {
-					break;
+				// Checks if needs to break a line
+				if (current_break_line_index < break_line_indices.size() && break_line_indices[current_break_line_index] == char_index) {
+					x_advance = 0;
+					if (current_break_line_index < line_heights.size()) {
+					y_advance += line_heights[current_break_line_index] + in_use_style->additional_interlinial_space;
+					}
+					current_break_line_index++;
+					continue;
 				}
 
+				// Checks if needs to space
 				if (ui_text_comp->text[char_index] == ' ') {
 					// If there is a blank space skip to next char
-					x_advance += in_use_style->font->x_advance_space;
+					if (x_advance != 0) {
+						x_advance += in_use_style->font->x_advance_space;
+					}
 					continue;
 				}
 
+				// Checks if needs to tab
 				if (ui_text_comp->text[char_index] == '\t') {
 					// If there is a tab space skip to next char
-					x_advance += in_use_style->font->x_advance_tab;
+					if (x_advance != 0) {
+						x_advance += in_use_style->font->x_advance_tab;
+					}
 					continue;
 				}
 
-				if (ui_text_comp->text[char_index] == '\n') {
-					x_advance = 0;
-					y_advance += (in_use_style->font->line_height) + in_use_style->additional_interlinial_space; // TODO: Be careful with a bigger font used in the same line and fix it
-					continue;
-				}
-
+				text_font_glyph* g = text_font_system_get_glyph(in_use_style->font, ui_text_comp->text[char_index]);
 				// TODO: Do the alignment position calculation, kerning and spacing inside the text font system and return its value with functions?
 				quad_definition.transform.position.x = transform.position.x + (x_advance)+(g->width / 2) + g->x_offset;
 				float glyph_pos_y = ((g->y_offset2 + g->y_offset) / 2);
@@ -500,12 +742,19 @@ namespace caliope {
 
 				x_advance += (g->x_advance) + (kerning_advance);
 
-				caliope::quad_definition qd = quads_data[quads_data.size() - 1];
+				// Quad for the glyph
 				quad_definition.transform.scale.x = g->width;
 				quad_definition.transform.scale.y = g->height;
 
-				quad_definition.material_name = in_use_style->font->atlas_material->name;
-				quad_definition.diffuse_color = glm::vec3({ 1.0f });//TODO: Get from the material pointer
+				material* mat = in_use_style->font->atlas_material;
+				quad_definition.diffuse_color = mat->diffuse_color;
+				quad_definition.shininess_intensity = mat->shininess_intensity;
+				quad_definition.shininess_sharpness = mat->shininess_sharpness;
+				quad_definition.shader = mat->shader;
+				quad_definition.diffuse_texture = mat->diffuse_texture;
+				quad_definition.specular_texture = mat->specular_texture;
+				quad_definition.normal_texture = mat->normal_texture;
+
 				quad_definition.diffuse_color = in_use_style->text_color;
 				quad_definition.z_order = 0;
 				quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
@@ -521,7 +770,7 @@ namespace caliope {
 
 	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time) {
 
-		std::vector<quad_definition> quads_data;
+		std::vector<quad_instance_definition> quads_data;
 
 		
 		populate_package_with_ui_image(quads_data);

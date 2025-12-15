@@ -108,7 +108,7 @@ namespace caliope {
 			return text_image_style();
 		}
 
-		if (state_ptr->registered_style_tables.at(style_table->name).text_style.tag_image_indexes.find(image_tag) != state_ptr->registered_style_tables.at(style_table->name).text_style.tag_style_indexes.end()) {
+		if (state_ptr->registered_style_tables.at(style_table->name).text_style.tag_image_indexes.find(image_tag) == state_ptr->registered_style_tables.at(style_table->name).text_style.tag_image_indexes.end()) {
 			CE_LOG_WARNING("text_style_system_adquire_text_image_style the tag %s not found.", image_tag.c_str());
 			return text_image_style();
 		}
@@ -117,64 +117,9 @@ namespace caliope {
 
 		style.material = state_ptr->registered_style_tables.at(style_table->name).text_style.materials[index_style];
 		style.image_size = state_ptr->registered_style_tables.at(style_table->name).text_style.image_sizes[index_style];
+		style.texture_coord = state_ptr->registered_style_tables.at(style_table->name).text_style.texture_coordinates[index_style];
 
 		return style;
-	}
-
-	void text_style_system_get_metrics(text_style_table* style_table, std::string& text, std::vector<text_style>& styles, std::vector<uint>& style_starting_indices, std::vector<uint>& style_ending_indices)
-	{
-
-		// TODO: Redo to make read this simpler format {tag_name|Text wants to be formatted}
-
-		bool start_tag_retrieving = false;
-		bool tags_matches = false;
-		std::string found_tag_name = "";
-		uint found_tag_starting_index = 0;
-		uint found_tag_ending_index = 0;
-
-		for (uint char_index = 0; char_index < text.size(); ++char_index) {
-			
-			if (start_tag_retrieving == true) {
-				start_tag_retrieving = false;
-
-				if (tags_matches == false) {
-					// Iterates the style table to get each tag and first check if it has a > at the end, 
-					// second substring the tag found in the text and check if the name exists in the table
-					for (auto [tag, id] : style_table->tag_style_indexes) {
-						bool has_close_symbol = text.at(char_index + tag.size()) == '|';
-
-						found_tag_name = string_substring(&text, char_index, tag.size());
-						tags_matches = style_table->tag_style_indexes.find(found_tag_name) != style_table->tag_style_indexes.end();
-
-						if (has_close_symbol && tags_matches) {
-							found_tag_starting_index = char_index - 1; // Minus 1 due to  previous iteration has the special character '{'
-							char_index += tag.size();
-							break;
-						}
-					}
-				}
-			}
-
-			// If is the end format tag (}), reset
-			if (tags_matches && text[char_index] == '}') {
-				found_tag_ending_index = char_index;
-
-				styles.push_back(text_style_system_adquire_text_style(style_table, found_tag_name));
-				style_starting_indices.push_back(found_tag_starting_index);
-				style_ending_indices.push_back(found_tag_ending_index);
-
-				found_tag_name = "";
-				tags_matches = false;
-				found_tag_starting_index = 0;
-				found_tag_ending_index = 0;
-				continue;
-			}
-			
-			// If is start format, starts to the search for the tag name
-			if (text.at(char_index) == '{') {
-				start_tag_retrieving = true;
-			}
-		}
 	}
 
 	void text_style_system_release(std::string& name)
@@ -208,6 +153,11 @@ namespace caliope {
 			tsr.text_style.tag_image_indexes.insert({ std::string(&text_style_config.image_tag_names[i][0]), i });
 			tsr.text_style.materials.push_back(material_system_adquire(std::string(&text_style_config.image_materials[i][0])));
 			tsr.text_style.image_sizes.push_back(text_style_config.image_sizes[i]);
+
+			std::array<glm::vec2, 2> text_coord; 
+			text_coord[0] = glm::vec2({ text_style_config.texture_coordinates[i].x, text_style_config.texture_coordinates[i].y });
+			text_coord[1] = glm::vec2({ text_style_config.texture_coordinates[i].z, text_style_config.texture_coordinates[i].w });
+			tsr.text_style.texture_coordinates.push_back(text_coord);
 		}
 
 		state_ptr->registered_style_tables.insert({ tsr.text_style.name, tsr });

@@ -72,7 +72,7 @@ namespace caliope {
 
 	bool ui_render_view_on_build_package(render_view& self, renderer_view_packet& out_packet, std::vector<std::any>& variadic_data) {
 
-		std::vector<quad_definition>& quads = std::any_cast<std::vector<quad_definition>>(variadic_data[0]);
+		std::vector<quad_instance_definition>& quads = std::any_cast<std::vector<quad_instance_definition>>(variadic_data[0]);
 		camera* cam = std::any_cast<camera*>(variadic_data[1]);
 		float delta_time = std::any_cast<float>(variadic_data[2]);
 
@@ -82,9 +82,9 @@ namespace caliope {
 		ui_packet.ui_camera = cam;
 
 		for (uint index = 0; index < quads.size(); ++index) {
-			ui_packet.quad_definitions.insert({ material_system_adquire(quads[index].material_name)->shader->name, {}});
+			ui_packet.quad_definitions.insert({ quads[index].shader->name, {}});
 			ui_packet.quad_definitions.at(
-				material_system_adquire(quads[index].material_name)->shader->name
+				quads[index].shader->name
 			).push(quads[index]);
 		}
 		
@@ -117,20 +117,18 @@ namespace caliope {
 			uint number_of_instances = 0;
 
 			while (!sprites.empty()) {
-				quad_definition sprite = sprites.top();
+				quad_instance_definition sprite = sprites.top();
 
-				material* mat = material_system_adquire(sprite.material_name);
-
-				texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
+				texture* aux_diffuse_texture =  sprite.diffuse_texture ?  sprite.diffuse_texture : material_system_get_default()->diffuse_texture;
 				uint diffuse_id = 0;
 
 				if (state_ptr->batch_textures[aux_diffuse_texture->normal_render_batch_index] && state_ptr->batch_textures[aux_diffuse_texture->normal_render_batch_index]->name == aux_diffuse_texture->name) {
 					diffuse_id = aux_diffuse_texture->normal_render_batch_index;
 				}
 				else {
-					if (mat->diffuse_texture) {
-						state_ptr->batch_textures[state_ptr->texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->normal_render_batch_index = state_ptr->texture_id;
+					if ( sprite.diffuse_texture) {
+						state_ptr->batch_textures[state_ptr->texture_id] =  sprite.diffuse_texture;
+						 sprite.diffuse_texture->normal_render_batch_index = state_ptr->texture_id;
 					}
 					else {
 						state_ptr->batch_textures[state_ptr->texture_id] = material_system_get_default()->diffuse_texture;

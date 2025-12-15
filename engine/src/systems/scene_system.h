@@ -7,7 +7,7 @@ namespace caliope {
 	struct renderer_view_packet;
 	struct transform;
 	struct camera;
-	struct quad_definition;
+	struct quad_instance_definition;
 	enum archetype;
 	enum component_id;
 

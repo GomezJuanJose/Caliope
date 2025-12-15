@@ -18,7 +18,8 @@ namespace caliope {
 
 	typedef struct text_image_style {
 		material* material;
-		float image_size;
+		glm::vec2 image_size;
+		std::array<glm::vec2,2> texture_coord;
 	} text_image_style;
 
 	bool text_style_system_initialize();
@@ -27,8 +28,7 @@ namespace caliope {
 	CE_API text_style_table* text_style_system_adquire_text_style_table(std::string& name);
 	CE_API text_style text_style_system_adquire_text_style(text_style_table* style_table, std::string& text_tag);
 	CE_API text_image_style text_style_system_adquire_text_image_style(text_style_table* style_table, std::string& image_tag);
-	CE_API void text_style_system_get_metrics(text_style_table* style_table, std::string& text, std::vector<text_style>& styles, std::vector<uint>& style_starting_indices, std::vector<uint>& style_ending_indices);
-
+	
 	CE_API void text_style_system_release(std::string& name);
 	
 

@@ -71,7 +71,7 @@ namespace caliope {
 	};
 
 	struct z_order_comparator {
-		bool operator()(const quad_definition& a, const quad_definition& b) {
+		bool operator()(const quad_instance_definition& a, const quad_instance_definition& b) {
 			return a.z_order > b.z_order;
 		};
 	};
@@ -185,19 +185,19 @@ namespace caliope {
 		camera* world_camera;
 		glm::vec4 ambient_color;
 		std::vector<point_light_definition> point_light_definitions;
-		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
+		std::unordered_map <std::string, std::priority_queue<quad_instance_definition, std::vector<quad_instance_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 	};
 
 	typedef struct render_view_ui_packet {
 		float delta_time;
 		camera* ui_camera;
-		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator >> quad_definitions; // Key : shader name, Value: vector of materials
+		std::unordered_map <std::string, std::priority_queue<quad_instance_definition, std::vector<quad_instance_definition>, z_order_comparator >> quad_definitions; // Key : shader name, Value: vector of materials
 	};
 
 	typedef struct render_view_object_pick_packet {
 		float delta_time;
 		camera* pick_camera;
-		std::unordered_map <std::string, std::priority_queue<quad_definition, std::vector<quad_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
+		std::unordered_map <std::string, std::priority_queue<quad_instance_definition, std::vector<quad_instance_definition>, z_order_comparator>> sprite_definitions; // Key : shader name, Value: vector of materials
 	}render_view_object_pick_packet;
 
 	typedef struct render_view {

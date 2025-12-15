@@ -77,7 +77,7 @@ namespace caliope {
 
 	bool world_render_view_on_build_package(render_view& self, renderer_view_packet& out_packet, std::vector<std::any>& variadic_data) {
 
-		std::vector<quad_definition>& quads = std::any_cast<std::vector<quad_definition>>(variadic_data[0]);
+		std::vector<quad_instance_definition>& quads = std::any_cast<std::vector<quad_instance_definition>>(variadic_data[0]);
 		std::vector<point_light_definition>& lights = std::any_cast<std::vector<point_light_definition>>(variadic_data[1]);
 		camera* cam = std::any_cast<camera*>(variadic_data[2]);
 		float delta_time = std::any_cast<float>(variadic_data[3]);
@@ -89,9 +89,9 @@ namespace caliope {
 		world_packet.world_camera = cam;
 
 		for (uint index = 0; index < quads.size(); ++index) {
-			world_packet.sprite_definitions.insert({ material_system_adquire(quads[index].material_name)->shader->name, {}});
+			world_packet.sprite_definitions.insert({ quads[index].shader->name, {}});
 			world_packet.sprite_definitions.at(
-				material_system_adquire(quads[index].material_name)->shader->name
+				quads[index].shader->name
 			).push(quads[index]);
 		}
 
@@ -136,14 +136,13 @@ namespace caliope {
 
 			//for (std::string material_name : packet.quad_materials[shader_name]) {
 			while (!sprites.empty()) {
-				quad_definition sprite = sprites.top();
+				quad_instance_definition sprite = sprites.top();
 
-				material* mat = material_system_adquire(sprite.material_name);
 				//std::vector<transform>& transforms = packet.quad_transforms[material_name];
 
-				texture* aux_diffuse_texture = mat->diffuse_texture ? mat->diffuse_texture : material_system_get_default()->diffuse_texture;
-				texture* aux_specular_texture = mat->specular_texture ? mat->specular_texture : material_system_get_default()->specular_texture;
-				texture* aux_normal_texture = mat->normal_texture ? mat->normal_texture : material_system_get_default()->normal_texture;
+				texture* aux_diffuse_texture =  sprite.diffuse_texture ?  sprite.diffuse_texture : material_system_get_default()->diffuse_texture;
+				texture* aux_specular_texture =  sprite.specular_texture ?  sprite.specular_texture : material_system_get_default()->specular_texture;
+				texture* aux_normal_texture =  sprite.normal_texture ?  sprite.normal_texture : material_system_get_default()->normal_texture;
 
 				// TODO: detect batch and better integration with the algorithm
 				// TODO: Probar a hacer que cuando el texture_id(es decir el numero de texturas que lleva en el batch) sobrepase el maximo sutituya los primeros(pero antes de eso tiene que haber hecho el draw)
@@ -179,9 +178,9 @@ namespace caliope {
 					diffuse_id = aux_diffuse_texture->normal_render_batch_index;
 				}
 				else {
-					if (mat->diffuse_texture) {
-						state_ptr->batch_textures[state_ptr->texture_id] = mat->diffuse_texture;
-						mat->diffuse_texture->normal_render_batch_index = state_ptr->texture_id;
+					if ( sprite.diffuse_texture) {
+						state_ptr->batch_textures[state_ptr->texture_id] =  sprite.diffuse_texture;
+						 sprite.diffuse_texture->normal_render_batch_index = state_ptr->texture_id;
 					}
 					else {
 						state_ptr->batch_textures[state_ptr->texture_id] = material_system_get_default()->diffuse_texture;
@@ -195,9 +194,9 @@ namespace caliope {
 					specula_id = aux_specular_texture->normal_render_batch_index;
 				}
 				else {
-					if (mat->specular_texture) {
-						state_ptr->batch_textures[state_ptr->texture_id] = mat->specular_texture;
-						mat->specular_texture->normal_render_batch_index = state_ptr->texture_id;
+					if ( sprite.specular_texture) {
+						state_ptr->batch_textures[state_ptr->texture_id] =  sprite.specular_texture;
+						 sprite.specular_texture->normal_render_batch_index = state_ptr->texture_id;
 					}
 					else {
 						state_ptr->batch_textures[state_ptr->texture_id] = material_system_get_default()->specular_texture;
@@ -211,9 +210,9 @@ namespace caliope {
 					normal_id = aux_normal_texture->normal_render_batch_index;
 				}
 				else {
-					if (mat->normal_texture) {
-						state_ptr->batch_textures[state_ptr->texture_id] = mat->normal_texture;
-						mat->normal_texture->normal_render_batch_index = state_ptr->texture_id;
+					if ( sprite.normal_texture) {
+						state_ptr->batch_textures[state_ptr->texture_id] =  sprite.normal_texture;
+						 sprite.normal_texture->normal_render_batch_index = state_ptr->texture_id;
 
 					}
 					else {
@@ -231,8 +230,8 @@ namespace caliope {
 				sp.diffuse_index = diffuse_id;
 				sp.specular_index = specula_id;
 				sp.normal_index = normal_id;
-				sp.shininess_sharpness = mat->shininess_sharpness;
-				sp.shininess_intensity = mat->shininess_intensity;
+				sp.shininess_sharpness =  sprite.shininess_sharpness;
+				sp.shininess_intensity =  sprite.shininess_intensity;
 				sp.texture_region = sprite.texture_region;
 				state_ptr->quads.at(number_of_instances) = sp;
 				number_of_instances++;

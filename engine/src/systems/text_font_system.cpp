@@ -107,7 +107,7 @@ namespace caliope {
 		material_resource_data mat_config;
 		zero_memory(&mat_config, sizeof(material_resource_data));
 
-		copy_memory(&mat_config.name, ("__" + tfr.text_font.name+"_" + std::to_string(font_size) + "_mat__").c_str(), sizeof(char) * MAX_NAME_LENGTH);// TODO: as a pointer?
+		copy_memory(&mat_config.name, ("__" + tfr.text_font.name + "_mat__").c_str(), sizeof(char) * MAX_NAME_LENGTH);// TODO: as a pointer?
 		copy_memory(&mat_config.diffuse_texture_name, writeable_atlas->name.c_str(), sizeof(char) * MAX_NAME_LENGTH); // TODO: as a pointer?
 		mat_config.diffuse_color = glm::vec3(1.0f);
 		mat_config.shader_name = { "Builtin.UIShader" };// TODO: Make it configurable? and as a pointer?
@@ -121,7 +121,7 @@ namespace caliope {
 		int ascent;
 		int descent;
 		int line_gap;
-		stbtt_GetFontVMetrics(&text_font_config.stb_font_info, &ascent, &descent, &line_gap);
+		stbtt_GetFontVMetrics(&text_font_config.stb_font_info, &ascent, &descent, &line_gap); // TODO: This do not work with mono-spaced fonts
 		tfr.text_font.line_height = (ascent - descent + line_gap) * scale_pixel_height;
 
 
