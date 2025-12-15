@@ -433,8 +433,10 @@ namespace caliope {
 		uint x_advance = 0;
 		uint char_to_break_index = 0;
 		std::string word_to_recheck = "";
+		bool is_new_line = true;
 
 		uint max_line_height = 0;
+		uint temporal_max_line_height = 0;
 
 		for (uint char_index = 0; char_index < text.size(); ++char_index) {
 			char_to_break_index++;
@@ -452,14 +454,16 @@ namespace caliope {
 					if (has_close_symbol && image_matches) {
 						text_image_style* image = &text_style_system_adquire_text_image_style(style_table, found_tag_image_name);
 						insterted_images.push_back(*image);
+						if(inserted_image_starting_indices.empty() || inserted_image_starting_indices.back() != char_index - 1)
 						inserted_image_starting_indices.push_back(char_index - 1); // Minus 1 due to  previous iteration has the special character '{'
+						if (inserted_image_ending_indices.empty() || inserted_image_ending_indices.back() != char_index + tag_image.size() + 1)
 						inserted_image_ending_indices.push_back(char_index + tag_image.size() + 1); // Plus 1 to get the character '{'
 						char_index += tag_image.size();
 						char_to_break_index += tag_image.size();
 						x_advance += image->image_size.x;
 
-						if (max_line_height < image->image_size.y + (in_use_style->font->line_height/2)) {
-							max_line_height = image->image_size.y + (in_use_style->font->line_height/2);
+						if (temporal_max_line_height < image->image_size.y + (in_use_style->font->line_height/2)) {
+							temporal_max_line_height = image->image_size.y + (in_use_style->font->line_height/2);
 						}
 
 						break;
@@ -523,10 +527,12 @@ namespace caliope {
 				if (x_advance > max_width_line) {
 					break_line_indices.push_back(char_index - char_to_break_index);
 				}
-				line_heighs.push_back(max_line_height);
 				break_line_indices.push_back(char_index);
+				line_heighs.push_back(max_line_height);
 
+				is_new_line = true;
 				max_line_height = 0;
+				temporal_max_line_height = 0;
 				x_advance = 0;
 				char_to_break_index = 0;
 				word_to_recheck = "";
@@ -539,30 +545,21 @@ namespace caliope {
 				// If there is a blank space skip to next char
 				x_advance += text[char_index] == ' ' ? in_use_style->font->x_advance_space : in_use_style->font->x_advance_tab;
 
-				if (x_advance > max_width_line) {
+				if (x_advance > max_width_line && !is_new_line) {
 					x_advance = 0;
 					break_line_indices.push_back(char_index - char_to_break_index);
 					line_heighs.push_back(max_line_height);
 					max_line_height = 0;
+					temporal_max_line_height = 0;
 
 					// This is to avoid cases where there is a long word and breaks into a new line and the same word is long enough to occupie the entirety of the line
-					for (uint char_index = 0; char_index < word_to_recheck.size(); ++char_index) {
-						text_font_glyph* g = text_font_system_get_glyph(in_use_style->font, text[char_index]);
-						x_advance += g->x_advance; // Kerning is ignored because adds compleixty to the code and are very few pixels in specific situations
-
-						if (max_line_height < in_use_style->font->line_height) {
-							max_line_height = in_use_style->font->line_height;
-						}
-
-						if (x_advance > max_width_line) {
-							break_line_indices.push_back(char_index);
-							line_heighs.push_back(max_line_height);
-							x_advance = 0;
-							max_line_height = 0;
-						}
-					}
+					char_index = (char_index - char_to_break_index);
+					is_new_line = true;
 				}
-
+				else {
+					max_line_height = temporal_max_line_height;
+					is_new_line = false;
+				}
 				char_to_break_index = 0;
 				word_to_recheck = "";
 				continue;
@@ -572,8 +569,8 @@ namespace caliope {
 			x_advance += g->x_advance; // Kerning is ignored because adds compleixty to the code and are very few pixels in specific situations
 			word_to_recheck += text[char_index];
 
-			if (max_line_height < in_use_style->font->line_height) {
-				max_line_height = in_use_style->font->line_height;
+			if (temporal_max_line_height < in_use_style->font->line_height) {
+				temporal_max_line_height = in_use_style->font->line_height;
 			}
 		}
 	}
@@ -691,10 +688,10 @@ namespace caliope {
 				// Checks if needs to break a line
 				if (current_break_line_index < break_line_indices.size() && break_line_indices[current_break_line_index] == char_index) {
 					x_advance = 0;
-					if (current_break_line_index < line_heights.size()) {
-					y_advance += line_heights[current_break_line_index] + in_use_style->additional_interlinial_space;
-					}
 					current_break_line_index++;
+					if (current_break_line_index < line_heights.size()) {
+						y_advance += line_heights[current_break_line_index] + in_use_style->additional_interlinial_space;
+					}
 					continue;
 				}
 

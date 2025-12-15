@@ -122,7 +122,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	t3.roll_rotation = 0.0f;
 	caliope::ui_text_component tc;
 	tc.style_table_name = { "test_style"};
-	tc.text = { "{abc def ghi jkl {green|mno} pqr stu vwx {#test_image} yz\nABC DEF GHI JKL {#test_image} {#test_image} MNO PQRS TUV A{red|{W}}X YZ !\"§$%&/()={#test_image}?*'<>#|;²³~@`´©«»¤¼×{} otra frase\nLorem {red|ipsum} do{blue|lor sit amet, consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{\nTODO: Haz que quad_definition.diffuse_color\nsea por material no valor hardcoded" };
+	tc.text = { "{abc def ghi jkl {green|mno} pqr stu vwx {#test_image} yz\nABC DEF GHI JKL {#test_image} {#test_image} MNO PQRS TUV A{red|{W}}X YZ !\"§$%&/()={#test_image}?*'<>#|;²³~@`´©«»¤¼×{} otra frase para probar caso\nLorem {red|ipsum} do{blue|lor sit amet, consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{\nTODO: Haz que quad_definition.diffuse_color\nsea por material no valor hardcoded" };
 	//tc.text = { "ef hi jk AW VW" };
 	caliope::ui_system_instance_text_box(std::string("ui_layout_test"), t3, tc);
 
