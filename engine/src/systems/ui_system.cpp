@@ -371,7 +371,8 @@ namespace caliope {
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_image_comp->material_name.data()))->diffuse_texture,
 				ui_image_comp->texture_region[0],
-				ui_image_comp->texture_region[1]
+				ui_image_comp->texture_region[1],
+				true
 			);
 
 			quads_data.push_back(quad_definition);
@@ -407,7 +408,8 @@ namespace caliope {
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data()))->diffuse_texture,
 				ui_dynamic_image_comp->texture_region[0],
-				ui_dynamic_image_comp->texture_region[1]
+				ui_dynamic_image_comp->texture_region[1],
+				true
 			);
 
 			quads_data.push_back(quad_definition);
@@ -661,8 +663,9 @@ namespace caliope {
 					quad_definition.z_order = 0;
 					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 						*insterted_images[current_candidate_image_index].material->diffuse_texture,
-						insterted_images[current_candidate_image_index].texture_coord[0] ,
-						insterted_images[current_candidate_image_index].texture_coord[1]
+						insterted_images[current_candidate_image_index].texture_coord[0],
+						insterted_images[current_candidate_image_index].texture_coord[1],
+						true
 					);
 
 					quads_data.push_back(quad_definition);
@@ -756,8 +759,9 @@ namespace caliope {
 				quad_definition.z_order = 0;
 				quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 					*in_use_style->font->atlas_material->diffuse_texture,
-					{ g->x, (g->y + g->height) },// NOTE: Y is flipped due stbi is from top to bottom
-					{ g->x + g->width, g->y }
+					{ g->x,  g->y },
+					{ g->x + g->width, (g->y + g->height) },
+					false
 				);
 
 				quads_data.push_back(quad_definition);

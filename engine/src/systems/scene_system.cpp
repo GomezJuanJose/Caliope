@@ -238,7 +238,8 @@ namespace caliope {
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(sprite_comp->material_name.data()))->diffuse_texture,
 				sprite_comp->texture_region[0],
-				sprite_comp->texture_region[1]
+				sprite_comp->texture_region[1],
+				false
 			);
 
 			quads_data.push_back(quad_definition);

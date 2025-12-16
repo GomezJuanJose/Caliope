@@ -144,14 +144,28 @@ namespace caliope {
 		return &state_ptr->default_normal_texture;
 	}
 
-	std::array<glm::vec2,4> texture_system_calculate_custom_region_coordinates(texture& texture, glm::vec2 left_bottom, glm::vec2 right_top) {
+	std::array<glm::vec2,4> texture_system_calculate_custom_region_coordinates(texture& texture, glm::vec2 left_bottom, glm::vec2 right_top, bool invert_coordinates) {
 		std::array<glm::vec2, 4> region;
 
-		if (left_bottom.x == 0.0f && left_bottom.y == 0.0f && right_top.x == 0.0f && right_top.y == 0.0f) {
+		if (invert_coordinates) {
+			glm::vec2 aux_storage = left_bottom;
+			left_bottom = right_top;
+			right_top = aux_storage;
+		}
+
+		if (!invert_coordinates && left_bottom.x == 0.0f && left_bottom.y == 0.0f && right_top.x == 0.0f && right_top.y == 0.0f) {
 			region[0] = { 0.0f, 0.0f };
 			region[1] = { 0.0f, 1.0f };
 			region[2] = { 1.0f, 0.0f };
 			region[3] = { 1.0f, 1.0f };
+
+
+		}
+		else if (invert_coordinates && left_bottom.x == 0.0f && left_bottom.y == 0.0f && right_top.x == 0.0f && right_top.y == 0.0f) {
+			region[1] = { 0.0f, 0.0f };
+			region[0] = { 0.0f, 1.0f };
+			region[3] = { 1.0f, 0.0f };
+			region[2] = { 1.0f, 1.0f };
 		}
 		else {
 			region[0] = { left_bottom.x / texture.width, left_bottom.y / texture.height };

@@ -24,6 +24,7 @@ namespace caliope {
 	/*
 	 * @note Set left_bottom and right_top to 0 for the the whole texture
 	 */
-	CE_API std::array<glm::vec2,4> texture_system_calculate_custom_region_coordinates(texture& texture, glm::vec2 left_bottom_pixel, glm::vec2 right_top_pixel);
+	CE_API std::array<glm::vec2,4> texture_system_calculate_custom_region_coordinates(texture& texture, glm::vec2 left_bottom_pixel, glm::vec2 right_top_pixel, bool invert_coordinates);
+	// TODO: Implement the invert here too
 	CE_API std::array<glm::vec2,4> texture_system_calculate_grid_region_coordinates(texture& texture, glm::vec2 grid_size, uint row_index, uint column_index);
 }

@@ -160,9 +160,17 @@ namespace caliope {
 		RENDERPASS_CLEAR_FLAG_DEPTH_BUFFER = 0x2,
 	} renderpass_clear_flag;
 
+	// NOTE: Aligned with vulkan types 
+	typedef enum renderpass_front_face {
+		FRONT_FACE_COUNTER_CLOCKWISE = 0,
+		FRONT_FACE_CLOCKWISE = 1,
+		FRONT_FACE_MAX_ENUM = 0x7FFFFFFF
+	} renderpass_front_face;
+
 	typedef struct renderpass {
 		renderpass_type type;
 		renderpass_clear_flag flags;
+		renderpass_front_face front_face;
 
 		glm::vec4 render_area;
 		glm::vec4 clear_color;

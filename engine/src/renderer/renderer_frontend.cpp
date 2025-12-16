@@ -57,6 +57,7 @@ namespace caliope{
 		pass = {};
 		pass.type = RENDERPASS_TYPE_WORLD;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER | RENDERPASS_CLEAR_FLAG_DEPTH_BUFFER);
+		pass.front_face = FRONT_FACE_CLOCKWISE;
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
 		renderpass_resource_data world_renderpass_data;
 		world_renderpass_data.clear_color = glm::vec4(0.0f, 0.2f, 0.6f, 1.0f);
@@ -76,6 +77,7 @@ namespace caliope{
 		pass = {};
 		pass.type = RENDERPASS_TYPE_UI;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_NONE);
+		pass.front_face = FRONT_FACE_COUNTER_CLOCKWISE;
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
 		renderpass_resource_data ui_renderpass_data;
 		ui_renderpass_data.clear_color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -95,6 +97,7 @@ namespace caliope{
 		pass = {};
 		pass.type = RENDERPASS_TYPE_WORLD_OBJECT_PICK;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
+		pass.front_face = FRONT_FACE_CLOCKWISE;
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
 		renderpass_resource_data world_pick_object_renderpass_data;
 		world_pick_object_renderpass_data.clear_color = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
@@ -114,6 +117,7 @@ namespace caliope{
 		pass = {};
 		pass.type = RENDERPASS_TYPE_UI_OBJECT_PICK;
 		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
+		pass.front_face = FRONT_FACE_COUNTER_CLOCKWISE;
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
 		renderpass_resource_data ui_pick_object_renderpass_data;
 		ui_pick_object_renderpass_data.clear_color = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);

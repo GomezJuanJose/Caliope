@@ -141,7 +141,7 @@ namespace caliope {
 			float left = self.type == 1 ? -state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : 0.0f;
 			float right = self.type == 1 ? state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).width;
 			float top = self.type == 1 ? object_pick_packet.pick_camera->zoom : 0.0f;
-			float bottom = self.type == 1 ? -object_pick_packet.pick_camera->zoom : -state_ptr->view_data.at(self.type).height;
+			float bottom = self.type == 1 ? -object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).height;
 
 			state_ptr->view_data.at(self.type).projection = glm::ortho(left, right, bottom, top, -100.0f, 100.0f);
 			state_ptr->view_data.at(self.type).zoom = object_pick_packet.pick_camera->zoom;
@@ -214,7 +214,6 @@ namespace caliope {
 
 			
 				shader_pick_quad_properties psp;
-				sprite.transform.position.y *= -1;
 				psp.model = transform_get_world(sprite.transform);
 				psp.id = sprite.id;
 				psp.diffuse_index = diffuse_id;

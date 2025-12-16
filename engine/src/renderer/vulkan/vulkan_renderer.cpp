@@ -852,6 +852,7 @@ namespace caliope {
 			shader_stages,
 			viewport,
 			scissor,
+			(VkFrontFace)pass.front_face,
 			false,
 			vk_shader->pipeline
 			);
