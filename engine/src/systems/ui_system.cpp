@@ -639,7 +639,7 @@ namespace caliope {
 
 					// For correct spacing
 					quad_definition.transform.position.x = transform.position.x + (x_advance)+(insterted_images[current_candidate_image_index].image_size.x / 2) ;
-					quad_definition.transform.position.y = transform.position.y - y_advance + (insterted_images[current_candidate_image_index].image_size.y / 2);
+					quad_definition.transform.position.y = transform.position.y + y_advance - (insterted_images[current_candidate_image_index].image_size.y / 2);
 
 					x_advance += insterted_images[current_candidate_image_index].image_size.x;
 
@@ -717,7 +717,7 @@ namespace caliope {
 				// TODO: Do the alignment position calculation, kerning and spacing inside the text font system and return its value with functions?
 				quad_definition.transform.position.x = transform.position.x + (x_advance)+(g->width / 2) + g->x_offset;
 				float glyph_pos_y = ((g->y_offset2 + g->y_offset) / 2);
-				quad_definition.transform.position.y = transform.position.y - y_advance - (glyph_pos_y);// TODO: Change the - with + when the projection is fixed
+				quad_definition.transform.position.y = transform.position.y + y_advance + (glyph_pos_y);// TODO: Change the - with + when the projection is fixed
 
 
 				int kerning_advance = 0;

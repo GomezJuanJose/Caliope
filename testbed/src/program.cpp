@@ -82,7 +82,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::ui_system_create_empty_layout(std::string("ui_layout_test"), true);
 
 	caliope::transform_component t;
-	t.position = glm::vec3(100.0f, -100.0f, 0.0f);
+	t.position = glm::vec3(50.0f, 50.0f, 0.0f);
 	t.scale = glm::vec3(100.0f, 100.f, 0.5f);
 	t.roll_rotation = 0.0f;
 	caliope::ui_material_component sc;
@@ -92,7 +92,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc);
 
 	caliope::transform_component t2;
-	t2.position = glm::vec3(400.5f, -100.0f, 0.0f);
+	t2.position = glm::vec3(400.5f, 100.0f, 0.0f);
 	t2.scale = glm::vec3(50.0f, 50.f, 0.5f);
 	t2.roll_rotation = 0.0f;
 	caliope::ui_dynamic_material_component dmc;
@@ -117,7 +117,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 
 	caliope::transform_component t3;
-	t3.position = glm::vec3(400.5f, -400.0f, 0.0f);
+	t3.position = glm::vec3(400.5f, 400.0f, 0.0f);
 	t3.scale = glm::vec3(20.0f, 20.0f, 1.0f);
 	t3.roll_rotation = 0.0f;
 	caliope::ui_text_component tc;

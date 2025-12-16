@@ -214,6 +214,7 @@ namespace caliope {
 
 			
 				shader_pick_quad_properties psp;
+				sprite.transform.position.y *= -1;
 				psp.model = transform_get_world(sprite.transform);
 				psp.id = sprite.id;
 				psp.diffuse_index = diffuse_id;

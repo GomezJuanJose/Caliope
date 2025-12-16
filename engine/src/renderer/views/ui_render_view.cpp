@@ -103,7 +103,10 @@ namespace caliope {
 		}
 
 		if (state_ptr->regenerate_projection) {
-			state_ptr->projection = glm::ortho( 0.0f, state_ptr->width, -state_ptr->height, 0.0f, -100.0f, 100.0f); // TODO: FIX THIS FOR THE UI 
+			// Note: Is negative heigth because the pipeline has the front_face mode as VK_FRONT_FACE_CLOCKWISE instead of VK_FRONT_FACE_COUNTER_CLOCKWISE
+			// It was decided to just invert Y axis transform because using VK_FRONT_FACE_COUNTER_CLOCKWISE it should have inverted the coords in Y axis.
+			// So at the end it requires an inversion in some axis. Also inverting the text coords requires more edge case controls (due to the use of stbi_truetype)
+			state_ptr->projection = glm::ortho( 0.0f, state_ptr->width, -state_ptr->height, 0.0f, -100.0f, 100.0f);
 			state_ptr->regenerate_projection = false;
 		}
 
@@ -140,6 +143,7 @@ namespace caliope {
 
 
 				shader_ui_quad_properties sp;
+				sprite.transform.position.y *= -1;
 				sp.model = transform_get_world(sprite.transform);
 				sp.diffuse_color = sprite.diffuse_color;
 				sp.id = sprite.id;
