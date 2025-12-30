@@ -101,6 +101,14 @@ namespace caliope {
 		ui_text_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
 		ecs_system_build_archetype(ARCHETYPE_UI_TEXT_BOX, new_archetype_id, new_archetype_size, ui_text_components_data_types);
 
+		new_archetype_size = { sizeof(parent_component), sizeof(ui_transform_component), sizeof(ui_container_component) };
+		new_archetype_id = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_CONTAINER_COMPONENT };
+		std::vector<std::vector<component_data_type>> ui_box_components_data_types;
+		ui_box_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
+		ui_box_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_UINT });
+		ui_box_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_UINT });
+		ecs_system_build_archetype(ARCHETYPE_UI_CONTAINER_BOX, new_archetype_id, new_archetype_size, ui_box_components_data_types);
+
 		CE_LOG_INFO("ECS system initialized.");
 
 		return true;

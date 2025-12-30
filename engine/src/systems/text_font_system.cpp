@@ -121,9 +121,6 @@ namespace caliope {
 		stbtt_GetFontVMetrics(&text_font_config.stb_font_info, &ascent, &descent, &line_gap);
 		tfr.text_font.line_height = (ascent - descent + line_gap) * scale_pixel_height;
 
-		// This must be after retrieving the metrics other wise the stb_font_info is filled with trash data
-		tfr.text_font.atlas_material = material_system_adquire_from_config(mat_config);
-		tfr.text_font.atlas_material->diffuse_texture = writeable_atlas;
 
 		// TODO: From this point it can be moved to other function for future regeneration of the atlas if needs new characters
 		// Insert codepoints ids
@@ -170,8 +167,6 @@ namespace caliope {
 			rgba_pixels[(i * 4) + 3] = pixels[i];
 		}
 
-		// Write data to atlas
-		texture_system_write_data(*tfr.text_font.atlas_material->diffuse_texture, 0, pack_image_size * 4, rgba_pixels.data());
 
 		// Regenerate glyphs data
 		tfr.text_font.glyphs.clear();
@@ -210,6 +205,11 @@ namespace caliope {
 		}
 		// TODO: End move this to other function
 
+		// This must be at the end other wise the stb_font_info is filled with trash data
+		tfr.text_font.atlas_material = material_system_adquire_from_config(mat_config);
+		tfr.text_font.atlas_material->diffuse_texture = writeable_atlas;
+		// Write data to atlas
+		texture_system_write_data(*tfr.text_font.atlas_material->diffuse_texture, 0, pack_image_size * 4, rgba_pixels.data());
 
 		state_ptr->registered_fonts.insert({ tfr.text_font.name, tfr });
 

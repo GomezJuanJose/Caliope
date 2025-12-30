@@ -48,7 +48,7 @@ namespace caliope {
 		UI_ANCHOR_TOP_CENTER,
 		UI_ANCHOR_TOP_RIGHT,
 		UI_ANCHOR_CENTER_LEFT,
-		UI_ANCHOR_CENTER,
+		UI_ANCHOR_CENTER_CENTER,
 		UI_ANCHOR_CENTER_RIGHT,
 		UI_ANCHOR_BOTTOM_LEFT,
 		UI_ANCHOR_BOTTOM_CENTER,
@@ -103,4 +103,9 @@ namespace caliope {
 	typedef struct ui_behaviour_component {
 		ui_visibility visibility;
 	}ui_behaviour_component;
+
+	typedef struct ui_container_component {
+		glm::vec3 next_position;
+		bool is_arranged_horizontal;
+	} ui_box_component;
 }

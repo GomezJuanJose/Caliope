@@ -324,6 +324,32 @@ namespace caliope {
 		return entity;
 	}
 
+	uint ui_system_instance_container_box(std::string& name, ui_transform_component& transform, ui_container_component& box)
+	{
+		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
+			CE_LOG_WARNING("ui_system_instance_text_box scene %s not found", name.c_str());
+			return -1;
+		}
+
+		parent_component parent_comp;
+		parent_comp.parent = -1;
+
+		std::vector<component_id> components = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_CONTAINER_COMPONENT };
+		std::vector<void*> data = { &parent_comp, &transform , &box };
+
+		uint entity = ecs_system_add_entity(ARCHETYPE_UI_CONTAINER_BOX);
+		for (uint i = 0; i < components.size(); ++i) {
+			ecs_system_insert_data(entity, components[i], data[i]);
+		}
+
+
+		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
+		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
+
+
+		return entity;
+	}
+
 	void ui_system_destroy_entity(std::string& name, uint entity) {
 
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end() || state_ptr->entity_index_layout.find(entity) == state_ptr->entity_index_layout.end()) {
@@ -383,18 +409,12 @@ namespace caliope {
 	glm::vec3 calculate_position_based_on_anchor_bounds_and_parent(ui_transform_component* transform, ui_anchor_position anchor, uint parent) {
 		uint64 size;
 		ui_transform_component* parent_transform = (ui_transform_component*)ecs_system_get_component_data(parent, UI_TRANSFORM_COMPONENT, size);
-
-		glm::vec2 top_left_corner_ui_element = glm::vec2( 
-			transform->position.x + (transform->bounds_max_point.x / 2) - (transform->bounds_max_point.x * transform->bounds_offset.x), 
-			transform->position.y + (transform->bounds_max_point.y / 2) - (transform->bounds_max_point.y * transform->bounds_offset.y)
-		);
+		ui_container_component* parent_container_box = (ui_container_component*)ecs_system_get_component_data(parent, UI_CONTAINER_COMPONENT, size);
 
 		glm::vec2 parent_bounds = { state_ptr->window_width, state_ptr->window_height };
 		parent_bounds *= state_ptr->aspect_ratio;
-
 		glm::vec2 anchor_position = glm::vec2(0.0f);
 		glm::vec2 parent_position = { 0,0 };
-
 		if (parent_transform) {
 			parent_bounds = { parent_transform->bounds_max_point.x, parent_transform->bounds_max_point.y };
 			parent_position = calculate_position_based_on_anchor_bounds_and_parent(parent_transform, parent_transform->anchor, -1);
@@ -405,31 +425,81 @@ namespace caliope {
 		}
 
 
-		if (anchor == UI_ANCHOR_CENTER_LEFT || anchor == UI_ANCHOR_CENTER || anchor == UI_ANCHOR_CENTER_RIGHT) {
+		if (anchor == UI_ANCHOR_CENTER_LEFT || anchor == UI_ANCHOR_CENTER_CENTER || anchor == UI_ANCHOR_CENTER_RIGHT) {
 			anchor_position.y = parent_bounds.y / 2;
 		}
 		else if (anchor == UI_ANCHOR_BOTTOM_LEFT || anchor == UI_ANCHOR_BOTTOM_CENTER || anchor == UI_ANCHOR_BOTTOM_RIGHT) {
 			anchor_position.y = parent_bounds.y;
 		}
 
-		if (anchor == UI_ANCHOR_TOP_CENTER || anchor == UI_ANCHOR_CENTER || anchor == UI_ANCHOR_BOTTOM_CENTER) {
+		if (anchor == UI_ANCHOR_TOP_CENTER || anchor == UI_ANCHOR_CENTER_CENTER || anchor == UI_ANCHOR_BOTTOM_CENTER) {
 			anchor_position.x = parent_bounds.x / 2;
 		}
 		else if (anchor == UI_ANCHOR_TOP_RIGHT || anchor == UI_ANCHOR_CENTER_RIGHT || anchor == UI_ANCHOR_BOTTOM_RIGHT) {
 			anchor_position.x = parent_bounds.x;
 		}
 
+		glm::vec2 bound_offset = transform->bounds_offset;
+		glm::vec3 element_position = transform->position;
+		if (parent_container_box) {
+			// TODO: ANCHORING, SIZE  (IF SIZE OF A ELEMENT IS BIGGER THAN THE CONTAINER, MEANS TO ENTER IN FILL MODE)
+
+			bound_offset = glm::vec2(0.0f);
+			
+			if (parent_container_box->is_arranged_horizontal) {
+				element_position.x += parent_container_box->next_position.x;
+				element_position.y = 0;
+				parent_container_box->next_position.x += transform->position.x + transform->bounds_max_point.x;
+
+				anchor_position = glm::vec2(0.0f);
+
+				if (anchor == UI_ANCHOR_CENTER_LEFT || anchor == UI_ANCHOR_CENTER_CENTER || anchor == UI_ANCHOR_CENTER_RIGHT) {
+					anchor_position.y = parent_bounds.y / 2;
+					bound_offset.y = 0.5;
+				}
+
+				if (anchor == UI_ANCHOR_BOTTOM_LEFT || anchor == UI_ANCHOR_BOTTOM_CENTER || anchor == UI_ANCHOR_BOTTOM_RIGHT) {
+					anchor_position.y = parent_bounds.y;
+					bound_offset.y = 1.0;
+				}
+			}
+			else {
+				element_position.x = 0;
+				element_position.y += parent_container_box->next_position.y;
+				parent_container_box->next_position.y += transform->position.y + transform->bounds_max_point.y;
+				
+				anchor_position = glm::vec2(0.0f);
+
+				if (anchor == UI_ANCHOR_TOP_CENTER || anchor == UI_ANCHOR_CENTER_CENTER || anchor == UI_ANCHOR_BOTTOM_CENTER) {
+					anchor_position.x = parent_bounds.x / 2;
+					bound_offset.x = 0.5;
+				}
+
+				if (anchor == UI_ANCHOR_TOP_RIGHT || anchor == UI_ANCHOR_CENTER_RIGHT || anchor == UI_ANCHOR_BOTTOM_RIGHT) {
+					anchor_position.x = parent_bounds.x;
+					bound_offset.x = 1.0;
+				}
+
+			}
+		}
+
+		glm::vec2 top_left_corner_ui_element = glm::vec2( 
+			element_position.x + (transform->bounds_max_point.x / 2) - (transform->bounds_max_point.x * bound_offset.x),
+			element_position.y + (transform->bounds_max_point.y / 2) - (transform->bounds_max_point.y * bound_offset.y)
+		);
+
 		return {
 			top_left_corner_ui_element.x + anchor_position.x + parent_position.x,
 			top_left_corner_ui_element.y + anchor_position.y + parent_position.y,
-			transform->position.z
+			element_position.z
 		};
 	}
 
-	glm::vec3 calculate_scale_based_on_bounds(ui_transform_component* transform) {
+	glm::vec3 calculate_scale_based_on_bounds_and_parent(ui_transform_component* transform, uint parent) {
+		glm::vec2 final_scale = transform->bounds_max_point;
 		// NOTE: Here is not applied the aspect ratio because then the sizes do not rescale according to the window size, because applies the aspect ratio which will be applied into the proyection
 		// so the final result will end up with the same size in any resolution
-		return { transform->bounds_max_point.x, transform->bounds_max_point.y, 0 };
+		return { final_scale.x, final_scale.y, 0 };
 	}
 
 	void populate_package_with_ui_image(std::vector<quad_instance_definition>& quads_data, std::vector<quad_instance_definition>& pick_quads_data) {
@@ -452,7 +522,7 @@ namespace caliope {
 			ui_transform_component* tran_comp = (ui_transform_component*)ecs_system_get_component_data(ui_images[entity_index], UI_TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-			transform_set_scale(transform, calculate_scale_based_on_bounds(tran_comp));
+			transform_set_scale(transform, calculate_scale_based_on_bounds_and_parent(tran_comp, parent_comp->parent));
 			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
@@ -504,7 +574,7 @@ namespace caliope {
 			ui_transform_component* tran_comp = (ui_transform_component*)ecs_system_get_component_data(ui_button[entity_index], UI_TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-			transform_set_scale(transform, calculate_scale_based_on_bounds(tran_comp));
+			transform_set_scale(transform, calculate_scale_based_on_bounds_and_parent(tran_comp, parent_comp->parent));
 			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
@@ -730,7 +800,7 @@ namespace caliope {
 			ui_transform_component* tran_comp = (ui_transform_component*)ecs_system_get_component_data(ui_text[entity_index], UI_TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-			transform_set_scale(transform, calculate_scale_based_on_bounds(tran_comp));
+			transform_set_scale(transform, calculate_scale_based_on_bounds_and_parent(tran_comp, parent_comp->parent));
 			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
@@ -912,6 +982,18 @@ namespace caliope {
 		}
 	}
 
+	void reset_ui_elements_values() {
+		std::vector<uint> ui_container_boxes = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_CONTAINER_BOX);// TODO: If the vector is a reference and there is no text, calling the function the renderer crash?, investigate why!
+		for (uint entity_index = 0; entity_index < ui_container_boxes.size(); ++entity_index) {
+			uint64 size;
+			ui_container_component* container_comp = (ui_container_component*)ecs_system_get_component_data(ui_container_boxes[entity_index], UI_CONTAINER_COMPONENT, size);
+			ui_container_component new_container_comp;
+			new_container_comp.is_arranged_horizontal = container_comp->is_arranged_horizontal;
+			new_container_comp.next_position = glm::vec3(0.0f);
+			ecs_system_insert_data(ui_container_boxes[entity_index], UI_CONTAINER_COMPONENT, &new_container_comp);
+		}
+	}
+
 	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time) {
 
 		std::vector<quad_instance_definition> quads_data;
@@ -932,5 +1014,7 @@ namespace caliope {
 		pick_object_packet.view_type = VIEW_TYPE_UI_OBJECT_PICK;
 		render_view_system_on_build_packet(VIEW_TYPE_UI_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ pick_quads_data, ui_cam_in_use, delta_time }));
 		packets.push_back(pick_object_packet);
+
+		reset_ui_elements_values();
 	}
 }

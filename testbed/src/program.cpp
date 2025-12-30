@@ -97,17 +97,17 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc, cb);
 
 	caliope::ui_transform_component t2_1;
-	t2_1.position = glm::vec3(0.0f, 200.0f, 0.0f);
+	t2_1.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	t2_1.bounds_max_point = glm::vec2(50.0f, 50.f);
 	t2_1.bounds_offset = glm::vec2(0.5f);
 	t2_1.roll_rotation = 0.0f;
-	t2_1.anchor = caliope::UI_ANCHOR_TOP_CENTER;
+	t2_1.anchor = caliope::UI_ANCHOR_TOP_LEFT;
 	caliope::ui_transform_component t2_2;
 	t2_2.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	t2_2.bounds_max_point = glm::vec2(80.0f, 80.f);
+	t2_2.bounds_max_point = glm::vec2(80.0f, 300.f);
 	t2_2.bounds_offset = glm::vec2(0.0f);
 	t2_2.roll_rotation = 0.0f;
-	t2_2.anchor = caliope::UI_ANCHOR_TOP_CENTER;
+	t2_2.anchor = caliope::UI_ANCHOR_BOTTOM_RIGHT;
 
 	caliope::ui_dynamic_material_component dmc;
 	dmc.normal_texture = {"ui_button"};
@@ -132,7 +132,6 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	cb.visibility = caliope::UI_VISIBILITY_VISIBLE_NO_HIT;
 	uint child_button = caliope::ui_system_instance_button(std::string("ui_layout_test"), t2_2, dmc, me, cb);
 
-	caliope::ui_system_parent_entities(child_button, parent_button);
 	
 	caliope::ui_transform_component t3;
 	t3.position = glm::vec3(0.0f, -100.0f, 0.0f);
@@ -144,6 +143,26 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	tc.style_table_name = { "test_style"};
 	tc.text = { "{abc def ghi jkl {green|mno\n} pqr stu vwx {#test_image} yz\nABC DEF GHI JKL {#test_image} {#test_image} MNO PQRS TUV A{red|{W}}X YZ !\"§$%&/()={#test_image}?*'<>#|;²³~@`´©«»¤¼×{} otra frase para probar caso\nLorem {red|ipsum do{blue|lor sit amet, consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{" };
 	uint entity_text = caliope::ui_system_instance_text_box(std::string("ui_layout_test"), t3, tc, cb);
+
+
+	caliope::ui_transform_component t4;
+	t4.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	t4.bounds_max_point = glm::vec2(300.0f, 300.f);
+	t4.bounds_offset = glm::vec2(0.0f);
+	t4.bounds_offset.x = 1;
+	t4.roll_rotation = 0.0f;
+	t4.anchor = caliope::UI_ANCHOR_TOP_RIGHT;
+	caliope::ui_container_component bc;
+	bc.is_arranged_horizontal = true;
+	bc.next_position = glm::vec3(0.0f);
+
+
+	uint container_box = caliope::ui_system_instance_container_box(std::string("ui_layout_test"), t4, bc);
+
+	caliope::ui_system_parent_entities(child_button, container_box);
+	caliope::ui_system_parent_entities(parent_button, container_box);
+
+
 
 	initialize_sounds();
 

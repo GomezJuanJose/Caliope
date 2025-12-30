@@ -14,6 +14,7 @@ namespace caliope {
 	struct ui_events_component;
 	struct ui_text_component;
 	struct ui_behaviour_component;
+	struct ui_container_component;
 	struct quad_instance_definition;
 	enum archetype;
 	enum component_id;
@@ -41,6 +42,7 @@ namespace caliope {
 	CE_API uint ui_system_instance_image(std::string& name, ui_transform_component& transform, ui_material_component& ui_material, ui_behaviour_component& cursor_behaviour);
 	CE_API uint ui_system_instance_button(std::string& name, ui_transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events, ui_behaviour_component& cursor_behaviour);
 	CE_API uint ui_system_instance_text_box(std::string& name, ui_transform_component& transform, ui_text_component& ui_text, ui_behaviour_component& cursor_behaviour);
+	CE_API uint ui_system_instance_container_box(std::string& name, ui_transform_component& transform, ui_container_component& box);
 
 	CE_API void ui_system_destroy_entity(std::string& name, uint entity);
 
