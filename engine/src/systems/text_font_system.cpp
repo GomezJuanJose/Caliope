@@ -113,17 +113,17 @@ namespace caliope {
 		mat_config.shader_name = { "Builtin.UIShader" };// TODO: Make it configurable? and as a pointer?
 		
 
-		tfr.text_font.atlas_material = material_system_adquire_from_config(mat_config);
-		tfr.text_font.atlas_material->diffuse_texture = writeable_atlas;
-
 		// Obtain line height metric
 		float scale_pixel_height = stbtt_ScaleForPixelHeight(&text_font_config.stb_font_info, (float)font_size);
 		int ascent;
 		int descent;
 		int line_gap;
-		stbtt_GetFontVMetrics(&text_font_config.stb_font_info, &ascent, &descent, &line_gap); // TODO: This do not work with mono-spaced fonts
+		stbtt_GetFontVMetrics(&text_font_config.stb_font_info, &ascent, &descent, &line_gap);
 		tfr.text_font.line_height = (ascent - descent + line_gap) * scale_pixel_height;
 
+		// This must be after retrieving the metrics other wise the stb_font_info is filled with trash data
+		tfr.text_font.atlas_material = material_system_adquire_from_config(mat_config);
+		tfr.text_font.atlas_material->diffuse_texture = writeable_atlas;
 
 		// TODO: From this point it can be moved to other function for future regeneration of the atlas if needs new characters
 		// Insert codepoints ids

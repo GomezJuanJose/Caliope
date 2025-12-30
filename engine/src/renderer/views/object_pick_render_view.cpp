@@ -139,9 +139,9 @@ namespace caliope {
 
 			// NOTE: 1 is VIEW_TYPE_WORLD_OBJECT_PICK, TODO: Instead use the enums
 			float left = self.type == 1 ? -state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : 0.0f;
-			float right = self.type == 1 ? state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).width;
+			float right = self.type == 1 ? state_ptr->view_data.at(self.type).aspect_ratio * object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).width * state_ptr->view_data.at(self.type).aspect_ratio;
 			float top = self.type == 1 ? object_pick_packet.pick_camera->zoom : 0.0f;
-			float bottom = self.type == 1 ? -object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).height;
+			float bottom = self.type == 1 ? -object_pick_packet.pick_camera->zoom : state_ptr->view_data.at(self.type).height * state_ptr->view_data.at(self.type).aspect_ratio;
 
 			state_ptr->view_data.at(self.type).projection = glm::ortho(left, right, bottom, top, -100.0f, 100.0f);
 			state_ptr->view_data.at(self.type).zoom = object_pick_packet.pick_camera->zoom;

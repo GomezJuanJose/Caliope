@@ -38,6 +38,32 @@ namespace caliope {
 		float quadratic;
 	} point_light_component;
 
+	typedef struct parent_component {
+		uint parent;
+	} parent_component;
+
+
+	typedef enum ui_anchor_position {
+		UI_ANCHOR_TOP_LEFT = 0,
+		UI_ANCHOR_TOP_CENTER,
+		UI_ANCHOR_TOP_RIGHT,
+		UI_ANCHOR_CENTER_LEFT,
+		UI_ANCHOR_CENTER,
+		UI_ANCHOR_CENTER_RIGHT,
+		UI_ANCHOR_BOTTOM_LEFT,
+		UI_ANCHOR_BOTTOM_CENTER,
+		UI_ANCHOR_BOTTOM_RIGHT,
+
+	} ui_anchor_position;
+
+	typedef struct ui_transform_component {
+		glm::vec3 position;
+		glm::vec2 bounds_max_point; // NOTE: Assumes that the min point is 0,0
+		glm::vec2 bounds_offset; // NOTE: Goes from 0 to 1
+		float roll_rotation;
+		ui_anchor_position anchor;
+	} ui_transform_component;
+
 	typedef struct ui_material_component {
 		std::array<char, MAX_NAME_LENGTH> material_name;
 		std::array<glm::vec2, 2> texture_region;
@@ -64,7 +90,17 @@ namespace caliope {
 	} ui_events_component;
 
 	typedef struct ui_text_component {
-		std::array<char, 2048> text; // TODO: Do it dynamically to avoid great memory consumption
+		std::array<char, 2048> text; // TODO: Think what to do with this because with std::String does not function as expected
 		std::array<char, MAX_NAME_LENGTH> style_table_name;
 	}ui_text_component;
+
+	typedef enum ui_visibility {
+		UI_VISIBILITY_VISIBLE = 0,
+		UI_VISIBILITY_VISIBLE_NO_HIT, // The cursor pick will ignore this element
+		UI_VISIBILITY_COLLAPSE
+	} ui_visibility;
+
+	typedef struct ui_behaviour_component {
+		ui_visibility visibility;
+	}ui_behaviour_component;
 }

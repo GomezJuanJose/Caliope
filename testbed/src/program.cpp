@@ -80,21 +80,35 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 
 	caliope::ui_system_create_empty_layout(std::string("ui_layout_test"), true);
+	caliope::ui_behaviour_component cb;
+	cb.visibility = caliope::UI_VISIBILITY_VISIBLE;
 
-	caliope::transform_component t;
-	t.position = glm::vec3(50.0f, 50.0f, 0.0f);
-	t.scale = glm::vec3(100.0f, 100.f, 0.5f);
+	caliope::ui_transform_component t;
+	t.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	t.bounds_max_point = glm::vec2(300.0f, 300.f);
+	t.bounds_offset = glm::vec2(0.5f);
 	t.roll_rotation = 0.0f;
+	t.anchor = caliope::UI_ANCHOR_TOP_LEFT;
 	caliope::ui_material_component sc;
 	sc.material_name = { "ui_image_test" };
 	sc.texture_region[0] = { 0.0f, 0.0f };
 	sc.texture_region[1] = { 0.0f, 0.0f };
-	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc);
 
-	caliope::transform_component t2;
-	t2.position = glm::vec3(400.5f, 100.0f, 0.0f);
-	t2.scale = glm::vec3(50.0f, 50.f, 0.5f);
-	t2.roll_rotation = 0.0f;
+	caliope::ui_system_instance_image(std::string("ui_layout_test"),t,sc, cb);
+
+	caliope::ui_transform_component t2_1;
+	t2_1.position = glm::vec3(0.0f, 200.0f, 0.0f);
+	t2_1.bounds_max_point = glm::vec2(50.0f, 50.f);
+	t2_1.bounds_offset = glm::vec2(0.5f);
+	t2_1.roll_rotation = 0.0f;
+	t2_1.anchor = caliope::UI_ANCHOR_TOP_CENTER;
+	caliope::ui_transform_component t2_2;
+	t2_2.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	t2_2.bounds_max_point = glm::vec2(80.0f, 80.f);
+	t2_2.bounds_offset = glm::vec2(0.0f);
+	t2_2.roll_rotation = 0.0f;
+	t2_2.anchor = caliope::UI_ANCHOR_TOP_CENTER;
+
 	caliope::ui_dynamic_material_component dmc;
 	dmc.normal_texture = {"ui_button"};
 	dmc.hover_texture = { "ui_button" };
@@ -113,18 +127,23 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	me.on_ui_released = on_button_released;
 	me.on_ui_hover = on_button_hover;
 	me.on_ui_unhover = on_button_unhover;
-	caliope::ui_system_instance_button(std::string("ui_layout_test"), t2, dmc, me);
+	uint parent_button = caliope::ui_system_instance_button(std::string("ui_layout_test"), t2_1, dmc, me, cb);
 
+	cb.visibility = caliope::UI_VISIBILITY_VISIBLE_NO_HIT;
+	uint child_button = caliope::ui_system_instance_button(std::string("ui_layout_test"), t2_2, dmc, me, cb);
 
-	caliope::transform_component t3;
-	t3.position = glm::vec3(400.5f, 400.0f, 0.0f);
-	t3.scale = glm::vec3(20.0f, 20.0f, 1.0f);
+	caliope::ui_system_parent_entities(child_button, parent_button);
+	
+	caliope::ui_transform_component t3;
+	t3.position = glm::vec3(0.0f, -100.0f, 0.0f);
+	t3.bounds_max_point = glm::vec2(900.0f, 900.0f);
+	t3.bounds_offset = glm::vec2(0.5f);
 	t3.roll_rotation = 0.0f;
+	t3.anchor = caliope::UI_ANCHOR_BOTTOM_CENTER;
 	caliope::ui_text_component tc;
 	tc.style_table_name = { "test_style"};
-	tc.text = { "{abc def ghi jkl {green|mno} pqr stu vwx {#test_image} yz\nABC DEF GHI JKL {#test_image} {#test_image} MNO PQRS TUV A{red|{W}}X YZ !\"§$%&/()={#test_image}?*'<>#|;²³~@`´©«»¤¼×{} otra frase para probar caso\nLorem {red|ipsum} do{blue|lor sit amet, consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{\nTODO: Haz que quad_definition.diffuse_color\nsea por material no valor hardcoded" };
-	//tc.text = { "ef hi jk AW VW" };
-	caliope::ui_system_instance_text_box(std::string("ui_layout_test"), t3, tc);
+	tc.text = { "{abc def ghi jkl {green|mno\n} pqr stu vwx {#test_image} yz\nABC DEF GHI JKL {#test_image} {#test_image} MNO PQRS TUV A{red|{W}}X YZ !\"§$%&/()={#test_image}?*'<>#|;²³~@`´©«»¤¼×{} otra frase para probar caso\nLorem {red|ipsum do{blue|lor sit amet, consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{" };
+	uint entity_text = caliope::ui_system_instance_text_box(std::string("ui_layout_test"), t3, tc, cb);
 
 	initialize_sounds();
 

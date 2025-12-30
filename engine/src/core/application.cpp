@@ -260,6 +260,8 @@ namespace caliope {
 
 		ui_system_configuration ui_system_config;
 		ui_system_config.max_number_entities = 500;
+		ui_system_config.initial_window_width = config.width;
+		ui_system_config.initial_window_height = config.height;
 		if (!ui_system_initialize(ui_system_config)) {
 			CE_LOG_FATAL("Failed to initialize ui system; shutting down");
 			return false;
@@ -375,6 +377,7 @@ namespace caliope {
 		float height = size[1];
 		float aspect_ratio = width / height;
 		renderer_on_resized(width, height);
+		ui_system_on_resize(width, height);
 
 		state_ptr->is_suspended = false;
 		if (size[0] == 0 || size[1] == 0) {

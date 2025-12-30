@@ -45,7 +45,7 @@ namespace caliope {
 			return false;
 		}
 		
-		// Builtin archetypes
+		// Builtin archetypes TODO: Build from loaded files and delete this
 		std::vector<uint> new_archetype_size = {sizeof(transform_component), sizeof(material_component)};
 		std::vector<component_id> new_archetype_id = {TRANSFORM_COMPONENT, MATERIAL_COMPONENT};
 		std::vector<std::vector<component_data_type>> sprite_components_data_types;
@@ -68,31 +68,37 @@ namespace caliope {
 		ecs_system_build_archetype(ARCHETYPE_POINT_LIGHT, new_archetype_id, new_archetype_size, point_light_components_data_types);
 
 
-		new_archetype_size = { sizeof(transform_component), sizeof(ui_material_component) };
-		new_archetype_id = { TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT };
+		new_archetype_size = { sizeof(parent_component), sizeof(ui_transform_component), sizeof(ui_material_component), sizeof(ui_behaviour_component)};
+		new_archetype_id = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT, UI_BEHAVIOUR_COMPONENT };
 		std::vector<std::vector<component_data_type>> ui_image_components_data_types;
-		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
+		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_UINT });
 		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_STRING, COMPONENT_DATA_TYPE_VEC4 });
+		ui_image_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
 		ecs_system_build_archetype(ARCHETYPE_UI_IMAGE, new_archetype_id, new_archetype_size, ui_image_components_data_types);
 
-		new_archetype_size = { sizeof(transform_component), sizeof(ui_dynamic_material_component), sizeof(ui_events_component)};
-		new_archetype_id = { TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT };
+		new_archetype_size = { sizeof(parent_component), sizeof(ui_transform_component), sizeof(ui_dynamic_material_component), sizeof(ui_events_component), sizeof(ui_behaviour_component) };
+		new_archetype_id = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT, UI_BEHAVIOUR_COMPONENT };
 		std::vector<std::vector<component_data_type>> ui_button_components_data_types;
-		ui_button_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		ui_button_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
+		ui_button_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_UINT});
 		ui_button_components_data_types.push_back({ 
 			COMPONENT_DATA_TYPE_STRING,COMPONENT_DATA_TYPE_STRING,COMPONENT_DATA_TYPE_STRING, 
 			COMPONENT_DATA_TYPE_VEC4,COMPONENT_DATA_TYPE_VEC4,COMPONENT_DATA_TYPE_VEC4, 
 			COMPONENT_DATA_TYPE_STRING, COMPONENT_DATA_TYPE_VEC4 });
 		ui_button_components_data_types.push_back({
-			// TODO: How to parse a function?
+			// TODO: How to parse a function? only on scripting?
 			});
+		ui_button_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
 		ecs_system_build_archetype(ARCHETYPE_UI_BUTTON, new_archetype_id, new_archetype_size, ui_button_components_data_types);
 
-		new_archetype_size = { sizeof(transform_component), sizeof(ui_text_component)};
-		new_archetype_id = { TRANSFORM_COMPONENT, UI_TEXT_COMPONENT };
+		new_archetype_size = { sizeof(parent_component), sizeof(ui_transform_component), sizeof(ui_text_component), sizeof(ui_behaviour_component)};
+		new_archetype_id = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_TEXT_COMPONENT, UI_BEHAVIOUR_COMPONENT };
 		std::vector<std::vector<component_data_type>> ui_text_components_data_types;
-		ui_text_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_FLOAT });
+		ui_text_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
+		ui_text_components_data_types.push_back({ COMPONENT_DATA_TYPE_VEC3, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_VEC2, COMPONENT_DATA_TYPE_FLOAT, COMPONENT_DATA_TYPE_UINT });
 		ui_text_components_data_types.push_back({ COMPONENT_DATA_TYPE_STRING, COMPONENT_DATA_TYPE_STRING }); // TODO: Make the data "std::string text" not being parsed because it just stores a temporal text, not a permanent one
+		ui_text_components_data_types.push_back({ COMPONENT_DATA_TYPE_UINT });
 		ecs_system_build_archetype(ARCHETYPE_UI_TEXT_BOX, new_archetype_id, new_archetype_size, ui_text_components_data_types);
 
 		CE_LOG_INFO("ECS system initialized.");

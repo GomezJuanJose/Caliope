@@ -103,7 +103,7 @@ namespace caliope {
 		}
 
 		if (state_ptr->regenerate_projection) {
-			state_ptr->projection = glm::ortho( 0.0f, state_ptr->width, state_ptr->height, 0.0f, -100.0f, 100.0f);
+			state_ptr->projection = glm::ortho( 0.0f, state_ptr->width * (state_ptr->width / state_ptr->height), state_ptr->height * (state_ptr->width / state_ptr->height), 0.0f, -100.0f, 100.0f);
 			state_ptr->regenerate_projection = false;
 		}
 

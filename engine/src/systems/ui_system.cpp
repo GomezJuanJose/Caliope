@@ -5,6 +5,7 @@
 #include "core/event.h"
 #include "resources/resources_types.inl"
 #include "platform/file_system.h"
+#include "platform/platform.h"
 
 #include "components/components.inl"
 #include "ecs_system.h"
@@ -27,6 +28,10 @@ namespace caliope {
 		std::unordered_map<uint, uint> entity_index_layout; // Index of the entity that occupies in the layout
 		uint layout_count;
 		uint max_number_entities;
+
+		uint16 window_width;
+		uint16 window_height;
+		float aspect_ratio;
 
 		uint previous_hover_entity;
 	} ui_system_state;
@@ -112,6 +117,9 @@ namespace caliope {
 		}
 
 		state_ptr->max_number_entities = config.max_number_entities;
+		state_ptr->window_width = config.initial_window_width;
+		state_ptr->window_height = config.initial_window_height;
+		state_ptr->aspect_ratio = (float)config.initial_window_width / (float)config.initial_window_height;
 
 
 		event_register(EVENT_CODE_ON_ENTITY_PRESSED, on_ui_pressed);
@@ -131,6 +139,13 @@ namespace caliope {
 		state_ptr->loaded_ui_layouts.clear();
 		state_ptr.reset();
 		state_ptr = nullptr;
+	}
+
+	void ui_system_on_resize(uint16 width, uint16 height)
+	{
+		state_ptr->window_width = width;
+		state_ptr->window_height = height;
+		state_ptr->aspect_ratio = (float)width / (float)height;
 	}
 
 	bool ui_system_create_empty_layout(std::string& name, bool enable_by_default) {
@@ -228,14 +243,18 @@ namespace caliope {
 		return true;
 	}
 */
-	bool ui_system_instance_image(std::string& name, transform_component& transform, ui_material_component& ui_material) {
+	uint ui_system_instance_image(std::string& name, ui_transform_component& transform, ui_material_component& ui_material, ui_behaviour_component& cursor_behaviour) {
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
 			CE_LOG_WARNING("ui_system_instance_image scene %s not found", name.c_str());
-			return false;
+			return -1;
 		}
 
-		std::vector<component_id> components = { TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT };
-		std::vector<void*> data = { &transform , &ui_material };
+		parent_component parent_comp;
+		parent_comp.parent = -1;
+
+
+		std::vector<component_id> components = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT, UI_BEHAVIOUR_COMPONENT };
+		std::vector<void*> data = { &parent_comp, &transform , &ui_material, &cursor_behaviour };
 
 		uint entity = ecs_system_add_entity(ARCHETYPE_UI_IMAGE);
 		for (uint i = 0; i < components.size(); ++i) {
@@ -246,18 +265,21 @@ namespace caliope {
 		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
 		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
 
-		return true;
+		return entity;
 	}
 
-	bool ui_system_instance_button(std::string& name, transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events)
+	uint ui_system_instance_button(std::string& name, ui_transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events, ui_behaviour_component& cursor_behaviour)
 	{
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
 			CE_LOG_WARNING("ui_system_instance_button scene %s not found", name.c_str());
-			return false;
+			return -1;
 		}
 
-		std::vector<component_id> components = { TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT };
-		std::vector<void*> data = { &transform , &ui_dynamic_material, &ui_mouse_events };
+		parent_component parent_comp;
+		parent_comp.parent = -1;
+
+		std::vector<component_id> components = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT, UI_BEHAVIOUR_COMPONENT };
+		std::vector<void*> data = { &parent_comp, &transform , &ui_dynamic_material, &ui_mouse_events, &cursor_behaviour };
 
 		uint entity = ecs_system_add_entity(ARCHETYPE_UI_BUTTON);
 		for (uint i = 0; i < components.size(); ++i) {
@@ -273,18 +295,21 @@ namespace caliope {
 		event_register(EVENT_CODE_ON_UI_BUTTON_HOVER, ui_mouse_events.on_ui_hover);
 		event_register(EVENT_CODE_ON_UI_BUTTON_UNHOVER, ui_mouse_events.on_ui_unhover);
 
-		return true;
+		return entity;
 	}
 
-	bool ui_system_instance_text_box(std::string& name, transform_component& transform, ui_text_component& ui_text)
+	uint ui_system_instance_text_box(std::string& name, ui_transform_component& transform, ui_text_component& ui_text, ui_behaviour_component& cursor_behaviour)
 	{
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
 			CE_LOG_WARNING("ui_system_instance_text_box scene %s not found", name.c_str());
-			return false;
+			return -1;
 		}
 
-		std::vector<component_id> components = { TRANSFORM_COMPONENT, UI_TEXT_COMPONENT};
-		std::vector<void*> data = { &transform , &ui_text };
+		parent_component parent_comp;
+		parent_comp.parent = -1;
+
+		std::vector<component_id> components = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_TEXT_COMPONENT, UI_BEHAVIOUR_COMPONENT };
+		std::vector<void*> data = { &parent_comp, &transform , &ui_text, &cursor_behaviour };
 
 		uint entity = ecs_system_add_entity(ARCHETYPE_UI_TEXT_BOX);
 		for (uint i = 0; i < components.size(); ++i) {
@@ -296,7 +321,7 @@ namespace caliope {
 		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
 
 
-		return true;
+		return entity;
 	}
 
 	void ui_system_destroy_entity(std::string& name, uint entity) {
@@ -329,6 +354,20 @@ namespace caliope {
 
 	}
 
+	bool ui_system_parent_entities(uint child, uint parent)
+	{
+		uint64 size;
+		parent_component* parent_child_comp = (parent_component*)ecs_system_get_component_data(child, UI_TRANSFORM_COMPONENT, size);
+		if (parent_child_comp) {
+			parent_component new_parent;
+			new_parent.parent = parent;
+			ecs_system_insert_data(child, PARENT_COMPONENT, &new_parent);
+			return true;
+		}
+
+		return false;
+	}
+
 	void ui_system_enable_layout(std::string& name, bool enable) {
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
 			CE_LOG_WARNING("ui_system_enable_layout scene %s not found", name.c_str());
@@ -341,19 +380,80 @@ namespace caliope {
 		}
 	}
 
-	void populate_package_with_ui_image(std::vector<quad_instance_definition>& quads_data) {
+	glm::vec3 calculate_position_based_on_anchor_bounds_and_parent(ui_transform_component* transform, ui_anchor_position anchor, uint parent) {
+		uint64 size;
+		ui_transform_component* parent_transform = (ui_transform_component*)ecs_system_get_component_data(parent, UI_TRANSFORM_COMPONENT, size);
+
+		glm::vec2 top_left_corner_ui_element = glm::vec2( 
+			transform->position.x + (transform->bounds_max_point.x / 2) - (transform->bounds_max_point.x * transform->bounds_offset.x), 
+			transform->position.y + (transform->bounds_max_point.y / 2) - (transform->bounds_max_point.y * transform->bounds_offset.y)
+		);
+
+		glm::vec2 parent_bounds = { state_ptr->window_width, state_ptr->window_height };
+		parent_bounds *= state_ptr->aspect_ratio;
+
+		glm::vec2 anchor_position = glm::vec2(0.0f);
+		glm::vec2 parent_position = { 0,0 };
+
+		if (parent_transform) {
+			parent_bounds = { parent_transform->bounds_max_point.x, parent_transform->bounds_max_point.y };
+			parent_position = calculate_position_based_on_anchor_bounds_and_parent(parent_transform, parent_transform->anchor, -1);
+
+			// This is to revert the calculation of the left_corner, due its not the real position of the quad.
+			parent_position.x -= (parent_transform->bounds_max_point.x / 2);
+			parent_position.y -= (parent_transform->bounds_max_point.y / 2);
+		}
+
+
+		if (anchor == UI_ANCHOR_CENTER_LEFT || anchor == UI_ANCHOR_CENTER || anchor == UI_ANCHOR_CENTER_RIGHT) {
+			anchor_position.y = parent_bounds.y / 2;
+		}
+		else if (anchor == UI_ANCHOR_BOTTOM_LEFT || anchor == UI_ANCHOR_BOTTOM_CENTER || anchor == UI_ANCHOR_BOTTOM_RIGHT) {
+			anchor_position.y = parent_bounds.y;
+		}
+
+		if (anchor == UI_ANCHOR_TOP_CENTER || anchor == UI_ANCHOR_CENTER || anchor == UI_ANCHOR_BOTTOM_CENTER) {
+			anchor_position.x = parent_bounds.x / 2;
+		}
+		else if (anchor == UI_ANCHOR_TOP_RIGHT || anchor == UI_ANCHOR_CENTER_RIGHT || anchor == UI_ANCHOR_BOTTOM_RIGHT) {
+			anchor_position.x = parent_bounds.x;
+		}
+
+		return {
+			top_left_corner_ui_element.x + anchor_position.x + parent_position.x,
+			top_left_corner_ui_element.y + anchor_position.y + parent_position.y,
+			transform->position.z
+		};
+	}
+
+	glm::vec3 calculate_scale_based_on_bounds(ui_transform_component* transform) {
+		// NOTE: Here is not applied the aspect ratio because then the sizes do not rescale according to the window size, because applies the aspect ratio which will be applied into the proyection
+		// so the final result will end up with the same size in any resolution
+		return { transform->bounds_max_point.x, transform->bounds_max_point.y, 0 };
+	}
+
+	void populate_package_with_ui_image(std::vector<quad_instance_definition>& quads_data, std::vector<quad_instance_definition>& pick_quads_data) {
 		std::vector<uint>& ui_images = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_IMAGE);
 		for (uint entity_index = 0; entity_index < ui_images.size(); ++entity_index) {
 
 			uint64 size;
+			ui_behaviour_component* behaviour_comp = (ui_behaviour_component*)ecs_system_get_component_data(ui_images[entity_index], UI_BEHAVIOUR_COMPONENT, size);
+			if (behaviour_comp->visibility == UI_VISIBILITY_COLLAPSE) {
+				// Skip and go for the next one
+				continue;
+			}
+			
+			parent_component* parent_comp = (parent_component*)ecs_system_get_component_data(ui_images[entity_index], PARENT_COMPONENT, size);
+			
+
 			quad_instance_definition quad_definition;
 			quad_definition.id = ui_images[entity_index];
 
-			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_images[entity_index], TRANSFORM_COMPONENT, size);
+			ui_transform_component* tran_comp = (ui_transform_component*)ecs_system_get_component_data(ui_images[entity_index], UI_TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-			transform_set_scale(transform, tran_comp->scale);
-			transform_set_position(transform, tran_comp->position);
+			transform_set_scale(transform, calculate_scale_based_on_bounds(tran_comp));
+			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
 			ui_material_component* ui_image_comp = (ui_material_component*)ecs_system_get_component_data(ui_images[entity_index], UI_MATERIAL_COMPONENT, size);
@@ -375,23 +475,37 @@ namespace caliope {
 				true
 			);
 
+			
 			quads_data.push_back(quad_definition);
+
+			quads_data.push_back(quad_definition);
+			if (behaviour_comp->visibility == UI_VISIBILITY_VISIBLE) {
+				pick_quads_data.push_back(quad_definition);
+			}
 		}
 	}
 
-	void populate_package_with_ui_button(std::vector<quad_instance_definition>& quads_data) {
+	void populate_package_with_ui_button(std::vector<quad_instance_definition>& quads_data, std::vector<quad_instance_definition>& pick_quads_data) {
 		std::vector<uint> ui_button = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_BUTTON);// TODO: If the vector is a reference and there is no button, calling the function the renderer crash, investigate why!
 		for (uint entity_index = 0; entity_index < ui_button.size(); ++entity_index) {
 
 			uint64 size;
+			ui_behaviour_component* behaviour_comp = (ui_behaviour_component*)ecs_system_get_component_data(ui_button[entity_index], UI_BEHAVIOUR_COMPONENT, size);
+			if (behaviour_comp->visibility == UI_VISIBILITY_COLLAPSE) {
+				// Skip and go for the next one
+				continue;
+			}
+
 			quad_instance_definition quad_definition;
 			quad_definition.id = ui_button[entity_index];
 
-			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_button[entity_index], TRANSFORM_COMPONENT, size);
+			parent_component* parent_comp = (parent_component*)ecs_system_get_component_data(ui_button[entity_index], PARENT_COMPONENT, size);
+			
+			ui_transform_component* tran_comp = (ui_transform_component*)ecs_system_get_component_data(ui_button[entity_index], UI_TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-			transform_set_scale(transform, tran_comp->scale);
-			transform_set_position(transform, tran_comp->position);
+			transform_set_scale(transform, calculate_scale_based_on_bounds(tran_comp));
+			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
 			ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, size);
@@ -412,7 +526,13 @@ namespace caliope {
 				true
 			);
 
+			ui_behaviour_component* cursor_behaviour_comp = (ui_behaviour_component*)ecs_system_get_component_data(ui_button[entity_index], UI_BEHAVIOUR_COMPONENT, size);
+
 			quads_data.push_back(quad_definition);
+
+			if (cursor_behaviour_comp->visibility == UI_VISIBILITY_VISIBLE) {
+				pick_quads_data.push_back(quad_definition);
+			}
 		}
 	}
 
@@ -420,7 +540,7 @@ namespace caliope {
 	void get_metrics_applying_style_to_text(text_style_table* style_table, std::string& text,
 		std::vector<text_style>& styles, std::vector<uint>& style_starting_indices, std::vector<uint>& style_ending_indices,
 		std::vector<text_image_style>& insterted_images, std::vector<uint>& inserted_image_starting_indices, std::vector<uint>& inserted_image_ending_indices,
-		uint max_width_line, std::vector<uint>& break_line_indices, std::vector<uint>& line_heighs)
+		uint max_width_line, std::vector<uint>& break_line_indices, std::vector<int>& line_heighs)
 	{
 
 		bool start_tag_retrieving = false;
@@ -438,7 +558,18 @@ namespace caliope {
 		bool is_new_line = true;
 
 		uint max_line_height = 0;
-		uint temporal_max_line_height = 0;
+		int temporal_max_line_height = 0;
+
+		// If there is no end character (" \n")then add one to get the last break line with the correct lineheight
+		if (!text.empty() && text.substr(std::clamp<int>(0,2,text.size()-2),2) != " \n") {
+			//First remove the breakline char if exists just to insert the correct end text characters
+			if (text.back() == '\n') {
+				text.pop_back();
+			}
+
+			text.push_back(' ');
+			text.push_back('\n');
+		}
 
 		for (uint char_index = 0; char_index < text.size(); ++char_index) {
 			char_to_break_index++;
@@ -483,7 +614,7 @@ namespace caliope {
 					// Iterates the style table to get each tag and first check if it has a > at the end, 
 					// second substring the tag found in the text and check if the name exists in the table
 					for (auto [tag, id] : style_table->tag_style_indexes) {
-						bool has_close_symbol = text.at(char_index + tag.size()) == '|';
+						bool has_close_symbol = char_index + tag.size() < text.size() && text.at(char_index + tag.size()) == '|';
 
 						found_tag_name = string_substring(&text, char_index, tag.size());
 						tag_matches = style_table->tag_style_indexes.find(found_tag_name) != style_table->tag_style_indexes.end();
@@ -577,21 +708,30 @@ namespace caliope {
 		}
 	}
 
-	void populate_package_with_ui_text(std::vector<quad_instance_definition>& quads_data) {
-		// TODO: Cache the data and only recalculate it if changes the text
+	void populate_package_with_ui_text(std::vector<quad_instance_definition>& quads_data, std::vector<quad_instance_definition>& pick_quads_data) {
+
+		// TODO: Optimization, for the pick, calculate the bounds based on the text and just create a quad that big
 
 		std::vector<uint> ui_text = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_TEXT_BOX);// TODO: If the vector is a reference and there is no text, calling the function the renderer crash?, investigate why!
 		for (uint entity_index = 0; entity_index < ui_text.size(); ++entity_index) {
 
 			uint64 size;
+			ui_behaviour_component* behaviour_comp = (ui_behaviour_component*)ecs_system_get_component_data(ui_text[entity_index], UI_BEHAVIOUR_COMPONENT, size);
+			if (behaviour_comp->visibility == UI_VISIBILITY_COLLAPSE) {
+				// Skip and go for the next one
+				continue;
+			}
+
 			quad_instance_definition quad_definition;
 			quad_definition.id = ui_text[entity_index];// TODO: If wants to make each character a unique id then move this inside the for loop
 
-			transform_component* tran_comp = (transform_component*)ecs_system_get_component_data(ui_text[entity_index], TRANSFORM_COMPONENT, size);
+			parent_component* parent_comp = (parent_component*)ecs_system_get_component_data(ui_text[entity_index], PARENT_COMPONENT, size);
+			
+			ui_transform_component* tran_comp = (ui_transform_component*)ecs_system_get_component_data(ui_text[entity_index], UI_TRANSFORM_COMPONENT, size);
 			transform transform = transform_create();
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
-			transform_set_scale(transform, tran_comp->scale);
-			transform_set_position(transform, tran_comp->position);
+			transform_set_scale(transform, calculate_scale_based_on_bounds(tran_comp));
+			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
 			ui_text_component* ui_text_comp = (ui_text_component*)ecs_system_get_component_data(ui_text[entity_index], UI_TEXT_COMPONENT, size);
@@ -616,19 +756,18 @@ namespace caliope {
 
 			uint current_break_line_index = 0;
 			std::vector<uint> break_line_indices;
-			std::vector<uint> line_heights;
+			std::vector<int> line_heights;
 
 			get_metrics_applying_style_to_text(style_table, std::string(&ui_text_comp->text[0]),
 				styles, style_starting_indices, style_ending_indices,
 				insterted_images, inserted_image_starting_indices, inserted_image_ending_indices,// TODO: Do this operation every time the text change or precalculate it at the level beggining
-				600, break_line_indices, line_heights); // TODO: Replace the 200 by a component value.
+				tran_comp->bounds_max_point.x, break_line_indices, line_heights);
 			
 
 			float x_advance = 0;
 			float y_advance = 0;
 			// Iterates each string character
 			for (uint char_index = 0; char_index < ui_text_comp->text.size(); ++char_index) {
-				// TODO: Remove this, because it will be used an dynamic string, and test if all the text its printed with different fonts and styles (for example with 'red' only prints the first line)
 				if (ui_text_comp->text[char_index] == '\0') {
 					break;
 				}
@@ -765,6 +904,10 @@ namespace caliope {
 				);
 
 				quads_data.push_back(quad_definition);
+
+				if (behaviour_comp->visibility == UI_VISIBILITY_VISIBLE) {
+					pick_quads_data.push_back(quad_definition);
+				}
 			}
 		}
 	}
@@ -772,11 +915,12 @@ namespace caliope {
 	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time) {
 
 		std::vector<quad_instance_definition> quads_data;
+		std::vector<quad_instance_definition> pick_quads_data;
 
 		
-		populate_package_with_ui_image(quads_data);
-		populate_package_with_ui_button(quads_data);
-		populate_package_with_ui_text(quads_data);
+		populate_package_with_ui_image(quads_data, pick_quads_data);
+		populate_package_with_ui_button(quads_data, pick_quads_data);
+		populate_package_with_ui_text(quads_data, pick_quads_data);
 		
 
 		renderer_view_packet ui_packet;
@@ -786,7 +930,7 @@ namespace caliope {
 
 		renderer_view_packet pick_object_packet;
 		pick_object_packet.view_type = VIEW_TYPE_UI_OBJECT_PICK;
-		render_view_system_on_build_packet(VIEW_TYPE_UI_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ quads_data, ui_cam_in_use, delta_time }));
+		render_view_system_on_build_packet(VIEW_TYPE_UI_OBJECT_PICK, pick_object_packet, std::vector<std::any>({ pick_quads_data, ui_cam_in_use, delta_time }));
 		packets.push_back(pick_object_packet);
 	}
 }
