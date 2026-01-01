@@ -83,10 +83,6 @@ namespace caliope {
 
 	void object_pick_system_set_hover_entity(bool world_entity, uint id)
 	{
-		if (state_ptr->is_pressing == true) {
-			return;
-		}
-
 		if (world_entity) {
 			state_ptr->current_world_hover_entity = id;
 		}
@@ -100,6 +96,10 @@ namespace caliope {
 		else
 		{
 			state_ptr->current_hover_entity = state_ptr->current_ui_hover_entity;
+		}
+
+		if (state_ptr->is_pressing == true) {
+			return;
 		}
 
 		event_fire(EVENT_CODE_ON_ENTITY_HOVER, state_ptr->current_hover_entity);

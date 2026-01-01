@@ -34,17 +34,20 @@ namespace caliope {
 		float aspect_ratio;
 
 		uint previous_hover_entity;
+		uint current_clicked_entity;
 	} ui_system_state;
 
 	static std::unique_ptr<ui_system_state> state_ptr;
 
-	// NOTE: Data is the key current entity pressed
+	// NOTE: Data is the current entity pressed
 	bool on_ui_pressed(event_system_code code, std::any data) {
-		uint hover_entity = std::any_cast<uint>(data);
+		uint clicked_entity = std::any_cast<uint>(data);
 		uint64 size;
 
-		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
-		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
+		state_ptr->current_clicked_entity = clicked_entity;
+
+		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(clicked_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
+		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(clicked_entity, UI_MOUSE_EVENTS_COMPONENT, size);
 		if (ui_dynamic_image_comp != nullptr) {
 			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->pressed_color;
 			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->pressed_texture[0]));
@@ -56,20 +59,27 @@ namespace caliope {
 		return false;
 	}
 
-	// NOTE: Data is the key current entity released
+	// NOTE: Data is the current entity released
 	bool on_ui_released(event_system_code code, std::any data) {
-		uint hover_entity = std::any_cast<uint>(data);
+		uint released_entity = std::any_cast<uint>(data);
 		uint64 size;
 
-		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
-		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
+		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(released_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
+		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(released_entity, UI_MOUSE_EVENTS_COMPONENT, size);
 		if (ui_dynamic_image_comp != nullptr) {
 			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->normal_color;
 			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->normal_texture[0]));
 		}
+
+		if (ui_events_comp != nullptr && object_pick_system_get_ui_hover_entity() == state_ptr->current_clicked_entity) {
+			ui_events_comp->on_ui_clicked(EVENT_CODE_ON_UI_BUTTON_CLICKED, 0);
+		}
+
 		if (ui_events_comp != nullptr) {
 			ui_events_comp->on_ui_released(EVENT_CODE_ON_UI_BUTTON_RELEASED, 0);
 		}
+
+		state_ptr->current_clicked_entity = -1;
 
 		return false;
 	}
@@ -409,6 +419,7 @@ namespace caliope {
 	glm::vec3 calculate_position_based_on_anchor_bounds_and_parent(ui_transform_component* transform, ui_anchor_position anchor, uint parent) {
 		uint64 size;
 		ui_transform_component* parent_transform = (ui_transform_component*)ecs_system_get_component_data(parent, UI_TRANSFORM_COMPONENT, size);
+		parent_component* parent_of_parent = (parent_component*)ecs_system_get_component_data(parent, PARENT_COMPONENT, size);
 		ui_container_component* parent_container_box = (ui_container_component*)ecs_system_get_component_data(parent, UI_CONTAINER_COMPONENT, size);
 
 		glm::vec2 parent_bounds = { state_ptr->window_width, state_ptr->window_height };
@@ -417,7 +428,7 @@ namespace caliope {
 		glm::vec2 parent_position = { 0,0 };
 		if (parent_transform) {
 			parent_bounds = { parent_transform->bounds_max_point.x, parent_transform->bounds_max_point.y };
-			parent_position = calculate_position_based_on_anchor_bounds_and_parent(parent_transform, parent_transform->anchor, -1);
+			parent_position = calculate_position_based_on_anchor_bounds_and_parent(parent_transform, parent_transform->anchor, parent_of_parent->parent);
 
 			// This is to revert the calculation of the left_corner, due its not the real position of the quad.
 			parent_position.x -= (parent_transform->bounds_max_point.x / 2);
@@ -537,7 +548,7 @@ namespace caliope {
 			quad_definition.specular_texture = mat->specular_texture;
 			quad_definition.normal_texture = mat->normal_texture;
 
-			quad_definition.z_order = 0;
+			quad_definition.z_order = tran_comp->z_order;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_image_comp->material_name.data()))->diffuse_texture,
 				ui_image_comp->texture_region[0],
@@ -588,7 +599,7 @@ namespace caliope {
 			quad_definition.specular_texture = mat->specular_texture;
 			quad_definition.normal_texture = mat->normal_texture;
 
-			quad_definition.z_order = 0;
+			quad_definition.z_order = tran_comp->z_order;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 				*material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data()))->diffuse_texture,
 				ui_dynamic_image_comp->texture_region[0],
@@ -793,6 +804,7 @@ namespace caliope {
 			}
 
 			quad_instance_definition quad_definition;
+			quad_definition.transform = transform_create(); // Just to initialize it
 			quad_definition.id = ui_text[entity_index];// TODO: If wants to make each character a unique id then move this inside the for loop
 
 			parent_component* parent_comp = (parent_component*)ecs_system_get_component_data(ui_text[entity_index], PARENT_COMPONENT, size);
@@ -802,7 +814,9 @@ namespace caliope {
 			transform_set_rotation(transform, glm::angleAxis(glm::radians(tran_comp->roll_rotation), glm::vec3(0.f, 0.f, 1.f)));
 			transform_set_scale(transform, calculate_scale_based_on_bounds_and_parent(tran_comp, parent_comp->parent));
 			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
-			quad_definition.transform = transform;
+			// Do a correction to align correctly the TOP-LEFT corner of the text box with the text 
+			transform.position.x -= tran_comp->bounds_max_point.x / 2;
+			transform.position.y -= tran_comp->bounds_max_point.y / 2;
 
 			ui_text_component* ui_text_comp = (ui_text_component*)ecs_system_get_component_data(ui_text[entity_index], UI_TEXT_COMPONENT, size);
 			// Found the glyph. generate points.
@@ -835,7 +849,7 @@ namespace caliope {
 			
 
 			float x_advance = 0;
-			float y_advance = 0;
+			float y_advance = line_heights[0];
 			// Iterates each string character
 			for (uint char_index = 0; char_index < ui_text_comp->text.size(); ++char_index) {
 				if (ui_text_comp->text[char_index] == '\0') {
@@ -869,7 +883,7 @@ namespace caliope {
 					quad_definition.normal_texture = mat->normal_texture;
 
 					quad_definition.diffuse_color = insterted_images[current_candidate_image_index].material->diffuse_color;
-					quad_definition.z_order = 0;
+					quad_definition.z_order = tran_comp->z_order;
 					quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 						*insterted_images[current_candidate_image_index].material->diffuse_texture,
 						insterted_images[current_candidate_image_index].texture_coord[0],
@@ -929,7 +943,7 @@ namespace caliope {
 				// TODO: Do the alignment position calculation, kerning and spacing inside the text font system and return its value with functions?
 				quad_definition.transform.position.x = transform.position.x + (x_advance)+(g->width / 2) + g->x_offset;
 				float glyph_pos_y = ((g->y_offset2 + g->y_offset) / 2);
-				quad_definition.transform.position.y = transform.position.y + y_advance + (glyph_pos_y);// TODO: Change the - with + when the projection is fixed
+				quad_definition.transform.position.y = transform.position.y + y_advance + (glyph_pos_y);
 
 
 				int kerning_advance = 0;
@@ -965,7 +979,7 @@ namespace caliope {
 				quad_definition.normal_texture = mat->normal_texture;
 
 				quad_definition.diffuse_color = in_use_style->text_color;
-				quad_definition.z_order = 0;
+				quad_definition.z_order = tran_comp->z_order;
 				quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
 					*in_use_style->font->atlas_material->diffuse_texture,
 					{ g->x,  g->y },

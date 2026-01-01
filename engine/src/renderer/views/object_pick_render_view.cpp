@@ -254,7 +254,6 @@ namespace caliope {
 		data.id = -1;
 		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
 		object_pick_system_set_hover_entity(self.type == 1 ? true : false, data.id); // 1 means VIEW_TYPE_WORLD_OBJECT_PICK
-
 		return true;
 	}
 }

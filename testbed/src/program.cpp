@@ -39,12 +39,19 @@ void initialize_sounds() {
 bool on_button_pressed(caliope::event_system_code code, std::any data) {
 	CE_LOG_INFO("BUTTON PRESSED");
 
-	caliope::scene_system_enable(std::string("scene_test1"), false);
 	return false;
 }
 
 bool on_button_released(caliope::event_system_code code, std::any data) {
 	CE_LOG_INFO("BUTTON RELEASED");
+
+	return false;
+}
+
+bool on_button_clicked(caliope::event_system_code code, std::any data) {
+	CE_LOG_INFO("BUTTON RELEASED");
+	caliope::scene_system_enable(std::string("scene_test1"), false);
+
 	return false;
 }
 
@@ -89,6 +96,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	t.bounds_offset = glm::vec2(0.5f);
 	t.roll_rotation = 0.0f;
 	t.anchor = caliope::UI_ANCHOR_TOP_LEFT;
+	t.z_order = 0;
 	caliope::ui_material_component sc;
 	sc.material_name = { "ui_image_test" };
 	sc.texture_region[0] = { 0.0f, 0.0f };
@@ -102,12 +110,14 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	t2_1.bounds_offset = glm::vec2(0.5f);
 	t2_1.roll_rotation = 0.0f;
 	t2_1.anchor = caliope::UI_ANCHOR_TOP_LEFT;
+	t2_1.z_order = 0;
 	caliope::ui_transform_component t2_2;
 	t2_2.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	t2_2.bounds_max_point = glm::vec2(80.0f, 300.f);
 	t2_2.bounds_offset = glm::vec2(0.0f);
 	t2_2.roll_rotation = 0.0f;
 	t2_2.anchor = caliope::UI_ANCHOR_BOTTOM_RIGHT;
+	t2_2.z_order = 0;
 
 	caliope::ui_dynamic_material_component dmc;
 	dmc.normal_texture = {"ui_button"};
@@ -127,6 +137,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	me.on_ui_released = on_button_released;
 	me.on_ui_hover = on_button_hover;
 	me.on_ui_unhover = on_button_unhover;
+	me.on_ui_clicked = on_button_clicked;
 	uint parent_button = caliope::ui_system_instance_button(std::string("ui_layout_test"), t2_1, dmc, me, cb);
 
 	cb.visibility = caliope::UI_VISIBILITY_VISIBLE_NO_HIT;
@@ -134,11 +145,12 @@ bool initialize_testbed(caliope::game_state& game_state) {
 
 	
 	caliope::ui_transform_component t3;
-	t3.position = glm::vec3(0.0f, -100.0f, 0.0f);
-	t3.bounds_max_point = glm::vec2(900.0f, 900.0f);
-	t3.bounds_offset = glm::vec2(0.5f);
+	t3.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	t3.bounds_max_point = glm::vec2(900.0f, 700.0f);
+	t3.bounds_offset = glm::vec2(0.5f,1.0f);
 	t3.roll_rotation = 0.0f;
 	t3.anchor = caliope::UI_ANCHOR_BOTTOM_CENTER;
+	t3.z_order = 0;
 	caliope::ui_text_component tc;
 	tc.style_table_name = { "test_style"};
 	tc.text = { "{abc def ghi jkl {green|mno\n} pqr stu vwx {#test_image} yz\nABC DEF GHI JKL {#test_image} {#test_image} MNO PQRS TUV A{red|{W}}X YZ !\"§$%&/()={#test_image}?*'<>#|;²³~@`´©«»¤¼×{} otra frase para probar caso\nLorem {red|ipsum do{blue|lor sit amet, consectetuer adipiscing elit.\nAenean commodo ligula eget dolor. Aenean massa.{" };
@@ -152,6 +164,7 @@ bool initialize_testbed(caliope::game_state& game_state) {
 	t4.bounds_offset.x = 1;
 	t4.roll_rotation = 0.0f;
 	t4.anchor = caliope::UI_ANCHOR_TOP_RIGHT;
+	t4.z_order = 0;
 	caliope::ui_container_component bc;
 	bc.is_arranged_horizontal = true;
 	bc.next_position = glm::vec3(0.0f);

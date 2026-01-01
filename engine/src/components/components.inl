@@ -62,6 +62,8 @@ namespace caliope {
 		glm::vec2 bounds_offset; // NOTE: Goes from 0 to 1
 		float roll_rotation;
 		ui_anchor_position anchor;
+
+		uint z_order;
 	} ui_transform_component;
 
 	typedef struct ui_material_component {
@@ -86,6 +88,7 @@ namespace caliope {
 		bool(*on_ui_hover)(event_system_code code, std::any data);
 		bool(*on_ui_unhover)(event_system_code code, std::any data);
 		bool(*on_ui_pressed)(event_system_code code, std::any data);
+		bool(*on_ui_clicked)(event_system_code code, std::any data);
 		bool(*on_ui_released)(event_system_code code, std::any data);
 	} ui_events_component;
 
