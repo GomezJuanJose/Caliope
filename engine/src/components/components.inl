@@ -10,8 +10,6 @@ namespace caliope {
 		float roll_rotation;
 	} transform_component;
 
-#define MAX_NAME_LENGTH 255
-
 	typedef struct material_component {
 		std::array<char, MAX_NAME_LENGTH> material_name;
 		uint z_order;
@@ -79,8 +77,10 @@ namespace caliope {
 		glm::vec4 hover_color;
 		glm::vec4 pressed_color;
 
-		std::array<char, MAX_NAME_LENGTH> material_name;
-		std::array<glm::vec2, 2> texture_region;
+		// Note: Put at the end of the component non parseable varaibles, to indicate: skip this attribute becasue its used as temporal in runtime storage
+		// TODO: Improve this or move it to the ui_system as private information
+		glm::vec3 current_color;
+		struct texture* current_texture;
 	} ui_dynamic_material_component;
 
 	enum event_system_code;
@@ -93,8 +93,11 @@ namespace caliope {
 	} ui_events_component;
 
 	typedef struct ui_text_component {
-		std::array<char, 2048> text; // TODO: Think what to do with this because with std::String does not function as expected
 		std::array<char, MAX_NAME_LENGTH> style_table_name;
+
+		// Note: Put at the end of the component non parseable varaibles, to indicate: skip this attribute becasue its used as temporal in runtime storage
+		// TODO: Improve this or move it to the ui_system as private information
+		std::array<char, 2048> text; // TODO: Think what to do with this because with std::String does not function as expected
 	}ui_text_component;
 
 	typedef enum ui_visibility {

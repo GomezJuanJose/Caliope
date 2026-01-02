@@ -27,7 +27,7 @@ namespace caliope {
 	CE_API bool scene_system_save(std::string& name);
 
 	// returns the entity ID, if -1 means error.
-	CE_API bool scene_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data);
+	CE_API uint scene_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data);
 	CE_API void scene_system_destroy_entity(std::string& name, uint entity);
 
 	CE_API void scene_system_enable(std::string& name, bool enable);

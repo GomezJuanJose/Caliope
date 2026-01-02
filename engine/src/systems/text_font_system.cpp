@@ -184,7 +184,7 @@ namespace caliope {
 			g->width = pc->x1 - pc->x0;
 			g->height = pc->y1 - pc->y0;
 			g->x_advance = pc->xadvance;
-			g->kerning_index = stbtt_FindGlyphIndex(&text_font_config.stb_font_info, g->codepoint);
+			//g->kerning_index = stbtt_FindGlyphIndex(&text_font_config.stb_font_info, g->codepoint);
 
 			if (g->codepoint == ' ') {
 				tfr.text_font.x_advance_space = g->x_advance;

@@ -1,4 +1,4 @@
-#include "scene_loader.h"
+#include "entity_loader.h"
 #include "cepch.h"
 
 #include "core/logger.h"
@@ -9,9 +9,9 @@
 
 namespace caliope {
 
-	bool scene_loader_load(std::string* file, resource* out_resource) {
+	bool entity_loader_load(std::string* file, resource* out_resource) {
 		file_handle text_file;
-		if (!file_system_open(*file + ".cescene", FILE_MODE_READ, text_file)) {
+		if (!file_system_open(*file, FILE_MODE_READ, text_file)) {
 			CE_LOG_ERROR("Couldnt open %s", file->c_str());
 			return false;
 		}
@@ -44,6 +44,12 @@ namespace caliope {
 
 			if (strings_equali(&field, &std::string("name"))) {
 				copy_memory(&scene_config.name, value.c_str(), sizeof(char) * MAX_NAME_LENGTH);
+			}
+			else if (strings_equali(&field, &std::string("entity_id")))
+			{
+				uint entity_id;
+				string_to_uint(&value, &entity_id);
+				scene_config.entity_ids.push_back(entity_id);
 			}
 			else if (strings_equali(&field, &std::string("archetype_id")))
 			{
@@ -107,6 +113,16 @@ namespace caliope {
 
 				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_VEC3);
 			}
+			else if (strings_equali(&field, &std::string("vector2")))
+			{
+				glm::vec2 vec2;
+				string_to_vec2(&value, &vec2);
+				char* memory_dir = (char*)scene_config.components_data[entity_index][component_index];
+				copy_memory(memory_dir + offset_component_data, &vec2, sizeof(glm::vec2));
+				offset_component_data += sizeof(glm::vec2);
+
+				scene_config.components_data_types[entity_index][component_index].push_back(COMPONENT_DATA_TYPE_VEC2);
+			}
 			else if (strings_equali(&field, &std::string("float")))
 			{
 				float f;
@@ -136,7 +152,7 @@ namespace caliope {
 		return true;
 	}
 
-	void scene_loader_unload(resource* resource) {
+	void entity_loader_unload(resource* resource) {
 		scene_resource_data scene_data = std::any_cast<scene_resource_data>(resource->data);
 		for (uint i = 0; i < scene_data.components_data.size(); ++i) {
 			for (uint j = 0; j < scene_data.components_data[i].size(); ++j) {
@@ -156,8 +172,20 @@ namespace caliope {
 		loader.type = RESOURCE_TYPE_SCENE;
 		loader.custom_type = std::string("");
 		loader.resource_folder = std::string("scenes/");
-		loader.load = scene_loader_load;
-		loader.unload = scene_loader_unload;
+		loader.load = entity_loader_load;
+		loader.unload = entity_loader_unload;
+
+		return loader;
+	}
+
+	resource_loader ui_layout_resource_loader_create() {
+		resource_loader loader;
+
+		loader.type = RESOURCE_TYPE_UI_LAYOUT;
+		loader.custom_type = std::string("");
+		loader.resource_folder = std::string("ui_layouts/");
+		loader.load = entity_loader_load;
+		loader.unload = entity_loader_unload;
 
 		return loader;
 	}

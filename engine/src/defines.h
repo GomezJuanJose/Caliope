@@ -10,6 +10,8 @@ typedef signed long long int64;
 #define INVALID_ID 4294967295U
 #define INVALID_ID_U16 65535U
 
+#define MAX_NAME_LENGTH 256
+
 #define CE_DEBUG
 
 #ifdef CE_PLATFORM_WINDOWS

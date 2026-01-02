@@ -1,0 +1,172 @@
+# Scene definition
+# NOTE: The component information must be in the same order as the defined in the code structure
+# NOTE: 'component_size' defines the size in bytes of each component_id, if is a string should be counted as 255*sizeof(char)
+
+name=ui_layout_test
+entity_id=10
+archetype_id=3
+	component_id=5
+	component_size=4
+		integer=4294967295
+	end_component
+
+	component_id=6
+	component_size=40
+		vector3=0.000000 0.000000 0.000000
+		vector2=300.000000 300.000000
+		vector2=0.500000 0.500000
+		float=0.000000
+		integer=0
+		integer=0
+	end_component
+
+	component_id=7
+	component_size=272
+		string=ui_image_test
+		vector4=0.000000 0.000000 0.000000 0.000000
+	end_component
+
+	component_id=11
+	component_size=4
+		integer=0
+	end_component
+end_archetype
+
+entity_id=11
+archetype_id=4
+	component_id=5
+	component_size=4
+		integer=14
+	end_component
+
+	component_id=6
+	component_size=40
+		vector3=0.000000 0.000000 0.000000
+		vector2=50.000000 50.000000
+		vector2=0.500000 0.500000
+		float=0.000000
+		integer=0
+		integer=0
+	end_component
+
+	component_id=7
+	component_size=272
+		string=ui_button_test
+		vector4=0.000000 0.000000 0.000000 0.000000
+	end_component
+
+	component_id=8
+	component_size=840
+		string=ui_button
+		string=ui_button
+		string=ui_button_pressed
+		vector4=1.000000 1.000000 1.000000 1.000000
+		vector4=0.500000 0.500000 0.500000 1.000000
+		vector4=0.250000 0.250000 0.250000 1.000000
+	end_component
+
+	component_id=9
+	component_size=40
+	end_component
+
+	component_id=11
+	component_size=4
+		integer=0
+	end_component
+end_archetype
+
+entity_id=12
+archetype_id=4
+	component_id=5
+	component_size=4
+		integer=14
+	end_component
+
+	component_id=6
+	component_size=40
+		vector3=0.000000 0.000000 0.000000
+		vector2=80.000000 300.000000
+		vector2=0.000000 0.000000
+		float=0.000000
+		integer=8
+		integer=0
+	end_component
+
+	component_id=7
+	component_size=272
+		string=ui_button_test
+		vector4=0.000000 0.000000 0.000000 0.000000
+	end_component
+
+	component_id=8
+	component_size=840
+		string=ui_button
+		string=ui_button
+		string=ui_button_pressed
+		vector4=1.000000 1.000000 1.000000 1.000000
+		vector4=0.500000 0.500000 0.500000 1.000000
+		vector4=0.250000 0.250000 0.250000 1.000000
+	end_component
+
+	component_id=9
+	component_size=40
+	end_component
+
+	component_id=11
+	component_size=4
+		integer=1
+	end_component
+end_archetype
+
+entity_id=13
+archetype_id=5
+	component_id=5
+	component_size=4
+		integer=4294967295
+	end_component
+
+	component_id=6
+	component_size=40
+		vector3=0.000000 0.000000 0.000000
+		vector2=900.000000 700.000000
+		vector2=0.500000 1.000000
+		float=0.000000
+		integer=7
+		integer=0
+	end_component
+
+	component_id=10
+	component_size=2304
+		string=test_style
+	end_component
+
+	component_id=11
+	component_size=4
+		integer=1
+	end_component
+end_archetype
+
+entity_id=14
+archetype_id=6
+	component_id=5
+	component_size=4
+		integer=4294967295
+	end_component
+
+	component_id=6
+	component_size=40
+		vector3=0.000000 0.000000 0.000000
+		vector2=300.000000 300.000000
+		vector2=1.000000 0.000000
+		float=0.000000
+		integer=2
+		integer=0
+	end_component
+
+	component_id=12
+	component_size=16
+		vector3=0.000000 0.000000 0.000000
+		integer=3435973633
+	end_component
+end_archetype
+

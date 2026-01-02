@@ -8,4 +8,5 @@ namespace caliope {
 	struct resource_parser;
 
 	resource_parser scene_resource_parser_create();
+	resource_parser ui_layout_resource_parser_create();
 }

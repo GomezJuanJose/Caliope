@@ -10,11 +10,11 @@
 #include "resources/loaders/material_loader.h"
 #include "resources/loaders/sprite_animation_loader.h"
 #include "resources/loaders/audio_loader.h"
-#include "resources/loaders/scene_loader.h"
+#include "resources/loaders/entity_loader.h"
 #include "resources/loaders/text_font_loader.h"
 #include "resources/loaders/text_style_loader.h"
 
-#include "resources/parsers/scene_parser.h"
+#include "resources/parsers/entity_parser.h"
 
 namespace caliope {
 
@@ -44,11 +44,13 @@ namespace caliope {
 		resource_system_register_loader(sprite_animation_resource_loader_create());
 		resource_system_register_loader(audio_resource_loader_create());
 		resource_system_register_loader(scene_resource_loader_create());
+		resource_system_register_loader(ui_layout_resource_loader_create());
 		resource_system_register_loader(text_font_resource_loader_create());
 		resource_system_register_loader(text_style_resource_loader_create());
 
 		// Parsers
 		resource_system_register_parser(scene_resource_parser_create());
+		resource_system_register_parser(ui_layout_resource_parser_create());
 
 		CE_LOG_INFO("Resource system initialized.");
 		return true;

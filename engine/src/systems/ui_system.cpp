@@ -23,9 +23,12 @@
 
 
 namespace caliope {
+	#define UI_LAYOUT_FILE_EXTENSION ".ceuilay"
+
 	typedef struct ui_system_state {
 		std::unordered_map<std::string, scene> loaded_ui_layouts;
 		std::unordered_map<uint, uint> entity_index_layout; // Index of the entity that occupies in the layout
+
 		uint layout_count;
 		uint max_number_entities;
 
@@ -49,10 +52,10 @@ namespace caliope {
 		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(clicked_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
 		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(clicked_entity, UI_MOUSE_EVENTS_COMPONENT, size);
 		if (ui_dynamic_image_comp != nullptr) {
-			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->pressed_color;
-			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->pressed_texture[0]));
+			ui_dynamic_image_comp->current_color = ui_dynamic_image_comp->pressed_color;
+			ui_dynamic_image_comp->current_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->pressed_texture[0]));
 		}
-		if (ui_events_comp != nullptr) {
+		if (ui_events_comp != nullptr && ui_events_comp->on_ui_pressed) {
 			ui_events_comp->on_ui_pressed(EVENT_CODE_ON_UI_BUTTON_PRESSED, 0);
 		}
 
@@ -67,15 +70,15 @@ namespace caliope {
 		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(released_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
 		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(released_entity, UI_MOUSE_EVENTS_COMPONENT, size);
 		if (ui_dynamic_image_comp != nullptr) {
-			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->normal_color;
-			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->normal_texture[0]));
+			ui_dynamic_image_comp->current_color = ui_dynamic_image_comp->normal_color;
+			ui_dynamic_image_comp->current_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->normal_texture[0]));
 		}
 
-		if (ui_events_comp != nullptr && object_pick_system_get_ui_hover_entity() == state_ptr->current_clicked_entity) {
+		if (ui_events_comp != nullptr && ui_events_comp->on_ui_clicked && object_pick_system_get_ui_hover_entity() == state_ptr->current_clicked_entity) {
 			ui_events_comp->on_ui_clicked(EVENT_CODE_ON_UI_BUTTON_CLICKED, 0);
 		}
 
-		if (ui_events_comp != nullptr) {
+		if (ui_events_comp != nullptr && ui_events_comp->on_ui_released) {
 			ui_events_comp->on_ui_released(EVENT_CODE_ON_UI_BUTTON_RELEASED, 0);
 		}
 
@@ -93,10 +96,10 @@ namespace caliope {
 		ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
 		ui_events_component* ui_events_comp = (ui_events_component*)ecs_system_get_component_data(previous_hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
 		if (ui_dynamic_image_comp != nullptr) {
-			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_color = ui_dynamic_image_comp->hover_color;
-			material_system_adquire(std::string(&ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->hover_texture[0]));
+			ui_dynamic_image_comp->current_color = ui_dynamic_image_comp->hover_color;
+			ui_dynamic_image_comp->current_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->hover_texture[0]));
 		}
-		if (ui_events_comp != nullptr) {
+		if (ui_events_comp != nullptr && ui_events_comp->on_ui_hover) {
 			ui_events_comp->on_ui_hover(EVENT_CODE_ON_UI_BUTTON_HOVER, 0);
 		}
 
@@ -107,10 +110,10 @@ namespace caliope {
 		ui_dynamic_material_component* previous_ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(previous_hover_entity, UI_DYNAMIC_MATERIAL_COMPONENT, size);
 		ui_events_component* previous_ui_events_comp = (ui_events_component*)ecs_system_get_component_data(previous_hover_entity, UI_MOUSE_EVENTS_COMPONENT, size);
 		if (previous_ui_dynamic_image_comp != nullptr) {
-			material_system_adquire(std::string(&previous_ui_dynamic_image_comp->material_name[0]))->diffuse_color = previous_ui_dynamic_image_comp->normal_color;
-			material_system_adquire(std::string(&previous_ui_dynamic_image_comp->material_name[0]))->diffuse_texture = texture_system_adquire(std::string(&previous_ui_dynamic_image_comp->normal_texture[0]));
+			previous_ui_dynamic_image_comp->current_color = previous_ui_dynamic_image_comp->normal_color;
+			previous_ui_dynamic_image_comp->current_texture = texture_system_adquire(std::string(&previous_ui_dynamic_image_comp->normal_texture[0]));
 		}
-		if (previous_ui_events_comp != nullptr) {
+		if (previous_ui_events_comp != nullptr && previous_ui_events_comp->on_ui_unhover) {
 			previous_ui_events_comp->on_ui_unhover(EVENT_CODE_ON_UI_BUTTON_UNHOVER, 0);
 		}
 
@@ -168,23 +171,24 @@ namespace caliope {
 		return true;
 	}
 
-	/*bool ui_system_load_layout(std::string& name, bool enable_by_default) {
-
+	bool ui_system_load_layout(std::string& name, bool enable_by_default)
+	{
 		if (state_ptr->loaded_ui_layouts.find(name) != state_ptr->loaded_ui_layouts.end()) {
-			CE_LOG_WARNING("scene_system_load scene already loaded or created a new one with that name, try to unload it first and load again");
+			CE_LOG_WARNING("ui_system_load_layout scene already loaded or created a new one with that name, try to unload it first and load again");
 			return true;
 		}
 
 		resource r;
-		if (!resource_system_load(name, RESOURCE_TYPE_SCENE, r)) {
-			CE_LOG_ERROR("scene_system_load couldnt load file scene %s", name.c_str());
+		if (!resource_system_load(name + UI_LAYOUT_FILE_EXTENSION, RESOURCE_TYPE_UI_LAYOUT, r)) {
+			CE_LOG_ERROR("ui_system_load_layout couldnt load file scene %s", name.c_str());
 			return false;
 		}
 		scene_resource_data scene_config = std::any_cast<scene_resource_data>(r.data);
 
 
-		scene_system_create_empty(std::string(scene_config.name.data()), enable_by_default);
+		ui_system_create_empty_layout(std::string(scene_config.name.data()), enable_by_default);
 
+		std::vector<uint> new_entity_ids;
 
 		for (uint entity_index = 0; entity_index < scene_config.archetypes.size(); ++entity_index) {
 
@@ -215,44 +219,84 @@ namespace caliope {
 				data.push_back(scene_config.components_data[entity_index][component_index]);
 			}
 
-			scene_system_instance_entity(std::string(scene_config.name.data()), scene_config.archetypes[entity_index],
-				components,
-				data
+			new_entity_ids.push_back(
+				ui_system_instance_entity(std::string(scene_config.name.data()), scene_config.archetypes[entity_index],
+					components,
+					data
+				)
 			);
 		}
 
 		resource_system_unload(r);
 
-		return true;
-	}*/
+		// Reparents old ids with new ones
+		for (uint entity_index = 0; entity_index < new_entity_ids.size(); ++entity_index) {
+			uint64 size;
+			parent_component* parent_comp = (parent_component*)ecs_system_get_component_data(new_entity_ids[entity_index], PARENT_COMPONENT, size);
+			if (parent_comp) {
+				for (uint parent_index = 0; parent_index < scene_config.entity_ids.size(); ++parent_index) {
+					if (scene_config.entity_ids[parent_index] == parent_comp->parent) {
+						parent_component new_parent_comp;
+						new_parent_comp.parent = new_entity_ids[parent_index];
+						ecs_system_insert_data(new_entity_ids[entity_index], PARENT_COMPONENT, &new_parent_comp);
+					}
+				}
 
-/*	void scene_system_unload(std::string& name) {
+			}
+		}
+
+		// TODO: Improve this, be implicit in the loading phase? make it more simple than this
+		// Sets button values by default
+		std::vector<uint> ui_button = ecs_system_get_entities_by_archetype(ARCHETYPE_UI_BUTTON);// TODO: If the vector is a reference and there is no button, calling the function the renderer crash, investigate why!
+		for (uint entity_index = 0; entity_index < ui_button.size(); ++entity_index) {
+			uint64 size;
+			ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, size);
+			ui_dynamic_material_component new_ui_dynamic_image_comp;
+			new_ui_dynamic_image_comp.normal_color = ui_dynamic_image_comp->normal_color;
+			new_ui_dynamic_image_comp.hover_color = ui_dynamic_image_comp->hover_color;
+			new_ui_dynamic_image_comp.pressed_color = ui_dynamic_image_comp->pressed_color;
+			new_ui_dynamic_image_comp.normal_texture = ui_dynamic_image_comp->normal_texture;
+			new_ui_dynamic_image_comp.hover_texture = ui_dynamic_image_comp->hover_texture;
+			new_ui_dynamic_image_comp.pressed_texture = ui_dynamic_image_comp->pressed_texture;
+
+			new_ui_dynamic_image_comp.current_color = ui_dynamic_image_comp->normal_color;
+			new_ui_dynamic_image_comp.current_texture = texture_system_adquire(std::string(&ui_dynamic_image_comp->normal_texture[0]));
+
+			ecs_system_insert_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, &new_ui_dynamic_image_comp);
+		}
+
+		return true;
+	}
+
+	void ui_system_unload_layout(std::string& name)
+	{
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
-			CE_LOG_WARNING("scene_system_unload scene %s not found", name.c_str());
+			CE_LOG_WARNING("ui_system_unload_layout ui layout %s not found", name.c_str());
 			return;
 		}
-		
+
 		while (!state_ptr->loaded_ui_layouts.at(name).entities.empty()) {
-			scene_system_destroy_entity(name, state_ptr->loaded_ui_layouts.at(name).entities.front());
+			ui_system_destroy_entity(name, state_ptr->loaded_ui_layouts.at(name).entities.front());
 		}
 
 		state_ptr->loaded_ui_layouts.erase(name);
 	}
 
-	bool scene_system_save(std::string& name) {
+	bool ui_system_save_layout(std::string& name)
+	{
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
-			CE_LOG_WARNING("scene_system_save scene not found");
+			CE_LOG_WARNING("ui_system_save_layout scene not found");
 			return false;
 		}
 
-		if (!resource_system_parse(name, RESOURCE_TYPE_SCENE, &state_ptr->loaded_ui_layouts.at(name))) {
-			CE_LOG_ERROR("scene_system_save couldnt save file scene %s", name.c_str());
+		if (!resource_system_parse(name + UI_LAYOUT_FILE_EXTENSION, RESOURCE_TYPE_UI_LAYOUT, &state_ptr->loaded_ui_layouts.at(name))) {
+			CE_LOG_ERROR("ui_system_save_layout couldnt save file scene %s", name.c_str());
 			return false;
 		}
 
 		return true;
 	}
-*/
+
 	uint ui_system_instance_image(std::string& name, ui_transform_component& transform, ui_material_component& ui_material, ui_behaviour_component& cursor_behaviour) {
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
 			CE_LOG_WARNING("ui_system_instance_image scene %s not found", name.c_str());
@@ -278,7 +322,7 @@ namespace caliope {
 		return entity;
 	}
 
-	uint ui_system_instance_button(std::string& name, ui_transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events, ui_behaviour_component& cursor_behaviour)
+	uint ui_system_instance_button(std::string& name, ui_transform_component& transform, ui_material_component& material_component, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events, ui_behaviour_component& cursor_behaviour)
 	{
 		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
 			CE_LOG_WARNING("ui_system_instance_button scene %s not found", name.c_str());
@@ -288,8 +332,11 @@ namespace caliope {
 		parent_component parent_comp;
 		parent_comp.parent = -1;
 
-		std::vector<component_id> components = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT, UI_BEHAVIOUR_COMPONENT };
-		std::vector<void*> data = { &parent_comp, &transform , &ui_dynamic_material, &ui_mouse_events, &cursor_behaviour };
+		ui_dynamic_material.current_color = ui_dynamic_material.normal_color;
+		ui_dynamic_material.current_texture = texture_system_adquire(std::string(&ui_dynamic_material.normal_texture[0]));
+
+		std::vector<component_id> components = { PARENT_COMPONENT, UI_TRANSFORM_COMPONENT, UI_MATERIAL_COMPONENT, UI_DYNAMIC_MATERIAL_COMPONENT, UI_MOUSE_EVENTS_COMPONENT, UI_BEHAVIOUR_COMPONENT };
+		std::vector<void*> data = { &parent_comp, &transform , &material_component, &ui_dynamic_material, &ui_mouse_events, &cursor_behaviour };
 
 		uint entity = ecs_system_add_entity(ARCHETYPE_UI_BUTTON);
 		for (uint i = 0; i < components.size(); ++i) {
@@ -299,6 +346,7 @@ namespace caliope {
 
 		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
 		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
+
 
 		event_register(EVENT_CODE_ON_UI_BUTTON_PRESSED, ui_mouse_events.on_ui_pressed);
 		event_register(EVENT_CODE_ON_UI_BUTTON_RELEASED, ui_mouse_events.on_ui_released);
@@ -356,6 +404,24 @@ namespace caliope {
 		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
 		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
 
+
+		return entity;
+	}
+
+	uint ui_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data)
+	{
+		if (state_ptr->loaded_ui_layouts.find(name) == state_ptr->loaded_ui_layouts.end()) {
+			CE_LOG_WARNING("ui_system_instance_entity scene %s not found", name.c_str());
+			return -1;
+		}
+
+		uint entity = ecs_system_add_entity(archetype);
+		for (uint i = 0; i < components.size(); ++i) {
+			ecs_system_insert_data(entity, components[i], components_data[i]);
+		}
+
+		state_ptr->entity_index_layout.insert({ entity, state_ptr->loaded_ui_layouts.at(name).entities.size() });
+		state_ptr->loaded_ui_layouts.at(name).entities.push_back(entity);
 
 		return entity;
 	}
@@ -589,21 +655,25 @@ namespace caliope {
 			transform_set_position(transform, calculate_position_based_on_anchor_bounds_and_parent(tran_comp, tran_comp->anchor, parent_comp->parent));
 			quad_definition.transform = transform;
 
+
 			ui_dynamic_material_component* ui_dynamic_image_comp = (ui_dynamic_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_DYNAMIC_MATERIAL_COMPONENT, size);
-			material* mat = material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data())); //TODO: Use a built in material UI?
-			quad_definition.diffuse_color = mat->diffuse_color;
+			ui_material_component* ui_button_comp = (ui_material_component*)ecs_system_get_component_data(ui_button[entity_index], UI_MATERIAL_COMPONENT, size);
+			material* mat = material_system_adquire(std::string(ui_button_comp->material_name.data())); //TODO: Use a built in material UI?
+
+			quad_definition.diffuse_color = ui_dynamic_image_comp->current_color;
+			quad_definition.diffuse_texture = ui_dynamic_image_comp->current_texture;
+
 			quad_definition.shininess_intensity = mat->shininess_intensity;
 			quad_definition.shininess_sharpness = mat->shininess_sharpness;
 			quad_definition.shader = mat->shader;
-			quad_definition.diffuse_texture = mat->diffuse_texture;
 			quad_definition.specular_texture = mat->specular_texture;
 			quad_definition.normal_texture = mat->normal_texture;
 
 			quad_definition.z_order = tran_comp->z_order;
 			quad_definition.texture_region = texture_system_calculate_custom_region_coordinates(
-				*material_system_adquire(std::string(ui_dynamic_image_comp->material_name.data()))->diffuse_texture,
-				ui_dynamic_image_comp->texture_region[0],
-				ui_dynamic_image_comp->texture_region[1],
+				*material_system_adquire(std::string(ui_button_comp->material_name.data()))->diffuse_texture,
+				ui_button_comp->texture_region[0],
+				ui_button_comp->texture_region[1],
 				true
 			);
 
@@ -849,7 +919,10 @@ namespace caliope {
 			
 
 			float x_advance = 0;
-			float y_advance = line_heights[0];
+			float y_advance = 0;
+			if (!line_heights.empty()) {
+				y_advance = line_heights[0];
+			}
 			// Iterates each string character
 			for (uint char_index = 0; char_index < ui_text_comp->text.size(); ++char_index) {
 				if (ui_text_comp->text[char_index] == '\0') {

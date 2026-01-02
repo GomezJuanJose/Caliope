@@ -1,4 +1,4 @@
-#include "scene_parser.h"
+#include "entity_parser.h"
 #include "cepch.h"
 
 #include "core/logger.h"
@@ -11,13 +11,12 @@
 
 namespace caliope {
 
-	bool scene_parser_parse(std::string* file, void* data) {
-		
+	bool entity_parser_parse(std::string* file, void* data) {
 
 		scene* scene_data = (scene*)data;
 
 		file_handle text_file;
-		if (!file_system_open(*file + ".cescene", FILE_MODE_WRITE, text_file)) {
+		if (!file_system_open(*file, FILE_MODE_WRITE, text_file)) {
 			CE_LOG_ERROR("Couldnt open %s", file->c_str());
 			return false;
 		}
@@ -29,6 +28,7 @@ namespace caliope {
 
 		for (uint entity_index = 0; entity_index < scene_data->entities.size(); ++entity_index) {
 			uint entity = scene_data->entities[entity_index];
+			file_system_write_text(text_file, "entity_id=" + std::to_string(entity) + "\n");
 			file_system_write_text(text_file, "archetype_id=" + std::to_string(ecs_system_get_entity_archetype(entity)) + "\n");
 
 			std::vector<component_id> components = ecs_system_get_entity_components(entity);
@@ -55,6 +55,11 @@ namespace caliope {
 						glm::vec3* vec3 = (glm::vec3*)((char*)component_data + offset);
 						file_system_write_text(text_file, "\t\tvector3=" + std::to_string(vec3->x) + " " + std::to_string(vec3->y) + " " + std::to_string(vec3->z) + "\n");
 						offset += sizeof(glm::vec3);
+					}
+					else if (COMPONENT_DATA_TYPE_VEC2 == component_data_types[component_data_type_index]) {
+						glm::vec2* vec2 = (glm::vec2*)((char*)component_data + offset);
+						file_system_write_text(text_file, "\t\tvector2=" + std::to_string(vec2->x) + " " + std::to_string(vec2->y) + "\n");
+						offset += sizeof(glm::vec2);
 					}
 					else if (COMPONENT_DATA_TYPE_UINT == component_data_types[component_data_type_index]) {
 						uint* uinteger = (glm::uint*)((char*)component_data + offset);
@@ -90,7 +95,18 @@ namespace caliope {
 		parser.type = RESOURCE_TYPE_SCENE;
 		parser.custom_type = std::string("");
 		parser.resource_folder = std::string("scenes/");
-		parser.parse = scene_parser_parse;
+		parser.parse = entity_parser_parse;
+
+		return parser;
+	}
+
+	resource_parser ui_layout_resource_parser_create() {
+		resource_parser parser;
+
+		parser.type = RESOURCE_TYPE_UI_LAYOUT;
+		parser.custom_type = std::string("");
+		parser.resource_folder = std::string("ui_layouts/");
+		parser.parse = entity_parser_parse;
 
 		return parser;
 	}

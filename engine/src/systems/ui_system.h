@@ -32,18 +32,20 @@ namespace caliope {
 	void ui_system_populate_render_packet(std::vector<renderer_view_packet>& packets, camera* ui_cam_in_use, float delta_time);
 
 	CE_API bool ui_system_create_empty_layout(std::string& name, bool enable_by_default);
-	//CE_API bool ui_system_load_layout(std::string& name, bool enable_by_default);
-	//CE_API void ui_system_unload_layout(std::string& name);
+	CE_API bool ui_system_load_layout(std::string& name, bool enable_by_default);
+	CE_API void ui_system_unload_layout(std::string& name);
 	// Saves the scene passed as argument in a binary file.
-	//CE_API bool ui_system_save_layout(std::string& name);
+	CE_API bool ui_system_save_layout(std::string& name);
 
 	// returns the entity ID, if -1 means error.
 	// TODO: Do it like the scene system (just one function)?
 	CE_API uint ui_system_instance_image(std::string& name, ui_transform_component& transform, ui_material_component& ui_material, ui_behaviour_component& cursor_behaviour);
-	CE_API uint ui_system_instance_button(std::string& name, ui_transform_component& transform, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events, ui_behaviour_component& cursor_behaviour);
+	CE_API uint ui_system_instance_button(std::string& name, ui_transform_component& transform, ui_material_component& material_component, ui_dynamic_material_component& ui_dynamic_material, ui_events_component& ui_mouse_events, ui_behaviour_component& cursor_behaviour);
 	CE_API uint ui_system_instance_text_box(std::string& name, ui_transform_component& transform, ui_text_component& ui_text, ui_behaviour_component& cursor_behaviour);
 	CE_API uint ui_system_instance_container_box(std::string& name, ui_transform_component& transform, ui_container_component& box);
 
+	// returns the entity ID, if -1 means error.
+	CE_API uint ui_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data);
 	CE_API void ui_system_destroy_entity(std::string& name, uint entity);
 
 	CE_API bool ui_system_parent_entities(uint child, uint parent);

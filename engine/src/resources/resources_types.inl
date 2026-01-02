@@ -22,8 +22,6 @@ namespace caliope {
 	enum renderpass_stage_type;
 	enum renderpass_access_type;
 
-	#define MAX_NAME_LENGTH 256
-
 	typedef enum resource_type{
 		RESOURCE_TYPE_BINARY = 0,
 		RESOURCE_TYPE_IMAGE,
@@ -32,6 +30,7 @@ namespace caliope {
 		RESOURCE_TYPE_SPRITE_ANIMATION,
 		RESOURCE_TYPE_AUDIO,
 		RESOURCE_TYPE_SCENE,
+		RESOURCE_TYPE_UI_LAYOUT,
 		RESOURCE_TYPE_TEXT_FONT,
 		RESOURCE_TYPE_TEXT_STYLE
 
@@ -126,6 +125,7 @@ namespace caliope {
 
 	typedef struct scene_resource_data {
 		std::array<char, MAX_NAME_LENGTH> name;
+		std::vector<uint> entity_ids;
 		std::vector<archetype> archetypes;
 		std::vector<std::vector<component_id>> components;
 		std::vector< std::vector<std::vector<component_data_type>>> components_data_types; // Note: entity_id < component_id < data_type > > >

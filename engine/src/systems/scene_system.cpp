@@ -16,6 +16,8 @@
 #include "systems/render_view_system.h"
 
 namespace caliope {
+	#define SCENE_FILE_EXTENSION ".cescene"
+
 	typedef struct scene_system_state {
 		std::unordered_map<std::string, scene> loaded_scenes;
 		std::unordered_map<uint, uint> entity_index_scene; // Index of the entity that occupies in the scene
@@ -68,7 +70,7 @@ namespace caliope {
 		}
 
 		resource r;
-		if (!resource_system_load(name, RESOURCE_TYPE_SCENE, r)) {
+		if (!resource_system_load(name + SCENE_FILE_EXTENSION, RESOURCE_TYPE_SCENE, r)) {
 			CE_LOG_ERROR("scene_system_load couldnt load file scene %s", name.c_str());
 			return false;
 		}
@@ -137,7 +139,7 @@ namespace caliope {
 			return false;
 		}
 
-		if (!resource_system_parse(name, RESOURCE_TYPE_SCENE, &state_ptr->loaded_scenes.at(name))) {
+		if (!resource_system_parse(name + SCENE_FILE_EXTENSION, RESOURCE_TYPE_SCENE, &state_ptr->loaded_scenes.at(name))) {
 			CE_LOG_ERROR("scene_system_save couldnt save file scene %s", name.c_str());
 			return false;
 		}
@@ -145,7 +147,7 @@ namespace caliope {
 		return true;
 	}
 
-	bool scene_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data) {
+	uint scene_system_instance_entity(std::string& name, archetype archetype, std::vector<component_id>& components, std::vector<void*>& components_data) {
 		if (state_ptr->loaded_scenes.find(name) == state_ptr->loaded_scenes.end()) {
 			CE_LOG_WARNING("scene_system_instance_entity scene %s not found", name.c_str());
 			return -1;
