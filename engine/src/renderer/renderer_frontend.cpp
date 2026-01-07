@@ -116,7 +116,7 @@ namespace caliope{
 		// UI pick object renderpass
 		pass = {};
 		pass.type = RENDERPASS_TYPE_UI_OBJECT_PICK;
-		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_COLOR_BUFFER);
+		pass.flags = (renderpass_clear_flag)(RENDERPASS_CLEAR_FLAG_NONE);
 		pass.front_face = FRONT_FACE_COUNTER_CLOCKWISE;
 		pass.targets.resize(state_ptr->backend.window_images_count_get());
 		renderpass_resource_data ui_pick_object_renderpass_data;
@@ -214,6 +214,11 @@ namespace caliope{
 	void renderer_texture_write_data(texture& t, uint offset, uint size, uchar* pixels)
 	{
 		state_ptr->backend.texture_write_data(t, offset, size, pixels);
+	}
+
+	void renderer_get_picked_id(uint x, uint y, uint& id)
+	{
+		state_ptr->backend.get_picked_id(x, y, id);
 	}
 
 	void renderer_texture_change_filter(texture& texture) {

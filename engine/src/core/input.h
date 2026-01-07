@@ -5,13 +5,13 @@
 namespace caliope {
 #define DEFINE_KEY(name, code) KEY_##name = code
 	
-    typedef enum button {
+    typedef enum button_input {
         BUTTON_LEFT,
         BUTTON_RIGHT,
         BUTTON_MIDDLE,
 
         MAX_BUTTONS
-    }button;
+    }button_input;
 
 	typedef enum key {
         DEFINE_KEY(BACKSPACE, 0x08),
@@ -162,8 +162,8 @@ namespace caliope {
     CE_API bool is_key_pressed(key keycode);
     CE_API bool is_key_released(key keycode);
 
-    CE_API bool is_button_pressed(button buttoncode);
-    CE_API bool is_button_released(button buttoncode);
+    CE_API bool is_button_pressed(button_input buttoncode);
+    CE_API bool is_button_released(button_input buttoncode);
 
     CE_API std::array<int, 2> get_mouse_position();
 

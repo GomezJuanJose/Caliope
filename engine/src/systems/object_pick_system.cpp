@@ -27,7 +27,7 @@ namespace caliope {
 
 	// NOTE: Data is the key code pressed
 	bool on_entity_pressed(event_system_code code, std::any data) {
-		button keycode = std::any_cast<button>(data);
+		button_input keycode = std::any_cast<button_input>(data);
 
 		if (keycode == BUTTON_LEFT) {
 			state_ptr->is_pressing = true;
@@ -45,7 +45,7 @@ namespace caliope {
 	// NOTE: Data is the key code released
 	bool on_entity_released(event_system_code code, std::any data) {
 
-		button keycode = std::any_cast<button>(data);
+		button_input keycode = std::any_cast<button_input>(data);
 
 		if (keycode == BUTTON_LEFT) {
 			state_ptr->is_pressing = false;

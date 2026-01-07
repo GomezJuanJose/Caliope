@@ -736,6 +736,67 @@ namespace caliope {
 		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
 	}
 
+	void vulkan_renderer_get_picked_id(uint x, uint y, uint& id)
+	{
+		vulkan_command_buffer temp_buffer;
+		VkCommandPool pool = state_ptr->context.device.command_pool;
+		VkQueue queue = state_ptr->context.device.graphics_queue;
+
+		vulkan_command_buffer_allocate_and_begin_single_use(state_ptr->context, pool, temp_buffer);
+		
+		vulkan_image_transition_layout(
+			state_ptr->context,
+			temp_buffer,
+			state_ptr->context.swapchain.object_pick_attachment,
+			state_ptr->context.swapchain.object_pick_attachment.format,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+		);
+
+		vulkan_buffer staging_buffer;
+		vulkan_buffer_create(
+			state_ptr->context,
+			sizeof(float) * 4,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			true,
+			staging_buffer
+		);
+
+		vulkan_image_copy_pixel_to_buffer(
+			state_ptr->context,
+			state_ptr->context.swapchain.object_pick_attachment,
+			staging_buffer.handle,
+			x,
+			y,
+			temp_buffer
+		);
+
+		vulkan_image_transition_layout(
+			state_ptr->context,
+			temp_buffer,
+			state_ptr->context.swapchain.object_pick_attachment,
+			state_ptr->context.swapchain.object_pick_attachment.format,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+
+		vulkan_command_buffer_end_single_use(state_ptr->context, pool, temp_buffer, queue);
+
+		float id_color;
+		vulkan_buffer_read_data(
+			state_ptr->context,
+			staging_buffer,
+			0,
+			sizeof(float),
+			0,
+			&id_color
+		);
+		id = id_color;
+		vulkan_buffer_destroy(state_ptr->context, staging_buffer);
+
+	}
+
 	bool vulkan_renderer_shader_create(shader_resource_data& shader_config, shader& out_shader, renderpass& pass) {
 
 		// Shader modules creation

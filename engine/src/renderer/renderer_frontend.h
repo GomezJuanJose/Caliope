@@ -34,6 +34,8 @@ namespace caliope {
 	void renderer_texture_destroy(texture& texture);
 	void renderer_texture_write_data(texture& t, uint offset, uint size, uchar* pixels);
 	void renderer_texture_change_filter(texture& texture);
+	
+	void renderer_get_picked_id(uint x, uint y, uint& id);
 
 	bool renderer_shader_create(shader_resource_data& shader_config, shader& shader);
 	void renderer_shader_destroy(shader& shader);
@@ -52,7 +54,7 @@ namespace caliope {
 	void renderer_apply_descriptors(shader& shader);
 
 	void renderer_get_descriptor_ssbo(void* out_data, uint64 data_size, uint destination_binding, shader& shader, uint descriptor_buffer_index);
-	
+
 	void renderer_draw_geometry(uint instance_count, geometry& geometry);
 
 }

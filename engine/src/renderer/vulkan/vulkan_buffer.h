@@ -12,6 +12,7 @@ namespace caliope {
 	void vulkan_buffer_unlock_memory(vulkan_context& context, vulkan_buffer& buffer);
 
 	void vulkan_buffer_load_data(vulkan_context& context, vulkan_buffer& buffer, uint64 offset, uint64 size, uint flags, const void* data);
+	void vulkan_buffer_read_data(vulkan_context& context, vulkan_buffer& buffer, uint64 offset, uint64 size, uint flags, void* out_data);
 	bool vulkan_buffer_copy(vulkan_context& context, VkCommandPool pool, VkFence fence, VkQueue queue, VkBuffer source, uint source_offset, VkBuffer dest, uint64 dest_offset, uint64 size);
 
 	int find_memory_type(VkPhysicalDevice& device, int type_filter, VkMemoryPropertyFlags properties);

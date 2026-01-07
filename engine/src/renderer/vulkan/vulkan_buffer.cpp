@@ -62,6 +62,14 @@ namespace caliope {
 		vkUnmapMemory(context.device.logical_device, buffer.memory);
 	}
 
+	void vulkan_buffer_read_data(vulkan_context& context, vulkan_buffer& buffer, uint64 offset, uint64 size, uint flags, void* out_data)
+	{
+		void* data_ptr;
+		VK_CHECK(vkMapMemory(context.device.logical_device, buffer.memory, offset, size, flags, &data_ptr));
+		copy_memory(out_data, data_ptr, size);
+		vkUnmapMemory(context.device.logical_device, buffer.memory);
+	}
+
 	bool vulkan_buffer_copy(vulkan_context& context, VkCommandPool pool, VkFence fence, VkQueue queue, VkBuffer source, uint source_offset, VkBuffer dest, uint64 dest_offset, uint64 size) {
 		
 		vkQueueWaitIdle(queue);

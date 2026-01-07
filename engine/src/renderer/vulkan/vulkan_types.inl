@@ -101,7 +101,6 @@ namespace caliope {
 
 	typedef struct vulkan_buffer {
 
-		uint64 total_size;
 		VkBuffer handle;
 		VkBufferUsageFlagBits usage;
 		VkDeviceMemory memory;

@@ -62,6 +62,8 @@ namespace caliope {
 		void (*texture_write_data)(texture& t, uint offser, uint size, uchar* pixels);
 		void (*texture_change_filter)(texture& t);
 
+		void (*get_picked_id)(uint x, uint y, uint& id);
+
 		bool (*shader_create)(shader_resource_data& shader_config, shader& out_shader, renderpass& pass);
 		void (*shader_destroy)(shader& s);
 		void (*shader_use)(shader& s);

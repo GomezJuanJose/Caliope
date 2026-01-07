@@ -54,11 +54,11 @@ namespace caliope {
 		return state_ptr->keyboard_status[keycode] == INPUT_RELEASED;
 	}
 
-	bool is_button_pressed(button buttoncode) {
+	bool is_button_pressed(button_input buttoncode) {
 		return state_ptr->mouse_status[buttoncode] == INPUT_PRESSED;
 	}
 
-	bool is_button_released(button buttoncode) {
+	bool is_button_released(button_input buttoncode) {
 		return state_ptr->mouse_status[buttoncode] == INPUT_RELEASED;
 	}
 
@@ -80,7 +80,7 @@ namespace caliope {
 			state_ptr->mouse_status[keycode] = pressed ? INPUT_PRESSED : INPUT_RELEASED;
 			state_ptr->current_frame_button = keycode;
 
-			event_fire(pressed ? EVENT_CODE_BUTTON_PRESSED : EVENT_CODE_BUTTON_RELEASED, (button)keycode);
+			event_fire(pressed ? EVENT_CODE_BUTTON_PRESSED : EVENT_CODE_BUTTON_RELEASED, (button_input)keycode);
 		}
 	}
 

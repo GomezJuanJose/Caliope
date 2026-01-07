@@ -120,16 +120,9 @@ namespace caliope {
 
 		render_view_object_pick_packet& object_pick_packet = std::any_cast<render_view_object_pick_packet>(packet);
 
-		double cursor_x, cursor_y;
-		glm::vec2 scissor_extent;
-		glm::vec2 scissor_offset;
 
-		glm::vec2 cursor_position = platform_system_get_cursor_position();
-		scissor_offset.x = cursor_position.x > 0 ? cursor_position.x : 0;
-		scissor_offset.y = cursor_position.y > 0 ? cursor_position.y : 0;
-		scissor_extent = { 1,1 };
 
-		if (!renderer_renderpass_begin(self.renderpass, render_target_index, scissor_extent, scissor_offset)) {
+		if (!renderer_renderpass_begin(self.renderpass, render_target_index, glm::vec2(), glm::vec2())) {
 			CE_LOG_ERROR("object_pick_render_view_on_render failed renderpass begin. Application shutting down");
 			return false;
 		}
@@ -155,7 +148,6 @@ namespace caliope {
 		for (auto [shader_name, sprites] : object_pick_packet.sprite_definitions) {
 
 			renderer_shader_use(*shader);
-			uint instance_index = sprites.size() - 1;
 			uint number_of_instances = 0;
 			
 
@@ -218,10 +210,9 @@ namespace caliope {
 				psp.id = sprite.id;
 				psp.diffuse_index = diffuse_id;
 				psp.texture_region = sprite.texture_region;
-				state_ptr->view_data.at(self.type).pick_objects.at(instance_index) = psp;
-
+				state_ptr->view_data.at(self.type).pick_objects.at(number_of_instances) = psp;
 				number_of_instances++;
-				instance_index--;
+
 				//}
 				sprites.pop();
 			}
@@ -234,10 +225,9 @@ namespace caliope {
 			renderer_set_descriptor_ubo(&ubo_vertex, sizeof(uniform_vertex_buffer_object), 0, *shader, 0);
 			
 			renderer_set_descriptor_ssbo(state_ptr->view_data.at(self.type).pick_objects.data(), sizeof(shader_pick_quad_properties)* number_of_instances, 1, *shader, 1);
-			renderer_set_descriptor_ssbo(0, sizeof(ssbo_object_picking), 2, *shader, 2);
 			
 			std::vector<texture*> batch_textures = state_ptr->view_data.at(self.type).batch_textures;
-			renderer_set_descriptor_sampler(state_ptr->view_data.at(self.type).batch_textures, 3, *shader);// TODO: Reuse the already existing textures from the world view, to avoid to do the internal for loop of this function
+			renderer_set_descriptor_sampler(state_ptr->view_data.at(self.type).batch_textures, 2, *shader);// TODO: Reuse the already existing textures from the world view, to avoid to do the internal for loop of this function
 
 
 			renderer_apply_descriptors(*shader);
@@ -250,9 +240,14 @@ namespace caliope {
 			return false;
 		}
 
+
+		glm::vec2 cursor_position = platform_system_get_cursor_position();
+		cursor_position.x = cursor_position.x > 0 ? cursor_position.x : 0;
+		cursor_position.y = cursor_position.y > 0 ? cursor_position.y : 0;
+
 		ssbo_object_picking data;
 		data.id = -1;
-		renderer_get_descriptor_ssbo(&data.id, sizeof(uint), 2, *shader, 2);
+		renderer_get_picked_id(cursor_position.x, cursor_position.y, data.id);
 		object_pick_system_set_hover_entity(self.type == 1 ? true : false, data.id); // 1 means VIEW_TYPE_WORLD_OBJECT_PICK
 		return true;
 	}

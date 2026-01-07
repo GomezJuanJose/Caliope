@@ -43,6 +43,15 @@ namespace caliope {
 		VkBuffer buffer,
 		vulkan_command_buffer& command_buffer
 	);
+
+	void vulkan_image_copy_pixel_to_buffer(
+		vulkan_context& context,
+		vulkan_image& image,
+		VkBuffer buffer,
+		uint x,
+		uint y,
+		vulkan_command_buffer& command_buffer
+	);
 	
 	void vulkan_image_destroy(
 		vulkan_context& context,
